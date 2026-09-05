@@ -343,8 +343,11 @@ function serve(res, fp) {
   res.writeHead(200, { 'Content-Type': MIME[path.extname(fp)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
   fs.createReadStream(fp).pipe(res);
 }
+const TV_UA = /smart-?tv|tizen|web0s|webos|bravia|android tv|googletv|crkey|aft[a-z]|hbbtv|netcast|viera|roku|philipstv|vidaa/i;
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
+  // navegador de TV (Samsung/LG/Sony/Android TV/Fire TV/Chromecast/Roku…) abrindo a raiz -> vai direto para /tv
+  if (url === '/' && TV_UA.test(req.headers['user-agent'] || '')) { res.writeHead(302, { Location: '/tv' }); return res.end(); }
   // arquivos de tela dos jogos: /games/<id>/(tv|phone).js
   const gm = url.match(/^\/games\/([a-z0-9_-]+)\/(tv|phone)\.js$/i);
   if (gm) {
