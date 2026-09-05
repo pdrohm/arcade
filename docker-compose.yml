@@ -8,6 +8,15 @@ services:
     image: arcade:latest
     container_name: arcade
     restart: unless-stopped
+    # --- contenção contra abuso/DoS (o link é público) ---
+    mem_limit: 512m                     # teto de memória: um flood não come o servidor todo
+    memswap_limit: 512m
+    cpus: 1.0                           # teto de CPU
+    pids_limit: 256                     # teto de processos/threads
+    security_opt:
+      - no-new-privileges:true          # o processo não consegue ganhar privilégios
+    cap_drop:
+      - ALL                             # servidor node numa porta alta não precisa de nenhuma capability
     environment:
       - PORT=47321
       - PUBLIC_URL=https://arcade.phmarques.com.br/

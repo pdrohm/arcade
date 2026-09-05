@@ -112,7 +112,7 @@
         const before = A.form().name;
         if (before && before !== form.name) A.setPrev(before);
         A.saveForm(form);
-        return A.send({ t: 'join', room: A.room, color: form.color, name: form.name, pid: A.identity(), prevName: localStorage.getItem('arcade_prev') || '' });
+        return A.send({ t: 'join', room: A.room, color: form.color, name: form.name, pid: A.identity(), prevName: localStorage.getItem('arcade_prev') || '', sid: A.sid() });
       }
       case 'rename': {
         const n = prompt('Seu nome:', c.you ? c.you.name : form.name);

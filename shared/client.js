@@ -22,6 +22,10 @@ window.ARCADE = (() => {
     if (!pid) { pid = 'p' + Math.random().toString(36).slice(2, 12); localStorage.setItem('arcade_pid', pid); }
     return pid;
   }
+  // segredo da vaga: prova que este celular é o dono do pid. O servidor manda em you.sid;
+  // guardamos e reenviamos ao (re)entrar. É o que impede outra pessoa de assumir sua vaga pelo pid.
+  const sid = () => { try { return localStorage.getItem('arcade_sid') || ''; } catch { return ''; } };
+  const saveSid = s => { try { if (s) localStorage.setItem('arcade_sid', s); } catch {} };
   const form = () => JSON.parse(localStorage.getItem('arcade_me') || 'null') || { color: null, name: '' };
   const saveForm = f => localStorage.setItem('arcade_me', JSON.stringify(f));
   const prevName = () => localStorage.getItem('arcade_prev') || '';
@@ -35,7 +39,7 @@ window.ARCADE = (() => {
       if (kind === 'tv') send({ t: 'tv', room });
       else if (room) {
         const f = form();
-        if (f.color) send({ t: 'join', room, color: f.color, name: f.name, pid: identity(), prevName: prevName() });
+        if (f.color) send({ t: 'join', room, color: f.color, name: f.name, pid: identity(), prevName: prevName(), sid: sid() });
         else send({ t: 'watch', room });     // só olhar a sala (cores livres, quem já entrou) antes de escolher a cor
       }
     };
@@ -49,6 +53,8 @@ window.ARCADE = (() => {
         clockOffset = m.now - Date.now();
         noRoom = false;
         S = m; you = m.you;
+        if (you && you.sid) saveSid(you.sid);   // guarda o segredo da vaga para reconectar como você
+
         if (meta && S.core.gameId && !loaded.has(S.core.gameId)) { await loadGame(S.core.gameId); }
         draw();
       }
@@ -161,7 +167,7 @@ window.ARCADE = (() => {
       }, 250);
       connect();
     },
-    ctx, send, esc, $, form, saveForm, setPrev, identity, toast, beep, chord, turnover,
+    ctx, send, esc, $, form, saveForm, setPrev, identity, sid, toast, beep, chord, turnover,
     get room() { return room; }, goRoom, createRoom: () => send({ t: 'create' }),
     redraw: draw,   // redesenhar sem esperar o servidor (ex.: mostrar/esconder a resposta)
   };
