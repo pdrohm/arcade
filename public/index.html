@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e17">
+<title>Arcade da casa</title>
+<link rel="stylesheet" href="/shared/ui.css">
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<div class="conn" id="conn">conectando…</div>
+<div id="turnover"></div>
+<script src="/shared/client.js"></script>
+<script>
+(() => {
+  const A = ARCADE, $ = A.$, esc = A.esc;
+  const app = $('#app');
+  let form = A.form(), pickTarget = null, ctx = null;
+
+  function header(c) {
+    const me = c.you && c.C.players.find(p => p.pid === c.you.pid);
+    const g = c.C.screen === 'game' ? c.game() : null;
+    return `<div class="head">
+      <div><h1>${g ? esc(g.emoji + ' ' + g.name) : '🕹️ Arcade'}</h1><p class="sub mut">${g ? 'Jogando agora' : 'Escolha um jogo'} · sala <b>${esc(c.room)}</b></p></div>
+      ${me ? `<div class="center" data-a="rename"><span class="dot" style="background:${c.ci(me.color).hex};width:36px;height:36px"></span><div style="font-size:16px;font-weight:800">${esc(me.name)} ✏️</div></div>` : ''}
+    </div>`;
+  }
+
+  // Sem código na URL (ou código que não existe): digite o código da TV ou crie uma sala.
+  function lobby(c) {
+    return `<div class="box"><h1>🕹️ Arcade da casa</h1><p class="sub mut" style="margin-top:6px">${c.noRoom ? `A sala <b>${esc(c.room)}</b> não existe mais.` : 'Digite o código que aparece na TV.'}</p></div>
+      <div class="box"><p class="sub mut" style="margin-bottom:8px">Código da sala</p><input id="code" class="code" maxlength="4" placeholder="ABCD" autocapitalize="characters" autocomplete="off" spellcheck="false"></div>
+      <button class="btn big ok" data-a="ir">Entrar na sala</button>
+      <p class="sub center mut">Sem TV por perto? Crie uma sala e passe o código para os outros.</p>
+      <button class="btn ghost" data-a="criar">➕ Criar uma sala nova</button>`;
+  }
+
+  function entrar(c) {
+    const taken = k => c.C.players.find(p => p.color === k);
+    return `<div class="box"><h1>🕹️ Arcade da casa</h1><p class="sub mut" style="margin-top:6px">Sala <b>${esc(c.room)}</b> · Escolha sua cor. Ela é sua em todos os jogos.</p></div>
+      <div class="box"><div class="colors">${c.meta.colors.map(col => {
+        const t = taken(col.key);
+        return `<div class="color ${form.color === col.key ? 'sel' : ''} ${col.dark ? 'dk' : ''}" style="background:${col.hex};opacity:${t ? .3 : 1}" ${t ? '' : `data-a="cor" data-c="${col.key}"`}>${col.name}<small style="font-size:12px;opacity:.85">${t ? esc(t.name) : ''}</small></div>`;
+      }).join('')}</div></div>
+      <div class="box"><p class="sub mut" style="margin-bottom:8px">Seu nome</p><input id="name" placeholder="Ex.: Pedro" maxlength="20" value="${esc(form.name)}"></div>
+      <button class="btn big ok" data-a="entrar" ${form.color ? '' : 'disabled'}>Entrar na sala</button>
+      <p class="sub center mut">Já jogou antes? Entre com o mesmo nome para voltar ao seu lugar.</p>
+      <div class="box">${c.playersHtml()}</div>`;
+  }
+
+  function biblioteca(c) {
+    const n = c.C.players.length;
+    return `<div class="shelf">${c.meta.games.map(g => {
+      const off = n < (g.minPlayers || 2);
+      return `<div class="card ${off ? 'off' : ''}" ${off ? '' : `data-a="jogar" data-id="${g.id}"`}>
+        <div class="art" style="background:${g.art || 'linear-gradient(135deg,#334155,#0f172a)'}"></div>
+        <div class="emoji">${g.emoji || '🎲'}</div>
+        <div class="t">${esc(g.name)}</div><div class="d">${esc(g.tagline || '')}</div>
+        <div class="n">${off ? `Precisa de ${g.minPlayers} jogadores (tem ${n})` : `${g.minPlayers}–${g.maxPlayers} jogadores · toque para começar`}</div>
+      </div>`;
+    }).join('')}</div>
+      <div class="box">${c.playersHtml()}</div>
+      ${c.C.event ? `<p class="sub center">${c.hl(c.C.event.text)}</p>` : ''}
+      <button class="btn ghost" data-a="rename">✏️ Mudar meu nome</button>
+      <button class="btn ghost" data-a="sair">Trocar de cor / sair da sala</button>
+      <button class="btn ghost" data-a="trocar">🚪 Ir para outra sala</button>`;
+  }
+
+  let lastKey = null;
+  function render(c) {
+    ctx = c;
+    if (!c.S) {                     // sem sala ainda: só a tela de código
+      lastKey = null;
+      app.innerHTML = lobby(c);
+      app.querySelectorAll('[data-a]').forEach(el => el.onclick = ev => { ev.stopPropagation(); act(el.dataset.a, el); });
+      const code = $('#code'); code.focus(); code.onkeydown = ev => { if (ev.key === 'Enter') act('ir'); };
+      return;
+    }
+    // Um jogo pode pedir para NÃO redesenhar a tela (ex.: quadro de desenho no meio do rabisco).
+    // Se a chave for a mesma da última vez, só chama after() para atualizar por dentro.
+    const implK = c.C.screen === 'game' ? A.games[c.C.gameId] : null;
+    const key = implK && implK.phone && implK.phone.key ? c.C.screen + ':' + c.C.gameId + ':' + implK.phone.key(c) : null;
+    if (key !== null && key === lastKey && c.you) { if (implK.phone.after) implK.phone.after(c); return; }
+    lastKey = key;
+    let h = '';
+    if (!c.you) h = entrar(c);
+    else if (c.C.screen === 'library') h = header(c) + biblioteca(c);
+    else {
+      const impl = A.games[c.C.gameId];
+      h = header(c) + (impl && impl.phone ? impl.phone.html(c) : '<div class="box center"><p class="sub">Carregando o jogo…</p></div>')
+        + `<button class="btn ghost" data-a="voltar">⬅️ Sair do jogo (volta para a biblioteca)</button>`;
+    }
+    app.innerHTML = h;
+    app.querySelectorAll('[data-a]').forEach(el => el.onclick = ev => { ev.stopPropagation(); act(el.dataset.a, el); });
+    const n = $('#name'); if (n) n.oninput = () => { form.name = n.value; };
+    const impl = c.C.screen === 'game' ? A.games[c.C.gameId] : null;
+    if (impl && impl.phone && impl.phone.after) impl.phone.after(c);
+  }
+
+  function act(a, el) {
+    const c = ctx;
+    switch (a) {
+      case 'ir': { const v = ($('#code').value || '').trim().toUpperCase(); if (v.length !== 4) return A.toast('O código tem 4 letras.'); return A.goRoom(v); }
+      case 'criar': return A.createRoom();
+      case 'trocar': if (confirm('Ir para outra sala? Seu lugar nesta sala fica guardado.')) location.href = '/'; return;
+      case 'cor': form.color = el.dataset.c; A.saveForm(form); render(c); return;
+      case 'entrar': {
+        const before = A.form().name;
+        if (before && before !== form.name) A.setPrev(before);
+        A.saveForm(form);
+        return A.send({ t: 'join', room: A.room, color: form.color, name: form.name, pid: A.identity(), prevName: localStorage.getItem('arcade_prev') || '' });
+      }
+      case 'rename': {
+        const n = prompt('Seu nome:', c.you ? c.you.name : form.name);
+        if (n && n.trim()) { A.setPrev(form.name); form.name = n.trim().slice(0, 20); A.saveForm(form); A.send({ t: 'rename', name: form.name }); }
+        return;
+      }
+      case 'sair': if (confirm('Sair da sala? Você perde seu lugar na ordem.')) { A.send({ t: 'leave' }); form.color = null; A.saveForm(form); } return;
+      case 'kick': if (confirm(`Tirar "${el.dataset.name}" da sala? Só faça isso se esse celular não vai voltar.`)) A.send({ t: 'kick', pid: el.dataset.pid }); return;
+      case 'jogar': return A.send({ t: 'play', id: el.dataset.id });
+      case 'voltar': if (confirm('Sair do jogo e voltar para a biblioteca? A partida atual acaba.')) A.send({ t: 'quit' }); return;
+    }
+    const impl = A.games[c.C.gameId];
+    if (impl && impl.phone && impl.phone.act) impl.phone.act(a, el, c);
+  }
+
+  A.start('phone', render);
+})();
+</script>
+</body>
+</html>

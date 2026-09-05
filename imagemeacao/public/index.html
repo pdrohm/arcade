@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f0f14">
+<title>Imagem e Ação</title>
+<style>
+  :root { --bg:#0f0f14; --card:#1b1b25; --line:#2b2b3a; --txt:#f3f4f6; --mut:#9ca3af; --me:#a855f7; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; font-size:18px; background:var(--bg); color:var(--txt); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  body { padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  #app { max-width:520px; margin:0 auto; padding:16px; min-height:100vh; display:flex; flex-direction:column; gap:14px; }
+  h1 { font-size:30px; margin:6px 0 0; letter-spacing:-.5px; }
+  h1 span { color:#f97316; }
+  .sub { color:var(--mut); margin:0; font-size:18px; line-height:1.35; }
+  .box { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; }
+  .btn { display:block; width:100%; border:0; border-radius:14px; padding:20px; font-size:22px; font-weight:800; color:#fff; background:#3b82f6; cursor:pointer; transition:transform .08s, filter .2s; }
+  .btn:active { transform:scale(.97); }
+  .btn:disabled { filter:grayscale(.7) brightness(.6); cursor:default; }
+  .btn.big { padding:28px; font-size:28px; }
+  .btn.ok { background:#22c55e; color:#052e16; }
+  .btn.no { background:#ef4444; }
+  .btn.ghost { background:transparent; border:1px solid var(--line); color:#d1d5db; font-size:18px; padding:16px; }
+  .btn.warn { background:#f97316; color:#1a1a1a; }
+  .row { display:flex; gap:10px; }
+  .row > * { flex:1; }
+  input { width:100%; padding:14px; border-radius:12px; border:1px solid var(--line); background:#0f0f14; color:var(--txt); font-size:20px; }
+  .colors { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .color { border:3px solid transparent; border-radius:14px; padding:18px 10px; text-align:center; font-weight:800; font-size:22px; cursor:pointer; color:#0f0f14; position:relative; }
+  .color small { display:block; font-weight:600; font-size:15px; opacity:.75; margin-top:4px; }
+  .color.sel { border-color:#fff; box-shadow:0 0 0 3px #fff4; }
+  .tag { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
+  .me { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .dot { width:22px; height:22px; border-radius:50%; display:inline-block; vertical-align:middle; border:2px solid #0008; }
+  .cat { border-radius:14px; padding:18px; text-align:center; font-weight:900; font-size:26px; letter-spacing:.3px; }
+  .word { font-size:46px; font-weight:900; text-align:center; padding:26px 10px; border-radius:14px; background:#0f0f14; border:2px dashed var(--line); text-transform:uppercase; line-height:1.1; word-break:break-word; }
+  .word.hidden { color:#e5e7eb; font-size:22px; font-weight:600; text-transform:none; cursor:pointer; }
+  .timer { font-size:96px; font-weight:900; text-align:center; font-variant-numeric:tabular-nums; line-height:1; }
+  .timer.low { color:#ef4444; animation:pulse .5s infinite alternate; }
+  @keyframes pulse { to { transform:scale(1.08); } }
+  .bar { height:10px; border-radius:99px; background:#0f0f14; overflow:hidden; }
+  .bar i { display:block; height:100%; background:#22c55e; transition:width .25s linear; }
+  .teams { display:flex; flex-direction:column; gap:8px; }
+  .team { display:flex; align-items:center; gap:10px; padding:14px; border-radius:12px; background:#0f0f14; font-size:19px; }
+  .team.turn { outline:2px solid #fff; }
+  .team b { flex:1; }
+  .team .pos { color:#d1d5db; font-variant-numeric:tabular-nums; font-size:16px; }
+  .dice { width:110px; height:110px; margin:0 auto; border-radius:18px; background:#fff; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:12px; gap:4px; }
+  .dice i { border-radius:50%; background:#111; visibility:hidden; }
+  .dice.shake { animation:shake .12s infinite; }
+  @keyframes shake { 0%{transform:rotate(-8deg)} 100%{transform:rotate(8deg)} }
+  .event { color:#e5e7eb; font-size:18px; text-align:center; line-height:1.35; }
+  .center { text-align:center; }
+  .big-emoji { font-size:80px; text-align:center; }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#ef4444; color:#fff; padding:12px 18px; border-radius:12px; font-weight:700; opacity:0; transition:opacity .2s; pointer-events:none; }
+  .toast.show { opacity:1; }
+  .conn { position:fixed; top:8px; right:10px; font-size:13px; color:var(--mut); }
+  .conn.off { color:#ef4444; font-weight:700; }
+  .players { display:flex; flex-wrap:wrap; gap:6px; padding:0 4px 8px 12px; }
+  .pl { font-size:16px; color:#d1d5db; background:#ffffff10; border-radius:8px; padding:6px 10px; }
+  .pl.me { border:1px solid #ffffff40; }
+  .pl.now { color:#111; background:#fbbf24; font-weight:800; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<div class="conn" id="conn">conectando…</div>
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const app = $('#app');
+  let ws, meta = null, S = null, you = null, clockOffset = 0, reconnectT = null;
+  let form = JSON.parse(localStorage.getItem('iea_me') || 'null') || { color: null, name: '' };
+  // id fixo deste celular: o servidor sabe quem é você mesmo se a tela recarregar
+  let pid = localStorage.getItem('iea_pid');
+  if (!pid) { pid = 'p' + Math.random().toString(36).slice(2, 12); localStorage.setItem('iea_pid', pid); }
+  // atalho: /?cor=roxo&nome=Ana entra direto
+  const qs = new URLSearchParams(location.search);
+  if (qs.get('cor')) { form = { color: qs.get('cor'), name: qs.get('nome') || '' }; localStorage.setItem('iea_me', JSON.stringify(form)); history.replaceState(null, '', '/'); }
+  let reveal = false, lastRound = -1;
+
+  // ---------- rede ----------
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${proto}://${location.host}`);
+    ws.onopen = () => { $('#conn').textContent = 'online'; $('#conn').className = 'conn'; if (form.color) send({ t: 'join', color: form.color, name: form.name, pid, prevName: localStorage.getItem('iea_prev') || '' }); };
+    ws.onmessage = e => {
+      const m = JSON.parse(e.data);
+      if (m.t === 'init') { meta = m; return; }
+      if (m.t === 'error') return toast(m.text);
+      if (m.t === 'state') { clockOffset = m.now - Date.now(); S = m.state; you = m.you; if (S.round !== lastRound) { reveal = false; lastRound = S.round; } render(); }
+    };
+    ws.onclose = () => { $('#conn').textContent = 'sem conexão… reconectando'; $('#conn').className = 'conn off'; clearTimeout(reconnectT); reconnectT = setTimeout(connect, 1200); };
+    ws.onerror = () => ws.close();
+  }
+  function send(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+  function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2500); }
+
+  // ---------- helpers ----------
+  const ci = c => meta.colors.find(x => x.key === c);
+  const cat = k => meta.categories[k];
+  const myTeam = () => you && S.teams.find(t => t.color === you.color);
+  const cur = () => S.teams[S.turn];
+  const isMyTurn = () => you && cur() && cur().color === you.color;
+  const amDrawer = () => !!(you && you.drawer);
+  const drawerP = t => t && (t.players || []).find(p => p.pid === (S.drawers || {})[t.color]) || null;
+  const drawerOf = t => { const p = drawerP(t); return p ? p.name : null; };
+  // o desenhista da vez está sem conexão? (tela apagada, saiu do navegador…) O jogo espera ele voltar. Ninguém joga no lugar.
+  const offlineHtml = t => { const p = drawerP(t); return p && p.on === false ? `<div class="box center" style="border:1px solid #ef4444"><div class="big-emoji">📵</div><p class="sub"><b>${esc(p.name)}</b> está sem conexão.<br>Peça para abrir o jogo no celular de novo. A vez é dele e ninguém pode jogar no lugar.</p></div>` : ''; };
+  const playersHtml = t => (t.players || []).length ? `<div class="players">${t.players.map((p, i) => `<span class="pl ${p.pid === (S.drawers || {})[t.color] && S.phase !== 'lobby' ? 'now' : ''} ${p.pid === pid ? 'me' : ''}">${i + 1}. ${esc(p.name)}${p.pid === (S.drawers || {})[t.color] && S.phase !== 'lobby' ? ' ✏️' : ''}${p.on === false ? ' 📵' : ''}${p.on === false && p.pid !== pid && t.color === (you && you.color) ? ` <b data-a="kick" data-pid="${p.pid}" data-name="${esc(p.name)}" style="color:#ef4444;cursor:pointer">✕</b>` : ''}</span>`).join('')}</div>` : '';
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const remaining = () => S.timerEnd ? Math.max(0, (S.timerEnd - (Date.now() + clockOffset)) / 1000) : null;
+
+  function diceHtml(n, shake) {
+    const map = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+    const on = new Set(map[n] || []);
+    return `<div class="dice ${shake ? 'shake' : ''}">${Array.from({ length: 9 }, (_, i) => `<i style="visibility:${on.has(i) ? 'visible' : 'hidden'}"></i>`).join('')}</div>`;
+  }
+  function teamsHtml() {
+    return `<div class="teams">${S.teams.map((t, i) => `<div class="team ${i === S.turn && S.phase !== 'lobby' ? 'turn' : ''}"><span class="dot" style="background:${ci(t.color).hex}"></span><b>${ci(t.color).name}</b><span class="pos">${t.members} 📱 · casa ${t.pos}</span></div>${playersHtml(t)}`).join('')}</div>`;
+  }
+  function catHtml(k) { const c = cat(k); return `<div class="cat" style="background:${c.color};color:${c.text}">${c.name}</div>`; }
+  function wordHtml() {
+    if (!S.card || !S.card.word) return '';
+    if (!reveal) return `<div class="word hidden" data-a="reveal">👆 Toque para ver a palavra<br><small>(só quem vai desenhar!)</small></div>`;
+    return `<div class="word" data-a="hide">${esc(S.card.word)}</div>`;
+  }
+  function timerHtml() {
+    const r = remaining();
+    if (r === null) return '';
+    const pct = (r / meta.roundSeconds) * 100;
+    return `<div class="timer ${r <= 10 ? 'low' : ''}" id="timer">${Math.ceil(r)}</div><div class="bar"><i id="bar" style="width:${pct}%"></i></div>`;
+  }
+  function eventHtml() { return S.event ? `<div class="event">${esc(S.event.text)}</div>` : ''; }
+  function header() {
+    const me = myTeam();
+    return `<div class="me"><div><h1>Imagem e <span>Ação</span></h1><p class="sub">${S.phase === 'lobby' ? 'Sala de espera' : 'Rodada ' + S.round}</p></div>
+      ${me ? `<div class="center"><span class="dot" style="background:${ci(me.color).hex};width:34px;height:34px"></span><div style="font-size:16px;color:#e5e7eb" data-a="rename">${esc(you.name || ci(me.color).name)} ✏️</div></div>` : ''}</div>`;
+  }
+
+  // ---------- telas ----------
+  function render() {
+    if (!meta || !S) return;
+    let h = header();
+    const me = myTeam();
+
+    if (!me) {
+      h += `<div class="box"><p class="sub" style="margin-bottom:10px">Escolha sua cor (equipe)</p><div class="colors">${meta.colors.map(c => {
+        const t = S.teams.find(t => t.color === c.key);
+        const locked = S.phase !== 'lobby' && !t;
+        return `<div class="color ${form.color === c.key ? 'sel' : ''}" style="background:${c.hex};opacity:${locked ? .3 : 1}" data-a="pick" data-c="${c.key}">${c.name}<small>${t ? t.members + ' no time' : locked ? 'fechada' : 'livre'}</small></div>`;
+      }).join('')}</div></div>
+      <div class="box"><p class="sub" style="margin-bottom:8px">Seu nome (opcional)</p><input id="name" placeholder="Ex.: Pedro" maxlength="20" value="${esc(form.name)}"></div>
+      <button class="btn big" data-a="join" ${form.color ? '' : 'disabled'}>Entrar</button>
+      <div class="box">${teamsHtml() || '<p class="sub">Ninguém entrou ainda.</p>'}</div>`;
+      return app.innerHTML = h, bind();
+    }
+
+    switch (S.phase) {
+      case 'lobby':
+        h += `<p class="sub center">A ordem de quem desenha é a ordem de entrada. Não dá para escolher.</p><div class="box">${teamsHtml()}</div>${eventHtml()}
+          <button class="btn big ok" data-a="start" ${S.teams.length < 2 ? 'disabled' : ''}>▶ Começar o jogo</button>
+          ${S.teams.length < 2 ? '<p class="sub center">Precisa de 2 equipes ou mais.</p>' : ''}
+          <button class="btn ghost" data-a="rename">✏️ Mudar meu nome</button>
+          <button class="btn ghost" data-a="leave">Trocar de cor</button>`;
+        break;
+
+      case 'roll':
+        h += eventHtml();
+        if (isMyTurn() && amDrawer()) h += `<div class="box center"><p class="sub">É a sua vez de desenhar!</p>${diceHtml(S.dice)}</div><button class="btn big warn" data-a="roll">🎲 Jogar o dado</button>`;
+        else if (isMyTurn()) h += `<div class="box center"><p class="sub">Vez da sua equipe</p><h2 style="margin:6px 0">✏️ ${esc(drawerOf(cur()) || '?')}</h2><p class="sub">${esc(drawerOf(cur()) || 'Alguém')} joga o dado e desenha. Você adivinha!</p></div>` + offlineHtml(cur());
+        else h += `<div class="box center"><p class="sub">Vez da equipe</p><h2 style="margin:6px 0;color:${ci(cur().color).hex}">${ci(cur().color).name}</h2><p class="sub">Esperando jogar o dado…</p></div>`;
+        h += `<div class="box">${teamsHtml()}</div>`;
+        break;
+
+      case 'rolling':
+        h += `<div class="box center"><p class="sub">Rolando…</p>${diceHtml(null, true)}</div>`;
+        break;
+
+      case 'draw':
+      case 'judge': {
+        const c = cur(); const sq = meta.board[S.target];
+        h += `<div class="box center"><p class="sub">Dado: <b>${S.dice}</b> · Equipe <b style="color:${ci(c.color).hex}">${ci(c.color).name}</b></p><p class="sub">Casa ${c.pos} → <b>${S.target}</b> se acertar${sq.finish ? ' 🏁 (última!)' : ''}</p></div>`;
+        h += catHtml(S.card.cat);
+        if (isMyTurn() && !amDrawer()) {
+          h += offlineHtml(c) + `<div class="box center"><div class="big-emoji">🙈</div><p class="sub"><b>${esc(drawerOf(c) || 'Alguém')}</b> está desenhando pela sua equipe.<br>Adivinhe! Você não vê a palavra.</p></div>${S.timeUp ? '<p class="center sub">⏰ Tempo esgotado</p>' : timerHtml()}`;
+        } else if (isMyTurn()) {
+          h += wordHtml();
+          if (S.phase === 'draw' && !S.timerEnd) h += `<button class="btn big ok" data-a="timer">⏱ Começar a desenhar</button><button class="btn ghost" data-a="swap">🔁 Trocar carta</button>`;
+          else {
+            h += S.timeUp ? `<div class="big-emoji">⏰</div><p class="center sub">Tempo esgotado!</p>` : timerHtml();
+            h += `<div class="row"><button class="btn big ok" data-a="ok">✔ Acertou</button><button class="btn big no" data-a="fail">✘ Errou</button></div>`;
+          }
+        } else {
+          h += `<div class="box center"><div class="big-emoji">🤫</div><p class="sub">A equipe ${ci(c.color).name} está desenhando.<br>Olhe para a TV!</p></div>${S.timeUp ? '<p class="center sub">⏰ Tempo esgotado</p>' : timerHtml()}`;
+        }
+        h += eventHtml();
+        break;
+      }
+
+      case 'allplay': {
+        const mine = myTeam();
+        h += `<div class="cat" style="background:#fff;color:#111">⚡ TODOS JOGAM</div>${catHtml(S.card.cat)}<p class="sub center">Todas as equipes desenham. Quem acertar primeiro anda <b>${S.dice}</b> casa${S.dice === 1 ? '' : 's'}!</p>`;
+        if (amDrawer()) h += `<p class="sub center">✏️ Você desenha pela equipe ${ci(mine.color).name}.</p>` + wordHtml();
+        else h += `<div class="box center"><p class="sub">✏️ <b>${esc(drawerOf(mine) || 'Alguém')}</b> desenha pela sua equipe. Você adivinha!</p></div>` + offlineHtml(mine);
+        if (!S.timerEnd) {
+          if (isMyTurn() && amDrawer()) h += `<button class="btn big ok" data-a="timer">⏱ Valendo! Começar</button><button class="btn ghost" data-a="swap">🔁 Trocar carta</button>`;
+          else h += `<p class="sub center">Esperando ${esc(drawerOf(cur()) || 'a equipe ' + ci(cur().color).name)} começar…</p>`;
+        } else {
+          h += timerHtml() + `<button class="btn big ok" data-a="allwin">🙋 Acertamos!</button>`;
+          if (isMyTurn() && amDrawer()) h += `<button class="btn ghost" data-a="allnone">Ninguém acertou → passar a vez</button>`;
+        }
+        break;
+      }
+
+      case 'win': {
+        const w = ci(S.winner);
+        h += `<div class="box center"><div class="big-emoji">🏆</div><h2 style="color:${w.hex};margin:6px 0">Equipe ${w.name} venceu!</h2></div><div class="box">${teamsHtml()}</div><button class="btn big" data-a="reset">🔄 Jogar de novo</button>`;
+        break;
+      }
+    }
+    app.innerHTML = h; bind();
+  }
+
+  function bind() {
+    app.querySelectorAll('[data-a]').forEach(el => el.onclick = () => act(el.dataset.a, el));
+    const n = $('#name'); if (n) n.oninput = () => { form.name = n.value; };
+  }
+  function act(a, el) {
+    switch (a) {
+      case 'pick': form.color = el.dataset.c; render(); break;
+      case 'join': { const prev = (JSON.parse(localStorage.getItem('iea_me') || 'null') || {}).name || ''; if (prev && prev !== form.name) localStorage.setItem('iea_prev', prev); localStorage.setItem('iea_me', JSON.stringify(form)); send({ t: 'join', color: form.color, name: form.name, pid, prevName: localStorage.getItem('iea_prev') || '' }); break; }
+      case 'leave': send({ t: 'leave' }); form.color = null; localStorage.removeItem('iea_me'); break;
+      case 'kick': if (confirm(`Remover "${el.dataset.name}" da ordem da equipe? Só faça isso se esse celular não vai voltar.`)) send({ t: 'kick', pid: el.dataset.pid }); break;
+      case 'rename': { const n = prompt('Seu nome:', you ? you.name : form.name); if (n && n.trim()) { if (form.name && form.name !== n.trim()) localStorage.setItem('iea_prev', form.name); form.name = n.trim().slice(0, 20); localStorage.setItem('iea_me', JSON.stringify(form)); send({ t: 'rename', name: form.name }); } break; }
+      case 'start': send({ t: 'start' }); break;
+      case 'roll': send({ t: 'roll' }); break;
+      case 'timer': send({ t: 'timer' }); break;
+      case 'swap': send({ t: 'swap' }); reveal = false; break;
+      case 'reveal': reveal = true; render(); break;
+      case 'hide': reveal = false; render(); break;
+      case 'ok': send({ t: 'result', ok: true }); break;
+      case 'fail': send({ t: 'result', ok: false }); break;
+      case 'allwin': send({ t: 'allplayWin' }); break;
+      case 'allnone': send({ t: 'allplayNone' }); break;
+      case 'reset': if (confirm('Reiniciar o jogo para todo mundo?')) send({ t: 'reset' }); break;
+    }
+  }
+
+  // relógio local do timer (sem pedir nada ao servidor)
+  setInterval(() => {
+    if (!S || !S.timerEnd) return;
+    const r = remaining(); const t = $('#timer'), b = $('#bar');
+    if (t) { t.textContent = Math.ceil(r); t.classList.toggle('low', r <= 10); }
+    if (b) b.style.width = (r / meta.roundSeconds * 100) + '%';
+  }, 200);
+
+  // ---------- manter a tela acesa e reconectar ao destravar ----------
+  let wakeLock = null;
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch {}
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { keepAwake(); if (!ws || ws.readyState > 1) connect(); } });
+  document.addEventListener('click', keepAwake);
+  document.addEventListener('touchstart', keepAwake, { passive: true });
+  keepAwake();
+  setInterval(() => send({ t: 'ping' }), 20000);   // avisa o servidor que está vivo
+
+  connect();
+})();
+</script>
+</body>
+</html>

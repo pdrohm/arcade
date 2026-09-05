@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imagem e Ação — TV</title>
+<style>
+  :root { --bg:#12121a; --panel:#1b1b26; --line:#2a2a38; --txt:#f3f4f6; --mut:#9ca3af; --board:#f6f1e4; --board2:#e9e2d0; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--txt); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; overflow:hidden; }
+  #tv { display:grid; grid-template-columns:1fr 340px; gap:24px; height:100vh; padding:24px; }
+  .board-wrap { position:relative; display:flex; align-items:center; justify-content:center; min-width:0; }
+
+  /* tabuleiro: 10 x 7 casas em espiral com pista por baixo, centro livre */
+  .board { position:relative; width:100%; max-width:calc((100vh - 48px) * 10 / 7.1); border-radius:22px; background:linear-gradient(160deg,var(--board),var(--board2)); box-shadow:0 30px 60px #0009, inset 0 0 0 6px #fff8, inset 0 0 0 8px #c9bfa6; overflow:hidden; }
+  .track { position:absolute; inset:0; width:100%; height:100%; }
+  .sq { position:absolute; border-radius:14%; box-shadow:inset 0 -4px 0 #0002, inset 0 2px 0 #fff5, 0 2px 4px #0003; display:flex; align-items:center; justify-content:center; font-weight:900; color:#1a1a1a; font-size:clamp(9px,1.05vw,16px); letter-spacing:.5px; }
+  .sq .n { position:absolute; right:9%; bottom:5%; font-size:clamp(7px,.7vw,11px); font-weight:800; opacity:.45; letter-spacing:0; }
+  .sq.all::before { content:''; position:absolute; inset:22%; border-radius:50%; background:#fff; opacity:.9; }
+  .sq.all::after { content:'⚡'; position:absolute; font-size:clamp(10px,1.3vw,22px); }
+  .sq.start, .sq.finish { background:#fff; color:#1a1a1a; text-align:center; line-height:1.1; }
+  .sq.finish { background:repeating-linear-gradient(45deg,#fff 0 8px,#ddd 8px 16px); }
+  .sq.active { animation:glow .9s infinite alternate; z-index:2; }
+  @keyframes glow { from { box-shadow:0 0 0 3px #fff, 0 0 12px 4px #0006; } to { box-shadow:0 0 0 5px #fff, 0 0 26px 8px #0008; } }
+
+  .pawn { position:absolute; width:5.4%; aspect-ratio:1; border-radius:50%; border:3px solid #fff; box-shadow:0 5px 10px #0007, inset 0 -5px 0 #0003, 0 0 0 2px #0004; transition:left .28s ease, top .28s ease; z-index:5; transform:translate(-50%,-50%); }
+  .pawn.hop { animation:hop .28s; }
+  .ghost { position:absolute; width:5.4%; aspect-ratio:1; border-radius:50%; border:3px dashed #fff; opacity:.75; z-index:4; transform:translate(-50%,-50%); animation:ghost 1s infinite alternate; pointer-events:none; }
+  @keyframes ghost { from { opacity:.45; } to { opacity:.9; } }
+  @keyframes hop { 50% { transform:translate(-50%,-90%) scale(1.15); } }
+
+  /* centro do tabuleiro */
+  .center { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2%; padding:2%; text-align:center; color:#1a1a1a; }
+  .logo { font-size:clamp(20px,2.6vw,40px); font-weight:900; letter-spacing:-1px; line-height:1; }
+  .logo span { color:#f97316; }
+  .logo small { display:block; font-size:clamp(10px,1vw,14px); font-weight:600; letter-spacing:3px; color:#6b6252; margin-top:6px; }
+  .cat { border-radius:12px; padding:.5em 1.4em; font-weight:900; font-size:clamp(14px,1.8vw,28px); box-shadow:0 4px 10px #0003; }
+  .all-play { background:#1a1a1a; color:#fff; border-radius:12px; padding:.3em 1em; font-weight:900; font-size:clamp(12px,1.3vw,20px); }
+  .timer { font-size:clamp(50px,7vw,120px); font-weight:900; line-height:1; font-variant-numeric:tabular-nums; color:#1a1a1a; }
+  .timer.low { color:#ef4444; animation:pulse .5s infinite alternate; }
+  @keyframes pulse { to { transform:scale(1.08); } }
+  .bar { width:70%; height:10px; border-radius:99px; background:#0002; overflow:hidden; }
+  .bar i { display:block; height:100%; background:#22c55e; transition:width .25s linear; }
+  .hint { color:#6b6252; font-size:clamp(12px,1.2vw,18px); font-weight:600; }
+  .dice { width:clamp(50px,6.5vw,100px); aspect-ratio:1; border-radius:18%; background:#fff; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:14%; gap:6%; box-shadow:0 6px 14px #0004, inset 0 -4px 0 #0001; }
+  .dice i { border-radius:50%; background:#111; visibility:hidden; }
+  .dice.shake { animation:shake .12s infinite; }
+  @keyframes shake { 0%{transform:rotate(-12deg)} 100%{transform:rotate(12deg)} }
+  .row { display:flex; align-items:center; gap:4%; }
+  .qrbox { background:#fff; padding:8px; border-radius:12px; box-shadow:0 6px 14px #0003; }
+  .qrbox svg { display:block; width:clamp(90px,12vw,190px); height:auto; }
+  .url { font-size:clamp(14px,1.6vw,26px); font-weight:800; }
+
+  /* painel lateral */
+  .panel { display:flex; flex-direction:column; gap:14px; min-height:0; }
+  .box { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:16px; }
+  .sub { color:var(--mut); font-size:14px; margin:0; }
+  .turn { display:flex; align-items:center; gap:14px; }
+  .turn .dot { width:40px; height:40px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 0 2px #0006; }
+  .turn b { font-size:24px; }
+  .teams { display:flex; flex-direction:column; gap:8px; }
+  .team { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:12px; background:#12121a; border:2px solid transparent; }
+  .team.turn { border-color:#fff; }
+  .team .dot { width:18px; height:18px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px #0006; }
+  .team b { flex:1; font-size:16px; }
+  .team span { color:var(--mut); font-size:13px; font-variant-numeric:tabular-nums; }
+  .legend { display:flex; flex-direction:column; gap:7px; }
+  .legend div { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700; }
+  .legend i { width:22px; height:22px; border-radius:6px; flex:none; box-shadow:inset 0 -2px 0 #0003; display:flex; align-items:center; justify-content:center; font-style:normal; font-size:12px; }
+  .players { display:flex; flex-wrap:wrap; gap:5px; padding:2px 6px 6px 12px; }
+  .pl { font-size:12px; color:var(--mut); background:#ffffff12; border-radius:8px; padding:2px 8px; }
+  .pl.now { color:#111; background:#fbbf24; font-weight:800; }
+  .event { font-size:15px; text-align:center; color:#fff; min-height:40px; line-height:1.3; }
+  .win { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#000c; z-index:20; gap:10px; border-radius:22px; }
+  .win h2 { font-size:60px; margin:0; } .win .t { font-size:120px; }
+  .conn { position:fixed; top:6px; left:10px; font-size:11px; color:var(--mut); }
+  .conn.off { color:#ef4444; font-weight:700; }
+</style>
+</head>
+<body>
+<div id="tv">
+  <div class="board-wrap"><div class="board" id="board"></div><div id="win"></div></div>
+  <div class="panel" id="panel"></div>
+</div>
+<div class="conn" id="conn">conectando…</div>
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  let ws, meta = null, S = null, clockOffset = 0;
+  const shown = {}; let animating = false, lastBeep = -1, lastEventAt = 0, qrDone = false;
+
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${proto}://${location.host}`);
+    ws.onopen = () => { $('#conn').textContent = 'online'; $('#conn').className = 'conn'; send({ t: 'tv' }); };
+    ws.onmessage = e => {
+      const m = JSON.parse(e.data);
+      if (m.t === 'init') { meta = m; buildBoard(); return; }
+      if (m.t === 'state') { clockOffset = m.now - Date.now(); S = m.state; update(); }
+    };
+    ws.onclose = () => { $('#conn').textContent = 'sem conexão… reconectando'; $('#conn').className = 'conn off'; setTimeout(connect, 1200); };
+    ws.onerror = () => ws.close();
+  }
+  function send(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+
+  const ci = c => meta.colors.find(x => x.key === c);
+  const cat = k => meta.categories[k];
+  const cur = () => S.teams[S.turn];
+  const drawerOf = t => { const p = (t.players || []).find(p => p.pid === (S.drawers || {})[t.color]); return p ? p.name : null; };
+  const playersHtml = t => (t.players || []).length ? `<div class="players">${t.players.map((p, i) => `<span class="pl ${p.pid === (S.drawers || {})[t.color] && S.phase !== 'lobby' ? 'now' : ''}">${i + 1}. ${esc(p.name)}${p.on === false ? ' 📵' : ''}</span>`).join('')}</div>` : '';
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const remaining = () => S.timerEnd ? Math.max(0, (S.timerEnd - (Date.now() + clockOffset)) / 1000) : null;
+
+  // ---------- caminho em espiral (10 x 7) ----------
+  const COLS = 10, ROWS = 7;
+  function spiral(n) {
+    const out = []; let top = 0, left = 0, bottom = ROWS - 1, right = COLS - 1;
+    while (out.length < n) {
+      for (let c = left; c <= right && out.length < n; c++) out.push({ row: top, col: c });
+      top++;
+      for (let r = top; r <= bottom && out.length < n; r++) out.push({ row: r, col: right });
+      right--;
+      for (let c = right; c >= left && out.length < n; c--) out.push({ row: bottom, col: c });
+      bottom--;
+      for (let r = bottom; r >= top && out.length < n; r--) out.push({ row: r, col: left });
+      left++;
+    }
+    return out;
+  }
+  let PATH = [];
+  // geometria em % da largura do tabuleiro (altura é convertida)
+  const PAD = 2.2, GAP = 2.6, CW = (100 - 2 * PAD - (COLS - 1) * GAP) / COLS;
+  const BH = 2 * PAD + (ROWS - 1) * GAP + ROWS * CW;   // altura total, em % da largura
+  const cx = col => PAD + col * (CW + GAP) + CW / 2;   // centro (unidades de largura)
+  const cy = row => PAD + row * (CW + GAP) + CW / 2;
+  const pctY = v => (v / BH * 100) + '%';               // converte para % da altura
+
+  function buildBoard() {
+    PATH = spiral(meta.board.length);
+    const b = $('#board');
+    b.style.aspectRatio = `100 / ${BH}`;
+    // pista (SVG) por baixo das casas
+    const pts = PATH.map(p => [cx(p.col), cy(p.row)]);
+    let arrows = '';
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+      arrows += `<path d="M-0.55 -0.7 L0.35 0 L-0.55 0.7" transform="translate(${mx} ${my}) rotate(${ang})" fill="none" stroke="#6b5f48" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/>`;
+    }
+    const line = pts.map(p => p.join(',')).join(' ');
+    const svg = `<svg class="track" viewBox="0 0 100 ${BH}" preserveAspectRatio="none">
+      <polyline points="${line}" fill="none" stroke="#b9ad90" stroke-width="${CW * 0.62}" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/>
+      <polyline points="${line}" fill="none" stroke="#d3c8ab" stroke-width="${CW * 0.5}" stroke-linejoin="round" stroke-linecap="round"/>
+      <polyline points="${line}" fill="none" stroke="#fffdf5" stroke-width="0.22" stroke-dasharray="1.2 1" stroke-linejoin="round" opacity=".8"/>
+      ${arrows}</svg>`;
+    const squares = meta.board.map(sq => {
+      const { row, col } = PATH[sq.i];
+      const c = sq.cat ? cat(sq.cat) : null;
+      const cls = ['sq', sq.allPlay ? 'all' : '', sq.start ? 'start' : '', sq.finish ? 'finish' : ''].join(' ');
+      const style = `left:${cx(col) - CW / 2}%;top:${pctY(cy(row) - CW / 2)};width:${CW}%;height:${pctY(CW)};${c && !sq.start && !sq.finish ? `background:${c.color}` : ''}`;
+      const label = sq.start ? 'INÍCIO ▶' : sq.finish ? '🏁<br>FIM' : '';
+      return `<div class="${cls}" id="sq${sq.i}" style="${style}">${label}${sq.start || sq.finish ? '' : `<span class="n">${sq.i}</span>`}</div>`;
+    }).join('');
+    // centro livre: linhas 2..4, colunas 2..7
+    const cl = cx(2) - CW / 2, ct = cy(2) - CW / 2, cr = cx(7) + CW / 2, cb = cy(4) + CW / 2;
+    const center = `<div class="center" id="center" style="left:${cl}%;top:${pctY(ct)};width:${cr - cl}%;height:${pctY(cb - ct)}"></div>`;
+    b.innerHTML = svg + squares + center;
+  }
+  function pawnXY(i, k, n) {
+    const { row, col } = PATH[i];
+    const ox = n > 1 ? (k % 2 ? 0.3 : -0.3) : 0, oy = n > 2 ? (k < 2 ? -0.3 : 0.3) : 0;
+    return { left: (cx(col) + ox * CW) + '%', top: pctY(cy(row) + oy * CW) };
+  }
+  function placePawns(positions) {
+    const b = $('#board'); const groups = {};
+    for (const t of S.teams) { const p = positions[t.color]; (groups[p] = groups[p] || []).push(t.color); }
+    for (const t of S.teams) {
+      let el = document.getElementById('pawn-' + t.color);
+      if (!el) { el = document.createElement('div'); el.id = 'pawn-' + t.color; el.className = 'pawn'; el.style.background = ci(t.color).hex; b.appendChild(el); }
+      const g = groups[positions[t.color]];
+      const xy = pawnXY(positions[t.color], g.indexOf(t.color), g.length);
+      el.style.left = xy.left; el.style.top = xy.top;
+    }
+    for (const el of b.querySelectorAll('.pawn')) if (!S.teams.find(t => 'pawn-' + t.color === el.id)) el.remove();
+  }
+  async function animatePawns() {
+    if (animating) return; animating = true;
+    for (const t of S.teams) if (shown[t.color] === undefined) shown[t.color] = t.pos;
+    let moved = true;
+    while (moved) {
+      moved = false;
+      for (const t of S.teams) {
+        if (shown[t.color] < t.pos) { shown[t.color]++; moved = true; hop(t.color); }
+        else if (shown[t.color] > t.pos) { shown[t.color] = t.pos; moved = true; }
+      }
+      placePawns(shown);
+      if (moved) { blip(520, .05); await new Promise(r => setTimeout(r, 300)); }
+    }
+    animating = false; highlight();
+  }
+  function hop(color) { const el = document.getElementById('pawn-' + color); if (!el) return; el.classList.remove('hop'); void el.offsetWidth; el.classList.add('hop'); }
+  function highlight() {
+    document.querySelectorAll('.sq.active').forEach(e => e.classList.remove('active'));
+    const c = cur();
+    const b = $('#board');
+    let g = document.getElementById('ghost');
+    const tgt = S.target;
+    if (c && tgt !== null && tgt !== undefined && ['draw', 'judge', 'allplay'].includes(S.phase)) {
+      const el = document.getElementById('sq' + tgt); if (el) el.classList.add('active');
+      // fantasma: mostra onde o peão vai parar SE acertar
+      if (!g) { g = document.createElement('div'); g.id = 'ghost'; g.className = 'ghost'; b.appendChild(g); }
+      const { row, col } = PATH[tgt];
+      g.style.left = cx(col) + '%'; g.style.top = pctY(cy(row)); g.style.background = ci(c.color).hex + '55'; g.style.borderColor = ci(c.color).hex;
+    } else if (g) g.remove();
+  }
+
+  // ---------- centro + painel ----------
+  function diceHtml(n, shake) {
+    const map = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+    const on = new Set(map[n] || []);
+    return `<div class="dice ${shake ? 'shake' : ''}">${Array.from({ length: 9 }, (_, i) => `<i style="visibility:${on.has(i) ? 'visible' : 'hidden'}"></i>`).join('')}</div>`;
+  }
+  function teamsHtml() {
+    if (!S.teams.length) return '<p class="sub" style="text-align:center">Nenhuma equipe ainda.<br>Entre pelo celular!</p>';
+    return `<div class="teams">${S.teams.map((t, i) => `<div class="team ${i === S.turn && S.phase !== 'lobby' ? 'turn' : ''}"><span class="dot" style="background:${ci(t.color).hex}"></span><b>${ci(t.color).name}</b><span>${t.members} celular${t.members === 1 ? '' : 'es'} · casa ${t.pos}</span></div>${playersHtml(t)}`).join('')}</div>`;
+  }
+  function legendHtml() {
+    return `<div class="legend">${Object.values(meta.categories).map(c => `<div><i style="background:${c.color}"></i>${c.name}</div>`).join('')}<div><i style="background:#fff">⚡</i>Todos jogam</div></div>`;
+  }
+  function timerHtml() {
+    const r = remaining();
+    if (r === null) return S.timeUp ? '<div class="timer low">⏰</div><div class="hint">Tempo esgotado!</div>' : '';
+    return `<div class="timer ${r <= 10 ? 'low' : ''}" id="timer">${Math.ceil(r)}</div><div class="bar"><i id="bar" style="width:${r / meta.roundSeconds * 100}%"></i></div>`;
+  }
+  const logo = () => `<div class="logo">Imagem e <span>Ação</span><small>DESENHE · ADIVINHE · AVANCE</small></div>`;
+
+  function update() {
+    if (!meta) return;
+    const c = cur();
+    // centro do tabuleiro
+    let ch = '';
+    if (S.phase === 'lobby') {
+      const host = (meta.joinUrl || location.origin + '/').replace(/^https?:\/\//, '').replace(/\/$/, '');
+      ch = logo() + `<div class="row"><div class="qrbox" id="qrcode">${meta.qrSvg || ''}</div><div style="text-align:left"><div class="hint">📷 Aponte a câmera do celular</div><div class="hint">ou digite no navegador:</div><div class="url">${esc(host)}</div><div class="hint" style="margin-top:6px">Escolha sua cor e aperte<br>"Começar o jogo"</div></div></div>`;
+    } else if (c) {
+      const ic = ci(c.color);
+      ch = `<div class="row"><span class="turn"><span class="dot" style="background:${ic.hex};width:2vw;height:2vw;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #0004;display:inline-block"></span></span><div style="text-align:left"><div class="hint">Vez da equipe</div><div class="url">${ic.name}</div></div><div style="margin-left:1.5vw">${diceHtml(S.dice, S.phase === 'rolling')}</div></div>`;
+      if (S.phase === 'roll') ch += `<div class="hint">Jogue o dado no celular 🎲</div>`;
+      if (S.card && S.target !== null) ch += `<div class="hint">Casa ${c.pos} → ${S.target} se acertar</div>`;
+      if (S.phase !== 'roll' && S.phase !== 'rolling') { const dn = drawerOf(c); if (dn) ch += `<div class="hint">✏️ ${esc(dn)} desenha</div>`; }
+      else { const dn = drawerOf(c); if (dn) ch += `<div class="hint">✏️ ${esc(dn)} joga o dado e desenha</div>`; }
+      if (S.card) {
+        const k = cat(S.card.cat);
+        if (S.phase === 'allplay') ch += `<div class="all-play">⚡ TODOS JOGAM</div>`;
+        ch += `<div class="cat" style="background:${k.color};color:${k.text}">${k.name}</div>`;
+        ch += S.timerEnd || S.timeUp ? timerHtml() : '<div class="hint">Esperando começar a desenhar…</div>';
+      }
+    }
+    $('#center').innerHTML = ch;
+
+    // painel
+    $('#panel').innerHTML = `<div class="box"><div class="sub">${S.phase === 'lobby' ? 'Sala de espera' : 'Rodada ' + S.round}</div>${c && S.phase !== 'lobby' ? `<div class="turn" style="margin-top:8px"><span class="dot" style="background:${ci(c.color).hex}"></span><b style="color:${ci(c.color).hex}">${ci(c.color).name}</b></div>` : ''}</div>
+      <div class="box">${teamsHtml()}</div>
+      <div class="event">${S.event ? esc(S.event.text) : ''}</div>
+      <div class="box" style="margin-top:auto"><div class="sub" style="margin-bottom:8px">Categorias</div>${legendHtml()}</div>`;
+
+    $('#win').innerHTML = S.phase === 'win' ? `<div class="win"><div class="t">🏆</div><h2 style="color:${ci(S.winner).hex}">Equipe ${ci(S.winner).name} venceu!</h2><p class="sub" style="font-size:20px">Toque em "Jogar de novo" no celular</p></div>` : '';
+
+    if (S.event && S.event.at !== lastEventAt) { lastEventAt = S.event.at; if (S.phase === 'win') fanfare(); else if (S.phase === 'draw' || S.phase === 'allplay') blip(660, .08); }
+    if (S.phase === 'lobby') for (const t of S.teams) shown[t.color] = 0;
+    animatePawns(); highlight();
+  }
+
+  // ---------- som ----------
+  let actx = null;
+  function beep(freq, dur, type = 'sine', vol = .25) {
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type; o.frequency.value = freq; g.gain.value = vol;
+      o.connect(g); g.connect(actx.destination); o.start(); g.gain.exponentialRampToValueAtTime(.001, actx.currentTime + dur); o.stop(actx.currentTime + dur);
+    } catch {}
+  }
+  const blip = (f, d) => beep(f, d, 'square', .1);
+  function fanfare() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, .35, 'triangle', .3), i * 160)); }
+  document.addEventListener('click', () => { if (actx && actx.state === 'suspended') actx.resume(); });
+
+  setInterval(() => {
+    if (!S || !S.timerEnd) { lastBeep = -1; return; }
+    const r = remaining(); const t = $('#timer'), b = $('#bar'); const sec = Math.ceil(r);
+    if (t) { t.textContent = sec; t.classList.toggle('low', r <= 10); }
+    if (b) b.style.width = (r / meta.roundSeconds * 100) + '%';
+    if (sec <= 5 && sec !== lastBeep) { lastBeep = sec; beep(sec === 0 ? 220 : 880, sec === 0 ? .6 : .1); }
+  }, 150);
+
+  // ---------- manter a tela acesa e reconectar ao destravar ----------
+  let wakeLock = null;
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch {}
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { keepAwake(); if (!ws || ws.readyState > 1) connect(); } });
+  document.addEventListener('click', keepAwake);
+  document.addEventListener('touchstart', keepAwake, { passive: true });
+  keepAwake();
+  setInterval(() => send({ t: 'ping' }), 20000);   // avisa o servidor que está vivo
+
+  connect();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "imagemeacao",
+  "version": "1.0.0",
+  "description": "Imagem e Ação - multiplayer local (TV + celulares)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "ws": "^8.18.0"
+  }
+}

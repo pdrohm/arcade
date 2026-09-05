@@ -1,0 +1,39 @@
+# Arcade da casa na VPS. Fica sozinho na rede "pedro", sem enxergar a rede do pelvtime.
+# Nenhuma porta é aberta no servidor: quem atende a internet é só o Traefik.
+version: '3.9'
+
+services:
+  arcade:
+    build: .
+    image: arcade:latest
+    container_name: arcade
+    restart: unless-stopped
+    environment:
+      - PORT=47321
+      - PUBLIC_URL=https://arcade.phmarques.com.br/
+      - STATE_FILE=/data/state.json
+      - NO_LAN=1                       # na VPS não existe "celular no mesmo Wi-Fi"
+    volumes:
+      - arcade_state:/data             # as salas sobrevivem a restart e a deploy
+    networks:
+      - pedro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=pedro"
+      - "traefik.http.routers.arcade.rule=Host(`arcade.phmarques.com.br`)"
+      - "traefik.http.routers.arcade.entrypoints=websecure"
+      - "traefik.http.routers.arcade.tls=true"
+      - "traefik.http.routers.arcade.tls.certresolver=letsencrypt"
+      - "traefik.http.services.arcade.loadbalancer.server.port=47321"
+      # http -> https (o Let's Encrypt usa a porta 80 para validar o domínio)
+      - "traefik.http.routers.arcade-http.rule=Host(`arcade.phmarques.com.br`)"
+      - "traefik.http.routers.arcade-http.entrypoints=web"
+      - "traefik.http.routers.arcade-http.middlewares=arcade-https"
+      - "traefik.http.middlewares.arcade-https.redirectscheme.scheme=https"
+
+volumes:
+  arcade_state:
+
+networks:
+  pedro:
+    external: true

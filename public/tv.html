@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arcade da casa — TV</title>
+<link rel="stylesheet" href="/shared/ui.css">
+</head>
+<body>
+<div id="tv">
+  <div class="stage" id="stage"></div>
+  <div class="side" id="side"></div>
+</div>
+<div class="conn" id="conn">conectando…</div>
+<div id="turnover"></div>
+<script src="/shared/client.js"></script>
+<script>
+(() => {
+  const A = ARCADE, $ = A.$, esc = A.esc;
+  let mounted = null;
+
+  function biblioteca(c) {
+    const n = c.C.players.length;
+    const short = u => esc(String(u).replace(/^https?:\/\//, '').replace(/\/$/, ''));
+    const nets = (c.meta.nets || []).filter(n => n.qr);
+    const stage = `<div style="width:100%;padding:0 10px">
+      <div class="shelf">${c.meta.games.map(g => {
+        const off = n < (g.minPlayers || 2);
+        return `<div class="card ${off ? 'off' : ''}">
+          <div class="art" style="background:${g.art || 'linear-gradient(135deg,#334155,#0f172a)'}"></div>
+          <div class="emoji">${g.emoji || '🎲'}</div>
+          <div class="t">${esc(g.name)}</div><div class="d">${esc(g.tagline || '')}</div>
+          <div class="n">${off ? `Precisa de ${g.minPlayers} jogadores` : `${g.minPlayers}–${g.maxPlayers} jogadores`}</div>
+        </div>`;
+      }).join('')}</div></div>`;
+    const side = `<div class="box center"><div class="logo">Arcade<span> da casa</span></div><p class="sub mut" style="margin-top:6px">Quem escolhe o jogo é o celular</p></div>
+      <div class="box center"><p class="sub mut">Sala</p><div class="roomcode">${esc(c.room || '')}</div></div>
+      <div class="box"><p class="sub mut center" style="margin-bottom:10px">📷 Aponte a câmera</p>
+        <div class="qrs">${nets.map(n => `<div><div class="qrbox">${n.qr}</div><div class="qrlabel">${n.label}</div><div class="url">${short(n.url)}</div></div>`).join('')}</div></div>
+      <div class="box">${c.playersHtml()}</div>
+      <div class="event">${c.C.event ? c.hl(c.C.event.text) : ''}</div>`;
+    return { stage, side };
+  }
+
+  // O palco (esquerda) pode ser fixo: o jogo monta uma vez com mount() e depois
+  // só atualiza por dentro em after(). Sem mount(), o palco vem de html().stage.
+  function render(c) {
+    const impl = c.C.screen === 'game' ? A.games[c.C.gameId] : null;
+    if (c.C.screen === 'library') {
+      mounted = null;
+      const out = biblioteca(c);
+      $('#stage').innerHTML = out.stage;
+      $('#side').innerHTML = out.side;
+      return;
+    }
+    if (!impl || !impl.tv) {
+      mounted = null;
+      $('#stage').innerHTML = '<div class="box center"><p class="sub">Carregando o jogo…</p></div>';
+      $('#side').innerHTML = '';
+      return;
+    }
+    const fixo = typeof impl.tv.mount === 'function';
+    if (fixo && mounted !== c.C.gameId) { $('#stage').innerHTML = impl.tv.mount(c); mounted = c.C.gameId; }
+    const out = impl.tv.html(c) || {};
+    if (!fixo) $('#stage').innerHTML = out.stage || '';
+    $('#side').innerHTML = out.side || '';
+    if (impl.tv.after) impl.tv.after(c);
+  }
+
+  A.start('tv', render);
+})();
+</script>
+</body>
+</html>
