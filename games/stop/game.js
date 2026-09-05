@@ -9,6 +9,8 @@ const DEFAULT_CATS = ['Nome', 'Animal', 'Cor', 'Fruta ou comida', 'Objeto', 'Cid
 const DEFAULT_CFG = { rounds: 3, fillMs: Number(process.env.STOP_FILL_MS) || 90 * 1000, catsPerRound: 6, cats: DEFAULT_CATS.slice(), letters: DEFAULT_LETTERS.slice() };
 
 const norm = s => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ');
+const MIN_LEN = 2;                                     // uma letra sozinha não é resposta
+const preenchida = v => norm(v).length >= MIN_LEN;     // vale como "preenchido" para o STOP e para o progresso
 const pick = (arr, n) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, n); };
 
 module.exports = {
@@ -17,7 +19,7 @@ module.exports = {
     tagline: 'Uma letra, seis categorias, e o primeiro que terminar grita STOP.',
     art: 'linear-gradient(135deg,#ef4444 0%,#991b1b 55%,#450a0a 100%)',
     minPlayers: 2, maxPlayers: 8,
-    howTo: ['Sai uma letra. Preencha as categorias no celular.', 'Terminou tudo? Aperte STOP. O tempo para e começa a conferência.', 'Resposta certa vale 10. Igual à de outra pessoa vale 5. Errada ou vazia, zero.', 'Na conferência, se a maioria marcar ❌ numa resposta, ela não vale.', '3 rodadas. Quem somar mais pontos vence.'],
+    howTo: ['Sai uma letra. Preencha as categorias no celular.', 'Terminou tudo? Aperte STOP. O tempo para e começa a conferência.', 'Resposta certa vale 10. Igual à de outra pessoa vale 5. Errada, vazia ou de uma letra só, zero.', 'Na conferência, se a maioria marcar ❌ numa resposta, ela não vale.', '3 rodadas. Quem somar mais pontos vence.'],
   },
   create(api) {
     let s = { phase: 'setup', cfg: JSON.parse(JSON.stringify(DEFAULT_CFG)), round: 0, letter: 'A', cats: [], answers: {}, done: [], stopBy: null, review: 0, flags: {}, scores: {}, roundScores: {}, lastLetters: [], spinEnd: null };
@@ -54,7 +56,7 @@ module.exports = {
     }
     function scoreFor(cat, pid) {
       const a = norm((s.answers[pid] || {})[cat]);
-      if (!a || a[0] !== s.letter.toLowerCase()) return 0;
+      if (a.length < MIN_LEN || a[0] !== s.letter.toLowerCase()) return 0;   // vazia ou uma letra só: zero
       const flagged = (s.flags[cat] || {})[pid] || [];
       const others = players().filter(x => x !== pid).length;
       if (others > 0 && flagged.length > others / 2) return 0;
@@ -106,7 +108,7 @@ module.exports = {
           case 'stop': {
             if (s.phase !== 'fill' || s.stopBy) return;
             const a = s.answers[me] || {};
-            if (!s.cats.every(c => norm(a[c]))) return;
+            if (!s.cats.every(c => preenchida(a[c]))) return;
             s.stopBy = me;
             api.clearTimer();                 // o tempo para na hora
             api.setEvent(`🛑 ${p.name} gritou STOP! Conferindo…`, p.color);
@@ -142,7 +144,7 @@ module.exports = {
           cfg: { ...s.cfg, fillSec: Math.round(s.cfg.fillMs / 1000) }, allLetters: ALL_LETTERS, defaultCats: DEFAULT_CATS, spinEnd: s.spinEnd, spinMs: SPIN_MS,
           turnMs: s.stopBy ? STOP_MS : FILL(), scores: s.scores, roundScores: s.roundScores, flags: s.flags, points: pts,
           answers: s.phase === 'fill' ? (me ? { [me.pid]: s.answers[me.pid] || {} } : {}) : s.answers,
-          filled: players().map(pid => ({ pid, n: s.cats.filter(c => norm((s.answers[pid] || {})[c])).length })),
+          filled: players().map(pid => ({ pid, n: s.cats.filter(c => preenchida((s.answers[pid] || {})[c])).length })),
         };
       },
       serialize: () => ({ s }),

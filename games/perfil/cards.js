@@ -5,6 +5,7 @@ const CATEGORIES = {
   L: { name: 'Lugar',  color: '#22c55e', text: '#111' },
   C: { name: 'Coisa',  color: '#3b82f6', text: '#fff' },
   A: { name: 'Ano',    color: '#a855f7', text: '#fff' },
+  S: { name: 'Série ou Filme', color: '#ec4899', text: '#fff' },
 };
 
 const CARDS = {
@@ -298,18 +299,20 @@ const CARDS = {
   ],
 };
 
-// lotes extras de cartas
-try {
-  const { CARDS2 } = require('./cards2');
-  for (const k of Object.keys(CARDS2)) CARDS[k] = (CARDS[k] || []).concat(CARDS2[k]);
-} catch (e) { console.log('cards2.js não carregado:', e.message); }
-try {
-  const { CARDS3 } = require('./cards3');
-  for (const k of Object.keys(CARDS3)) CARDS[k] = (CARDS[k] || []).concat(CARDS3[k]);
-} catch (e) { if (e.code !== 'MODULE_NOT_FOUND') console.log('cards3.js não carregado:', e.message); }
-try {
-  const { CARDS4 } = require('./cards4');
-  for (const k of Object.keys(CARDS4)) CARDS[k] = (CARDS[k] || []).concat(CARDS4[k]);
-} catch (e) { if (e.code !== 'MODULE_NOT_FOUND') console.log('cards4.js não carregado:', e.message); }
+// lotes extras de cartas: qualquer arquivo cardsN.js desta pasta entra sozinho.
+// Cada lote exporta um objeto (CARDS2, CARDS3, ...) com as mesmas categorias.
+const fs = require('fs');
+const lotes = fs.readdirSync(__dirname)
+  .filter(f => /^cards\d+\.js$/.test(f))
+  .sort((a, b) => parseInt(a.match(/\d+/)[0], 10) - parseInt(b.match(/\d+/)[0], 10));
+for (const f of lotes) {
+  try {
+    const mod = require('./' + f);
+    const lote = mod.CARDS || mod[Object.keys(mod).find(k => /^CARDS/.test(k))];
+    if (!lote) { console.log(`${f}: nenhum lote de cartas exportado.`); continue; }
+    for (const k of Object.keys(lote)) CARDS[k] = (CARDS[k] || []).concat(lote[k]);
+  } catch (e) { console.log(`${f} não carregado:`, e.message); }
+}
+for (const k of Object.keys(CATEGORIES)) CARDS[k] = CARDS[k] || [];
 
 module.exports = { CATEGORIES, CARDS };

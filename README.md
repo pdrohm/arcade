@@ -57,10 +57,13 @@ O que o núcleo já resolve para todos os jogos:
 | Pasta | Jogo |
 |---|---|
 | `games/imagemeacao` | Imagem e Ação — equipes, dado, desenho e cronômetro |
-| `games/perfil` | Perfil — 20 dicas, mediador, carta bônus e ficha azul |
+| `games/perfil` | Perfil — 20 dicas, mediador, carta bônus e ficha azul. 5 categorias (Pessoa, Lugar, Coisa, Ano, Série ou Filme) e 400+ cartas em lotes `cardsN.js` (qualquer arquivo novo nessa pasta entra sozinho) |
 | `games/telefone` | Telefone Sem Fio — escreva, desenhe, descreva; álbum no fim (quadro de desenho no celular) |
 | `games/stop` | Stop (Adedonha) — menu de regras (rodadas, tempo, categorias, letras), roleta de letras, STOP e conferência com veto |
 | `games/provavel` | Quem é mais provável? — pergunta na TV, votos no celular, barras e coroa |
+| `games/stopalfabeto` | Stop Alfabeto — uma categoria, o alfabeto na TV; fala a palavra, aperta a letra, 5 s por vez, 3 vidas, contestação por votação |
+| `games/uno` | UNO — mão no celular, mesa na TV, coringa, +2/+4, UNO! e "Pegou!", pontuação oficial |
+| `games/palavrasecreta` | Palavra Secreta — todo mundo recebe a mesma palavra, menos o impostor; dicas, discussão, votação e chance final |
 
 ## Adicionar um jogo novo
 

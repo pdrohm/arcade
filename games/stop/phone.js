@@ -64,12 +64,12 @@
         }
         if (G.phase === 'fill') {
           const mine = G.answers[c.you.pid] || {};
-          const cheio = G.cats.every(k => (mine[k] || '').trim());
+          const cheio = G.cats.every(k => (mine[k] || '').trim().length >= 2);   // uma letra só não conta
           return `<div class="box" style="display:flex;align-items:center;gap:16px"><div class="st-letter">${G.letter}</div><div><p class="sub mut">Rodada ${G.round} de ${G.rounds}</p><p class="sub" style="font-size:20px;font-weight:800">Tudo com a letra ${G.letter}</p></div></div>
             ${G.stopBy ? `<div class="box" style="border-color:#ef4444;text-align:center"><div style="font-size:30px;font-weight:900">🛑 STOP!</div><p class="sub">${nm(ply(G.stopBy))} gritou. Conferindo…</p></div>` : c.timerHtml('', G.turnMs)}
             <div class="box" style="display:flex;flex-direction:column;gap:14px">${G.cats.map(k => `<div class="st-cat"><label>${esc(k)}</label><input data-cat="${esc(k)}" maxlength="40" autocomplete="off" autocapitalize="words" value="${esc(mine[k] || '')}" placeholder="${G.letter}…"></div>`).join('')}</div>
             <button class="btn big no" data-a="stop" id="st-stop" ${cheio && !G.stopBy ? '' : 'disabled'}>🛑 STOP!</button>
-            <p class="sub center mut" id="st-hint">${G.stopBy ? 'Acabou! O que estava digitado foi enviado.' : 'Preencha tudo para poder gritar STOP.'}</p>
+            <p class="sub center mut" id="st-hint">${G.stopBy ? 'Acabou! O que estava digitado foi enviado.' : 'Preencha tudo (mínimo 2 letras) para poder gritar STOP.'}</p>
             <div class="box"><p class="sub mut" style="margin-bottom:6px">Quem está preenchendo</p><div id="st-prog" style="display:flex;flex-wrap:wrap;gap:6px"></div></div>`;
         }
         if (G.phase === 'review') {
@@ -110,7 +110,7 @@
         } else if (spinTimer && G.phase !== 'spin') { clearInterval(spinTimer); spinTimer = null; spinFor = ''; }
         const nc = document.getElementById('st-newcat');
         if (nc && !nc._st) { nc._st = true; nc.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ARCADE.games.stop.phone.act('cfgAddCat', null, c); } }); }
-        document.querySelectorAll('[data-cat]').forEach(i => { if (!i._st) { i._st = true; i.addEventListener('input', () => { save(); const cheio = [...document.querySelectorAll('[data-cat]')].every(x => x.value.trim()); const b = document.getElementById('st-stop'); if (b) b.disabled = !cheio || !!G.stopBy; }); } });
+        document.querySelectorAll('[data-cat]').forEach(i => { if (!i._st) { i._st = true; i.addEventListener('input', () => { save(); const cheio = [...document.querySelectorAll('[data-cat]')].every(x => x.value.trim().length >= 2); const b = document.getElementById('st-stop'); if (b) b.disabled = !cheio || !!G.stopBy; }); } });
         const prog = document.getElementById('st-prog');
         if (prog) prog.innerHTML = G.filled.map(f => { const p = c.C.players.find(x => x.pid === f.pid); return p ? `<span class="nm" style="${c.nmStyle(p)}">${c.esc(p.name)} ${f.n}/${G.cats.length}</span>` : ''; }).join('');
         const tag = `${G.round}:${G.phase}`;
