@@ -1,48 +1,81 @@
-// Palavras do jogo, por categoria. pt-BR, coisas do dia a dia e atuais.
-const CATEGORIES = [
-  { id: 'comida', name: 'Comida', emoji: '🍕' },
-  { id: 'animais', name: 'Animais', emoji: '🐾' },
-  { id: 'lugares', name: 'Lugares', emoji: '🗺️' },
-  { id: 'objetos', name: 'Objetos', emoji: '📦' },
-  { id: 'profissoes', name: 'Profissões', emoji: '👩‍⚕️' },
-  { id: 'famosos', name: 'Famosos', emoji: '⭐' },
-  { id: 'filmes', name: 'Filmes e Séries', emoji: '🎬' },
-  { id: 'esportes', name: 'Esportes', emoji: '⚽' },
-  { id: 'marcas', name: 'Marcas', emoji: '🏷️' },
-  { id: 'casa', name: 'Coisas de casa', emoji: '🏠' },
-  { id: 'internet', name: 'Internet e memes', emoji: '🌐' },
-  { id: 'musica', name: 'Música', emoji: '🎵' },
+// Palavra Secreta — banco de palavras em pt-BR (Mega Senha).
+// Cada categoria guarda as palavras separadas por dificuldade (1 fácil, 2 médio, 3 difícil).
+// "aleatorio" não é uma lista: quer dizer "todas as categorias".
+const CATS = [
+  { id: 'aleatorio', name: 'Aleatório' },
+  { id: 'animais', name: 'Animais' },
+  { id: 'objetos', name: 'Objetos' },
+  { id: 'comidas', name: 'Comidas' },
+  { id: 'filmes_series', name: 'Filmes e séries' },
+  { id: 'musica', name: 'Música' },
+  { id: 'esportes', name: 'Esportes' },
+  { id: 'profissoes', name: 'Profissões' },
+  { id: 'lugares', name: 'Lugares' },
+  { id: 'brasil', name: 'Brasil' },
+  { id: 'tecnologia', name: 'Tecnologia' },
+  { id: 'cultura_pop', name: 'Cultura pop' },
 ];
 
-const WORDS = {
-  comida: ['Pizza','Brigadeiro','Coxinha','Feijoada','Pastel','Churrasco','Lasanha','Hambúrguer','Sushi','Pão de Queijo','Açaí','Tapioca','Moqueca','Picanha','Farofa','Cocada','Pudim','Bolo de Chocolate','Sorvete','Salgadinho','Pipoca','Cachorro-Quente','Empada','Kibe','Esfirra','Yakisoba','Temaki','Lámen','Nhoque','Risoto','Panqueca','Waffle','Torta de Limão','Mousse','Paçoca','Quindim','Vatapá','Baião de Dois','Arroz Carreteiro','Escondidinho','Strogonoff','Maionese','Vinagrete','Guaraná','Caldo Verde','Canjica','Rabanada','Beijinho'],
-  animais: ['Cachorro','Gato','Leão','Tigre','Elefante','Girafa','Macaco','Urso','Lobo','Raposa','Coelho','Cavalo','Vaca','Porco','Galinha','Pato','Tartaruga','Cobra','Jacaré','Tucano','Papagaio','Arara','Coruja','Águia','Tubarão','Baleia','Golfinho','Polvo','Peixe-Boi','Capivara','Onça','Jaguatirica','Preguiça','Tamanduá','Quati','Gambá','Morcego','Camundongo','Rato','Esquilo','Zebra','Hipopótamo','Rinoceronte','Panda','Coala','Canguru','Pinguim','Foca'],
-  lugares: ['Praia','Escola','Shopping','Hospital','Aeroporto','Academia','Cinema','Igreja','Padaria','Farmácia','Banco','Praça','Parque','Zoológico','Museu','Biblioteca','Estádio','Restaurante','Supermercado','Feira','Metrô','Rodoviária','Delegacia','Cartório','Salão de Beleza','Barbearia','Consultório','Cachoeira','Fazenda','Montanha','Deserto','Floresta','Ilha','Vulcão','Castelo','Palácio','Favela','Condomínio','Universidade','Creche','Cemitério','Presídio','Boate','Feira Livre','Camping','Motel','Hotel','Aquário','Piscina','Teatro'],
-  objetos: ['Celular','Carregador','Fone de Ouvido','Chave','Óculos','Relógio','Mochila','Carteira','Guarda-Chuva','Caneta','Caderno','Livro','Tesoura','Controle Remoto','Televisão','Geladeira','Fogão','Micro-ondas','Liquidificador','Ventilador','Espelho','Escova de Dente','Sabonete','Toalha','Travesseiro','Cobertor','Sofá','Cadeira','Mesa','Armário','Panela','Faca','Garfo','Colher','Copo','Prato','Vassoura','Rodo','Balde','Mala','Bicicleta','Skate','Patins','Câmera','Pilha','Fita Adesiva','Chaveiro','Cortina','Frigideira','Caneca','Almofada','Tablet','Pulseira','Freezer','Batedeira','Ar-Condicionado'],
-  profissoes: ['Médico','Enfermeiro','Professor','Advogado','Engenheiro','Dentista','Veterinário','Policial','Bombeiro','Motorista','Piloto','Cozinheiro','Garçom','Cabeleireiro','Barbeiro','Eletricista','Encanador','Pedreiro','Pintor','Padeiro','Açougueiro','Farmacêutico','Fisioterapeuta','Psicólogo','Nutricionista','Contador','Jornalista','Fotógrafo','Ator','Cantor','Músico','Dançarino','Youtuber','Streamer','Influenciador','Programador','Designer','Arquiteto','Astronauta','Marinheiro','Agricultor','Pescador','Costureira','Zelador','Segurança','Recepcionista','Vendedor','Juiz','Economista'],
-  famosos: ['Anitta','Neymar','Ivete Sangalo','Fátima Bernardes','Silvio Santos','Xuxa','Gusttavo Lima','Ludmilla','Pabllo Vittar','Whindersson Nunes','Luciano Huck','Ana Maria Braga','Marília Mendonça','Roberto Carlos','Caetano Veloso','Gilberto Gil','Sandy','Junior','Wesley Safadão','Claudia Leitte','Larissa Manoela','Bruna Marquezine','Sasha Meneghel','Pelé','Ronaldinho Gaúcho','Gabigol','Vini Jr','Rafinha Bastos','Fábio Porchat','Tirullipa','Casimiro','Felca','Cristiano Ronaldo','Lionel Messi','Taylor Swift','Beyoncé','Rihanna','Ariana Grande','Dua Lipa','Bad Bunny','Shakira','Elon Musk','Barack Obama','Oprah Winfrey','Selena Gomez','Justin Bieber','MrBeast','Zendaya','Tom Holland'],
-  filmes: ['Vingadores','Homem-Aranha','Batman','Superman','Star Wars','Harry Potter','Senhor dos Anéis','Frozen','Toy Story','Shrek','Divertida Mente','Barbie','Duna','Coringa','John Wick','Matrix','Jurassic Park','Velozes e Furiosos','Missão Impossível','Stranger Things','Round 6','Wandinha','La Casa de Papel','Bridgerton','Friends','The Office','Breaking Bad','Game of Thrones','Vikings','Peaky Blinders','Chaves','A Grande Família','Avatar','Titanic','Karatê Kid','Homem de Ferro','Pantera Negra','Mulher Maravilha','Aquaman','Minions','Enrolados','Aladdin','Procurando Nemo','Rei Leão','Zootopia','Encanto','Vaiana','Wicked'],
-  esportes: ['Futebol','Vôlei','Basquete','Handebol','Tênis','Natação','Corrida','Ciclismo','Skate','Surfe','Judô','Karatê','Boxe','MMA','Ginástica','Atletismo','Golfe','Beisebol','Rúgbi','Futsal','Vôlei de Praia','Xadrez','Sinuca','Boliche','Patinação','Esgrima','Remo','Vela','Triatlo','Maratona','Capoeira','Jiu-Jitsu','Taekwondo','Halterofilismo','Ginástica Artística','Polo Aquático','Hipismo','Tiro com Arco','Badminton','Squash','Escalada','Slackline','Skimboard','Motocross','Fórmula 1','Vôlei Sentado','Futebol Americano','Peteca'],
-  marcas: ['Nike','Adidas','Puma','Coca-Cola','Pepsi','McDonald\'s','Burger King','Habib\'s','Netflix','Spotify','YouTube','Instagram','TikTok','WhatsApp','Facebook','Google','Apple','Samsung','Xiaomi','Motorola','Ifood','Uber','99','Nubank','Itaú','Bradesco','Havaianas','Natura','Boticário','Americanas','Magazine Luiza','Casas Bahia','Mercado Livre','Shopee','Amazon','Ford','Chevrolet','Fiat','Volkswagen','Honda','Yamaha','Red Bull','Guaraná Antarctica','Skol','Brahma','Heineken','Lacta','Nestlé','Danone'],
-  casa: ['Sofá','Cama','Travesseiro','Cobertor','Lençol','Cortina','Tapete','Almofada','Espelho','Armário','Guarda-Roupa','Estante','Mesa de Centro','Geladeira','Fogão','Micro-ondas','Liquidificador','Máquina de Lavar','Ferro de Passar','Aspirador de Pó','Vassoura','Rodo','Pia','Torneira','Chuveiro','Vaso Sanitário','Escova de Dente','Sabonete','Shampoo','Toalha','Panela','Frigideira','Faca','Garfo','Colher','Prato','Copo','Xícara','Jarra','Luminária','Ventilador','Ar-Condicionado','Controle Remoto','Televisão','Wi-Fi','Tomada','Chinelo','Freezer','Batedeira','Secadora'],
-  internet: ['Meme','Reels','Stories','Live','TikTok','Print','Stalker','Ship','Cringe','Hater','Fake News','Deepfake','Hashtag','Trend','Viral','Bug','Lag','Wi-Fi','Emoji','Sticker','Podcast','Vlog','Streamer','Youtuber','Influenciador','Cancelamento','Textão','Bafão','Zap','Grupo de Zap','Enquete','Curtida','Comentário','Compartilhar','Seguidor','Algoritmo','Feed','Chat','Pix','QR Code','VPN','FYP','Reação','Áudio de Zap','Nostalgia','Print da Conversa','Login','Senha','Notificação'],
-  musica: ['Funk','Sertanejo','Pagode','Samba','Axé','Forró','MPB','Rock','Pop','Rap','Trap','Reggae','Reggaeton','Bossa Nova','Piseiro','Brega Funk','Gospel','Eletrônica','Hip Hop','Arrocha','Vanera','Sofrência','Chorinho','Frevo','Maracatu','K-pop','Jazz','Blues','Heavy Metal','Punk','Ópera','Violão','Guitarra','Bateria','Teclado','Microfone','Show','Festival','Karaokê','Playlist','Fone de Ouvido','Caixa de Som','Baile Funk','Roda de Samba','Clipe','Turnê','DJ','Banda'],
+const BANK = {
+  animais: {
+    1: ["Cachorro", "Gato", "Cavalo", "Vaca", "Porco", "Galinha", "Pato", "Elefante", "Leão", "Tigre", "Macaco", "Urso", "Girafa", "Zebra", "Coelho", "Rato", "Cobra", "Peixe", "Tubarão", "Baleia", "Aranha", "Abelha", "Formiga", "Borboleta", "Pinguim", "Tartaruga", "Sapo", "Jacaré"],
+    2: ["Golfinho", "Foca", "Lobo", "Raposa", "Veado", "Águia", "Coruja", "Papagaio", "Tucano", "Canguru", "Camelo", "Rinoceronte", "Hipopótamo", "Panda", "Gorila", "Morcego", "Ovelha", "Cabra", "Búfalo", "Avestruz", "Flamingo", "Pelicano", "Escorpião", "Lagarto", "Caranguejo"],
+    3: ["Camaleão", "Preguiça", "Capivara", "Tamanduá", "Onça", "Puma", "Hiena", "Chacal", "Lhama", "Alpaca", "Polvo", "Caracol", "Água-viva", "Ouriço", "Gambá", "Quati", "Mico"],
+  },
+  objetos: {
+    1: ["Mesa", "Cadeira", "Cama", "Sofá", "Televisão", "Geladeira", "Fogão", "Copo", "Prato", "Garfo", "Faca", "Colher", "Panela", "Chave", "Porta", "Janela", "Espelho", "Travesseiro", "Cobertor", "Toalha", "Sabonete", "Escova", "Pente", "Tesoura", "Guarda-chuva", "Chinelo", "Sapato", "Óculos"],
+    2: ["Vassoura", "Escada", "Martelo", "Prego", "Parafuso", "Alicate", "Corda", "Balde", "Esponja", "Vela", "Fósforo", "Isqueiro", "Relógio", "Carteira", "Mochila", "Bolsa", "Cinto", "Boné", "Luva", "Cachecol", "Guarda-roupa", "Estante", "Almofada", "Ventilador", "Liquidificador"],
+    3: ["Alfinete", "Dedal", "Pinça", "Lanterna", "Termômetro", "Extintor", "Cadeado", "Antena", "Chaveiro", "Abridor", "Espátula", "Peneira", "Rolo de macarrão", "Varal", "Cabide", "Sacola", "Cortina"],
+  },
+  comidas: {
+    1: ["Pizza", "Hambúrguer", "Arroz", "Feijão", "Macarrão", "Batata frita", "Frango", "Carne", "Pão", "Bolo", "Sorvete", "Chocolate", "Pipoca", "Café", "Suco", "Leite", "Queijo", "Açaí", "Ovo", "Salada", "Feijoada", "Churrasco", "Coxinha", "Pastel", "Brigadeiro", "Refrigerante", "Água", "Banana"],
+    2: ["Lasanha", "Risoto", "Sushi", "Lanche", "Vitamina", "Milkshake", "Cachorro-quente", "Empanada", "Torta", "Pudim", "Manga", "Abacaxi", "Melancia", "Morango", "Uva", "Maçã", "Laranja", "Limão", "Abacate", "Cenoura", "Tomate", "Cebola", "Alho", "Pepino", "Beterraba"],
+    3: ["Estrogonofe", "Moqueca", "Vatapá", "Acarajé", "Tapioca", "Cuscuz", "Farofa", "Rapadura", "Paçoca", "Cocada", "Quindim", "Canjica", "Maionese", "Ketchup", "Mostarda", "Vinagre", "Azeite"],
+  },
+  filmes_series: {
+    1: ["Titanic", "Frozen", "Toy Story", "Shrek", "Vingadores", "Batman", "Homem-Aranha", "Superman", "Star Wars", "Harry Potter", "Matrix", "Jurassic Park", "Chaves", "Friends", "Round 6", "Stranger Things", "Big Brother Brasil", "A Fazenda", "Turma da Mônica", "Sítio do Pica-pau Amarelo", "Rei Leão", "Aladdin", "Cinderela", "Branca de Neve", "Moana", "Coco", "Up", "Wall-e"],
+    2: ["Avatar", "Gladiador", "Coringa", "Divertida Mente", "Procurando Nemo", "Carros", "Madagascar", "Zootopia", "Enrolados", "Malévola", "Rocky", "Rambo", "Duro de Matar", "De Volta para o Futuro", "Ghostbusters", "Karatê Kid", "Jumanji", "Homem de Ferro", "Pantera Negra", "Thor", "Hulk", "Capitã Marvel", "Wolverine", "Deadpool", "Esqueceram de Mim"],
+    3: ["Avenida Brasil", "Chiquititas", "Malhação", "Caminho das Índias", "Roda a Roda", "Programa do Ratinho", "Domingão", "Fantástico", "Jornal Nacional", "Zorra Total", "Escrava Isaura", "Laços de Família", "O Auto da Compadecida", "Cidade de Deus", "Tropa de Elite", "Central do Brasil", "Bacurau"],
+  },
+  musica: {
+    1: ["Violão", "Guitarra", "Bateria", "Piano", "Microfone", "Karaokê", "Rock", "Sertanejo", "Funk", "Pagode", "Samba", "Forró", "Rap", "Reggae", "Anitta", "Beyoncé", "Madonna", "Michael Jackson", "Elvis Presley", "Roberto Carlos", "Chico Buarque", "Caetano Veloso", "Gilberto Gil", "Pabllo Vittar", "Show", "Palco", "Disco", "Fone de ouvido"],
+    2: ["Flauta", "Violino", "Saxofone", "Trompete", "Baixo", "Teclado", "Pandeiro", "Tambor", "Coral", "Banda", "Festival", "Ídolo", "Playback", "Refrão", "Melodia", "Ritmo", "Axé", "Bossa Nova", "MPB", "Rihanna", "Shakira", "Adele", "Elton John", "Queen", "Beatles"],
+    3: ["Harpa", "Acordeão", "Cavaquinho", "Berimbau", "Trombone", "Clarinete", "Contrabaixo", "Sinfonia", "Ópera", "Maestro", "Partitura", "Turnê", "Autotune", "Freestyle", "Trap", "K-pop", "Beethoven"],
+  },
+  esportes: {
+    1: ["Futebol", "Vôlei", "Basquete", "Tênis", "Natação", "Corrida", "Ciclismo", "Boxe", "Judô", "Karatê", "Skate", "Surfe", "Ginástica", "Pelé", "Neymar", "Messi", "Cristiano Ronaldo", "Olimpíadas", "Copa do Mundo", "Gol", "Pênalti", "Bola", "Chuteira", "Apito", "Juiz", "Time", "Estádio", "Medalha"],
+    2: ["Handebol", "Rugby", "Golfe", "Boliche", "Xadrez", "Maratona", "Triatlo", "Halterofilismo", "Luta livre", "Esgrima", "Remo", "Iatismo", "Patinação", "Atletismo", "Vôlei de praia", "Muay Thai", "Jiu-jitsu", "Fórmula 1", "Motocross", "Arco e flecha", "Salto em distância", "Salto com vara", "Ronaldinho Gaúcho", "Zico", "Romário"],
+    3: ["Taekwondo", "Squash", "Polo aquático", "Hipismo", "Nado sincronizado", "Sinuca", "Peteca", "Capoeira", "Bocha", "Frescobol", "Paraquedismo", "Escalada", "Rapel", "Crossfit", "Pilates", "Kart", "Windsurfe"],
+  },
+  profissoes: {
+    1: ["Médico", "Professor", "Bombeiro", "Policial", "Dentista", "Advogado", "Engenheiro", "Cozinheiro", "Garçom", "Cabeleireiro", "Pedreiro", "Eletricista", "Encanador", "Motorista", "Piloto", "Enfermeiro", "Veterinário", "Padeiro", "Açougueiro", "Pescador", "Agricultor", "Costureira", "Faxineira", "Vendedor", "Caixa", "Segurança", "Jardineiro", "Mecânico"],
+    2: ["Youtuber", "Fisioterapeuta", "Psicólogo", "Nutricionista", "Farmacêutico", "Contador", "Arquiteto", "Jornalista", "Fotógrafo", "Tradutor", "Bibliotecário", "Marceneiro", "Pintor", "Recepcionista", "Manicure", "Programador", "Designer", "Corretor de imóveis", "Sociólogo", "Diplomata", "Astronauta", "Locutor", "Personal trainer", "Influencer", "Ator"],
+    3: ["Zootecnista", "Geólogo", "Astrônomo", "Meteorologista", "Oceanógrafo", "Paleontólogo", "Antropólogo", "Arqueólogo", "Cartógrafo", "Ourives", "Alfaiate", "Sapateiro", "Funileiro", "Tabelião", "Estivador", "Lobista", "Coveiro"],
+  },
+  lugares: {
+    1: ["Praia", "Aeroporto", "Padaria", "Hospital", "Escola", "Igreja", "Mercado", "Farmácia", "Cinema", "Parque", "Shopping", "Restaurante", "Hotel", "Banheiro", "Cozinha", "Escritório", "Estádio", "Biblioteca", "Fazenda", "Floresta", "Montanha", "Rio", "Deserto", "Ilha", "Praça", "Zoológico", "Museu", "Ponte"],
+    2: ["Paris", "Egito", "Japão", "Índia", "México", "Nova York", "Londres", "Roma", "Veneza", "Havaí", "Alasca", "Antártida", "Saara", "Groenlândia", "Polo Norte", "Vaticano", "Torre Eiffel", "Muralha da China", "Pirâmides", "Vulcão", "Cachoeira", "Caverna", "Vinhedo", "Savana", "Iceberg"],
+    3: ["Machu Picchu", "Chernobyl", "Estreito de Bering", "Triângulo das Bermudas", "Monte Everest", "Fossa das Marianas", "Ilhas Galápagos", "Serengeti", "Sibéria", "Patagônia", "Mar Morto", "Estação Espacial", "Polo Sul", "Vinícola", "Catacumbas", "Observatório", "Planetário"],
+  },
+  brasil: {
+    1: ["Carnaval", "Cristo Redentor", "Copacabana", "Samba", "Futebol", "Havaianas", "Ipanema", "Maracanã", "Amazônia", "Pantanal", "Favela", "Carioca", "Paulista", "Nordestino", "Gaúcho", "Baiano", "Mineiro", "Funk", "Sertanejo", "Axé", "Pagode", "Bloco de carnaval", "Trio elétrico", "Rede de dormir", "Chinelo", "Sunga", "Biquíni", "Escola de samba"],
+    2: ["Capoeira", "Forró", "Bossa nova", "Bumba meu boi", "Boi-bumbá", "Jangada", "Cangaço", "Lampião", "Saci-pererê", "Curupira", "Boto cor-de-rosa", "Jeitinho brasileiro", "Pelourinho", "Sertão", "Cerrado", "Caatinga", "Boi de Parintins", "Fla-Flu", "Frevo", "Maracatu", "Berimbau", "Cuíca", "Repentista", "Cordel", "Vaquejada"],
+    3: ["Umbanda", "Candomblé", "Orixá", "Quilombo", "Bandeirante", "Vaqueiro", "Tropicália", "Cangaceiro", "Iemanjá", "Zumbi dos Palmares", "Alforria", "Engenho", "Coronelismo", "Retirante", "Sesmaria", "Jangadeiro", "Pajelança"],
+  },
+  tecnologia: {
+    1: ["Pix", "Wi-Fi", "Celular", "Senha", "Internet", "Computador", "Notebook", "Teclado", "Mouse", "Impressora", "Televisão", "Controle remoto", "Fone de ouvido", "Carregador", "Bateria", "Aplicativo", "WhatsApp", "Instagram", "Facebook", "Câmera", "Tablet", "E-mail", "Site", "Download", "Vídeo chamada", "Software", "Hardware", "Google"],
+    2: ["Bluetooth", "Inteligência artificial", "Nuvem", "Criptomoeda", "Streaming", "Realidade virtual", "Impressora 3D", "Código de barras", "QR code", "Chip", "Placa-mãe", "Processador", "Servidor", "Antivírus", "Robô", "Satélite", "Drone", "GPS", "Fibra óptica", "Roteador", "Pendrive", "Biometria", "Criptografia", "Chatbot", "Firewall"],
+    3: ["Blockchain", "Metaverso", "Big data", "Machine learning", "Realidade aumentada", "Nanotecnologia", "Semicondutor", "Firmware", "Kernel", "API", "Deep learning", "Reconhecimento facial", "Algoritmo", "Autenticação", "Token", "Open source", "Backend"],
+  },
+  cultura_pop: {
+    1: ["Mario", "Pokémon", "TikTok", "Homem-Aranha", "Barbie", "Emoji", "Batman", "Superman", "Mickey Mouse", "Frozen", "Minecraft", "Naruto", "Pikachu", "Star Wars", "Harry Potter", "Netflix", "Meme", "Selfie", "Zumbi", "Vampiro", "Princesa", "Super-herói", "Vilão", "Dinossauro", "Desenho animado", "Novela", "Boneca", "Máscara"],
+    2: ["Homem de Ferro", "Capitão América", "Hulk", "Thor", "Shrek", "Simpsons", "Bob Esponja", "Cinderela", "Branca de Neve", "Chapeuzinho Vermelho", "Lobisomem", "Bruxa", "Fada", "Dragão", "Roblox", "Fortnite", "GTA", "PlayStation", "Xbox", "Podcast", "Reels", "Hashtag", "Streamer", "Cosplay", "Gamer"],
+    3: ["Anime", "Mangá", "Multiverso", "Nerd", "Geek", "Fandom", "Spoiler", "Crossover", "Prequela", "Sequência", "Remake", "Reboot", "Trailer", "Bilheteria", "Roteirista", "Dublagem", "Legendado"],
+  },
 };
 
-// Pares parecidos para o modo Mister White: [palavra dos inocentes, palavra do Mister White]
-const PAIRS = {
-  comida: [['Pizza','Lasanha'],['Coxinha','Kibe'],['Feijoada','Strogonoff'],['Pastel','Esfirra'],['Sushi','Temaki'],['Brigadeiro','Beijinho'],['Cocada','Paçoca'],['Bolo de Chocolate','Pudim'],['Sorvete','Açaí'],['Hambúrguer','Cachorro-Quente'],['Churrasco','Picanha'],['Nhoque','Risoto'],['Panqueca','Waffle'],['Quindim','Canjica'],['Mousse','Torta de Limão'],['Yakisoba','Lámen'],['Farofa','Vinagrete'],['Empada','Rabanada']],
-  animais: [['Cachorro','Lobo'],['Gato','Onça'],['Leão','Tigre'],['Cavalo','Zebra'],['Vaca','Porco'],['Pato','Galinha'],['Águia','Coruja'],['Arara','Papagaio'],['Tubarão','Golfinho'],['Baleia','Peixe-Boi'],['Capivara','Quati'],['Preguiça','Tamanduá'],['Morcego','Gambá'],['Camundongo','Rato'],['Esquilo','Camundongo'],['Hipopótamo','Rinoceronte'],['Panda','Coala'],['Pinguim','Foca']],
-  lugares: [['Praia','Piscina'],['Shopping','Feira'],['Hospital','Consultório'],['Escola','Universidade'],['Cinema','Teatro'],['Padaria','Restaurante'],['Banco','Cartório'],['Parque','Praça'],['Zoológico','Aquário'],['Museu','Biblioteca'],['Estádio','Academia'],['Cachoeira','Fazenda'],['Montanha','Vulcão'],['Deserto','Floresta'],['Castelo','Palácio'],['Favela','Condomínio'],['Presídio','Delegacia'],['Hotel','Motel']],
-  objetos: [['Panela','Frigideira'],['Faca','Tesoura'],['Garfo','Colher'],['Copo','Caneca'],['Sofá','Cadeira'],['Mesa','Armário'],['Toalha','Cobertor'],['Travesseiro','Almofada'],['Vassoura','Rodo'],['Balde','Mala'],['Bicicleta','Skate'],['Celular','Tablet'],['Relógio','Pulseira'],['Geladeira','Freezer'],['Fogão','Micro-ondas'],['Liquidificador','Batedeira'],['Ventilador','Ar-Condicionado'],['Chave','Chaveiro']],
-  profissoes: [['Médico','Enfermeiro'],['Advogado','Juiz'],['Pedreiro','Eletricista'],['Cabeleireiro','Barbeiro'],['Cozinheiro','Padeiro'],['Ator','Cantor'],['Youtuber','Streamer'],['Programador','Designer'],['Piloto','Motorista'],['Policial','Bombeiro'],['Veterinário','Dentista'],['Fisioterapeuta','Nutricionista'],['Jornalista','Fotógrafo'],['Agricultor','Pescador'],['Arquiteto','Engenheiro'],['Contador','Economista'],['Zelador','Segurança'],['Recepcionista','Vendedor']],
-  famosos: [['Anitta','Ludmilla'],['Neymar','Vini Jr'],['Pelé','Ronaldinho Gaúcho'],['Cristiano Ronaldo','Lionel Messi'],['Taylor Swift','Ariana Grande'],['Beyoncé','Rihanna'],['Silvio Santos','Luciano Huck'],['Xuxa','Ana Maria Braga'],['Sandy','Claudia Leitte'],['Caetano Veloso','Gilberto Gil'],['Gusttavo Lima','Wesley Safadão'],['Whindersson Nunes','Fábio Porchat'],['Larissa Manoela','Bruna Marquezine'],['Justin Bieber','Tom Holland'],['Selena Gomez','Zendaya'],['Elon Musk','MrBeast'],['Shakira','Dua Lipa'],['Casimiro','Felca']],
-  filmes: [['Vingadores','Homem de Ferro'],['Batman','Superman'],['Homem-Aranha','Pantera Negra'],['Mulher Maravilha','Aquaman'],['Star Wars','Duna'],['Harry Potter','Senhor dos Anéis'],['Frozen','Encanto'],['Toy Story','Shrek'],['Divertida Mente','Procurando Nemo'],['Enrolados','Aladdin'],['Rei Leão','Zootopia'],['John Wick','Matrix'],['Jurassic Park','Velozes e Furiosos'],['Stranger Things','Wandinha'],['La Casa de Papel','Round 6'],['Friends','The Office'],['Breaking Bad','Peaky Blinders'],['Game of Thrones','Vikings']],
-  esportes: [['Futebol','Futsal'],['Vôlei','Vôlei de Praia'],['Basquete','Handebol'],['Judô','Jiu-Jitsu'],['Karatê','Taekwondo'],['Boxe','MMA'],['Natação','Polo Aquático'],['Ciclismo','Motocross'],['Skate','Slackline'],['Tênis','Badminton'],['Golfe','Squash'],['Corrida','Maratona'],['Remo','Vela'],['Sinuca','Boliche'],['Atletismo','Ginástica Artística'],['Esgrima','Tiro com Arco'],['Fórmula 1','Motocross'],['Triatlo','Maratona']],
-  marcas: [['Nike','Adidas'],['Coca-Cola','Pepsi'],['McDonald\'s','Burger King'],['Instagram','TikTok'],['WhatsApp','Facebook'],['Samsung','Xiaomi'],['Ford','Chevrolet'],['Fiat','Volkswagen'],['Honda','Yamaha'],['Skol','Brahma'],['Nestlé','Danone'],['Americanas','Casas Bahia'],['Magazine Luiza','Mercado Livre'],['Shopee','Amazon'],['Nubank','Itaú'],['Uber','99'],['Natura','Boticário'],['Lacta','Nestlé']],
-  casa: [['Cama','Sofá'],['Travesseiro','Almofada'],['Cobertor','Lençol'],['Cortina','Tapete'],['Armário','Guarda-Roupa'],['Estante','Mesa de Centro'],['Geladeira','Freezer'],['Fogão','Micro-ondas'],['Liquidificador','Batedeira'],['Máquina de Lavar','Secadora'],['Ferro de Passar','Aspirador de Pó'],['Vassoura','Rodo'],['Pia','Torneira'],['Chuveiro','Vaso Sanitário'],['Panela','Frigideira'],['Prato','Copo'],['Xícara','Jarra'],['Ventilador','Ar-Condicionado']],
-  internet: [['Meme','Trend'],['Reels','TikTok'],['Stories','Live'],['Curtida','Comentário'],['Seguidor','Influenciador'],['Hater','Stalker'],['Fake News','Deepfake'],['Cringe','Bafão'],['Zap','Grupo de Zap'],['Podcast','Vlog'],['Youtuber','Streamer'],['Bug','Lag'],['Login','Senha'],['Emoji','Sticker'],['Pix','QR Code'],['Print','Print da Conversa'],['Feed','Algoritmo'],['Textão','Bafão']],
-  musica: [['Funk','Brega Funk'],['Sertanejo','Piseiro'],['Samba','Pagode'],['Axé','Forró'],['Rap','Trap'],['Reggae','Reggaeton'],['Rock','Punk'],['Pop','K-pop'],['Jazz','Blues'],['Chorinho','Frevo'],['Violão','Guitarra'],['Bateria','Teclado'],['Show','Festival'],['Karaokê','Playlist'],['Baile Funk','Roda de Samba'],['Clipe','Turnê'],['DJ','Banda'],['Vanera','Sofrência']],
-};
+// lista plana { w, cat, d } — o jogo filtra por categoria e dificuldade
+const WORDS = [];
+for (const [cat, byDiff] of Object.entries(BANK)) for (const [d, list] of Object.entries(byDiff)) for (const w of list) WORDS.push({ w, cat, d: Number(d) });
 
-module.exports = { CATEGORIES, WORDS, PAIRS };
+module.exports = { CATS, BANK, WORDS };

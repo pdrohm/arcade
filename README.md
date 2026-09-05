@@ -63,7 +63,8 @@ O que o núcleo já resolve para todos os jogos:
 | `games/provavel` | Quem é mais provável? — pergunta na TV, votos no celular, barras e coroa |
 | `games/stopalfabeto` | Stop Alfabeto — uma categoria, o alfabeto na TV; fala a palavra, aperta a letra, 5 s por vez, 3 vidas, contestação por votação |
 | `games/uno` | UNO — mão no celular, mesa na TV, coringa, +2/+4, UNO! e "Pegou!", pontuação oficial |
-| `games/palavrasecreta` | Palavra Secreta — todo mundo recebe a mesma palavra, menos o impostor; dicas, discussão, votação e chance final |
+| `games/impostor` | Impostor — todo mundo recebe a mesma palavra, menos o(s) impostor(es); com ou sem dica; dicas, discussão, votação e chance final |
+| `games/palavrasecreta` | Palavra Secreta — estilo Mega Senha: em times, um vê a palavra e dá dicas em voz alta, o colega adivinha; ACERTOU/PASSAR no celular, cronômetro e placar na TV |
 
 ## Adicionar um jogo novo
 

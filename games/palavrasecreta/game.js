@@ -1,318 +1,286 @@
-// Palavra Secreta (o jogo do impostor). Todo mundo recebe a mesma palavra no celular,
-// menos o(s) impostor(es). Uma dica por vez, discussão, votação e revelação na TV.
-// A palavra só aparece na TV na hora do resultado.
-const { CATEGORIES, WORDS, PAIRS } = require('./words');
+// Palavra Secreta (estilo Mega Senha) — em times: um vê a palavra e dá dicas em voz alta,
+// o colega adivinha em voz alta. Acerto vale 1. A TV nunca recebe a palavra.
+const { CATS, WORDS } = require('./words');
 
-const TIE_MS = 30 * 1000;                       // discussão curta depois de um empate
-const CLUE_MAX = 20;
-const DEFAULT_CFG = { impostors: 1, hint: true, white: false, discussSec: 90, rounds: 5, laps: 1, cats: CATEGORIES.map(c => c.id) };
-
-const norm = s => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '');
+const KIND = 'megasenha';                       // marcador do estado salvo (ignora estado de outro jogo)
+const RESULT_MS = Number(process.env.PS_RESULT_MS) || 6000;   // tela de fim de vez antes do próximo time
+const TEAM_COLORS = ['#22d3ee', '#f472b6', '#facc15', '#a3e635'];
+const TEAM_OPTS = [2, 3, 4];
+const ROUND_OPTS = [3, 5, 8, 10];
+const TIME_OPTS = process.env.PS_TIME_OPTS ? process.env.PS_TIME_OPTS.split(',').map(Number) : [30, 45, 60, 90, 120];
+const DIFFS = [
+  { id: 'facil', name: 'Fácil', ds: [1] },
+  { id: 'medio', name: 'Médio', ds: [2] },
+  { id: 'dificil', name: 'Difícil', ds: [3] },
+  { id: 'misto', name: 'Misto', ds: [1, 2, 3] },
+];
+const CAT_IDS = CATS.filter(c => c.id !== 'aleatorio').map(c => c.id);
+const defCfg = () => ({ teams: 2, auto: true, rounds: 5, turnSec: 60, diff: 'misto', cats: CAT_IDS.slice(), pass: true });
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-const catName = id => (CATEGORIES.find(c => c.id === id) || {}).name || '';
 
 module.exports = {
   meta: {
-    id: 'palavrasecreta', name: 'Palavra Secreta', emoji: '🕵️‍♂️',
-    tagline: 'Todo mundo sabe a palavra. Menos o impostor. Descubra quem é.',
-    art: 'linear-gradient(135deg,#0ea5e9 0%,#1e3a8a 60%,#020617 100%)',
-    minPlayers: 3, maxPlayers: 8,
+    id: 'palavrasecreta', name: 'Palavra Secreta', emoji: '🗝️',
+    tagline: 'Dê dicas e faça seu time descobrir o máximo de palavras.',
+    art: 'linear-gradient(135deg,#14b8a6 0%,#0f766e 55%,#042f2e 100%)',
+    minPlayers: 4, maxPlayers: 8,
     howTo: [
-      'Todos recebem a mesma palavra no celular. O impostor, não.',
-      'Cada um fala UMA palavra de dica, na ordem da TV.',
-      'Discutam e votem em quem parece o impostor.',
-      'Acertou o impostor? Os inocentes pontuam.',
-      'O impostor eliminado ainda pode adivinhar a palavra.',
+      'Formem times de 2 ou mais. Cada time joga uma vez por rodada.',
+      'Um jogador vê a palavra no celular e dá dicas falando. Não pode dizer a palavra.',
+      'O colega da vez adivinha em voz alta. Acertou? Toque em ACERTOU e vem outra palavra.',
+      'Travou? Toque em PASSAR (se estiver liberado). Passar não tira ponto.',
+      'Cada acerto vale 1. Quem somar mais pontos no fim das rodadas vence.',
     ],
   },
+
   create(api) {
     let s = {
-      phase: 'setup', cfg: JSON.parse(JSON.stringify(DEFAULT_CFG)), round: 0,
-      cat: null, word: '', white: '', impostors: [], seen: [],
-      order: [], clues: {}, turn: 0, discussMs: 90000,
-      endVotes: [], votes: {}, revote: 0, out: [], result: null, guess: null,
-      scores: {}, used: [],
+      kind: KIND,
+      phase: 'setup',            // setup | ready | play | result | end
+      cfg: defCfg(),
+      teams: [],                 // [{ players:[pid], score }]
+      round: 1, turn: 0,
+      clue: null, guess: null,   // pid de quem dá as dicas / de quem adivinha
+      clueN: {}, guessN: {},     // quantas vezes cada pid já fez cada papel
+      word: null,                // { w, cat, d } — só vai para o celular de quem dá as dicas
+      used: [],                  // palavras já usadas na partida
+      turnWords: [], hits: 0,
+      last: null,                // { team, hits, words } da última vez
     };
+    let resT = null;
 
-    const pids = () => api.players.map(p => p.pid);
-    const alive = () => pids().filter(x => !s.out.includes(x));
-    const online = pid => { const p = api.byPid(pid); return !!p && p.on !== false; };
-    const isImp = pid => s.impostors.includes(pid);
-    const impAlive = () => alive().filter(isImp);
-    const innAlive = () => alive().filter(x => !isImp(x));
     const nameOf = pid => { const p = api.byPid(pid); return p ? p.name : 'Alguém'; };
-    const nImp = () => (s.cfg.impostors === 2 && api.players.length >= 6) ? 2 : 1;
-    const revealed = () => ['guess', 'scores', 'end'].includes(s.phase) || (s.phase === 'result' && !!s.result && !!s.result.over);   // a palavra só sai quando a rodada acaba
-    const maioria = n => Math.floor(n / 2) + 1;
+    const teamOf = pid => s.teams.findIndex(t => t.players.includes(pid));
+    const cur = () => s.teams[s.turn] || null;
+    const clearRes = () => { clearTimeout(resT); resT = null; };
+    const alive = t => t.players.filter(pid => api.byPid(pid));
 
-    // ---------- rodada ----------
-    function newRound() {
-      s.round++;
-      const cats = s.cfg.cats.filter(id => (WORDS[id] || []).length);
-      const cid = cats.length ? cats[Math.floor(Math.random() * cats.length)] : CATEGORIES[0].id;
-      s.cat = cid;
-      if (s.cfg.white) {                                  // Mister White: o impostor recebe uma palavra parecida
-        let pool = (PAIRS[cid] || []).filter(p => !s.used.includes(p[0]));
-        if (!pool.length) { s.used = []; pool = PAIRS[cid] || []; }
-        const pr = pool[Math.floor(Math.random() * pool.length)] || [WORDS[cid][0], WORDS[cid][1]];
-        s.word = pr[0]; s.white = pr[1];
-      } else {
-        let pool = (WORDS[cid] || []).filter(w => !s.used.includes(w));
-        if (!pool.length) { s.used = []; pool = WORDS[cid] || []; }
-        s.word = pool[Math.floor(Math.random() * pool.length)] || 'Pizza'; s.white = '';
-      }
-      s.used.push(s.word); if (s.used.length > 300) s.used.shift();
-      s.impostors = shuffle(pids()).slice(0, Math.min(nImp(), Math.max(1, api.players.length - 2)));
-      const ord = shuffle(pids());                        // a ordem é sorteada, mas quem fala primeiro é inocente
-      const i = ord.findIndex(x => !isImp(x));
-      if (i > 0) { const t = ord[0]; ord[0] = ord[i]; ord[i] = t; }
-      s.order = ord; s.clues = {}; s.turn = 0; s.seen = [];
-      s.votes = {}; s.endVotes = []; s.revote = 0; s.out = []; s.result = null; s.guess = null; s.gain = {}; s.needGuess = false;
-      s.phase = 'reveal';
-      api.clearTimer();
-      api.setEvent(`Rodada ${s.round} de ${s.cfg.rounds}. Cada um vê a própria palavra no celular.`);
+    function ensureTeams(n) {
+      s.teams = Array.from({ length: n }, (_, i) => s.teams[i] || { players: [], score: 0 });
+      s.teams.length = n;
+      for (const t of s.teams) t.players = t.players.filter(pid => api.byPid(pid));
     }
-    function startClues() {
-      s.phase = 'clues'; s.turn = 0;
-      api.clearTimer();
-      api.setEvent(`Ordem sorteada! ${nameOf(s.order[0])} começa: uma palavra de dica.`, (api.byPid(s.order[0]) || {}).color);
+    function autoTeams() {   // sorteio equilibrado: embaralha e distribui em zigue-zague
+      const n = s.cfg.teams;
+      s.teams = Array.from({ length: n }, () => ({ players: [], score: 0 }));
+      shuffle(api.players.map(p => p.pid)).forEach((pid, i) => s.teams[i % n].players.push(pid));
     }
-    const totalTurns = () => s.order.length * Math.max(1, s.cfg.laps);
-    const speaker = () => (s.phase === 'clues' && s.turn < totalTurns()) ? s.order[s.turn % s.order.length] : null;
-    function nextTurn() {
+    function canBegin() {
+      if (s.cfg.auto) return api.players.length >= 2 * s.cfg.teams;
+      const inTeam = s.teams.reduce((a, t) => a + t.players.length, 0);
+      return s.teams.length >= 2 && inTeam === api.players.length && s.teams.every(t => t.players.length >= 2);
+    }
+
+    // ---------- sorteio de palavras ----------
+    function pool() {
+      const ds = (DIFFS.find(d => d.id === s.cfg.diff) || DIFFS[3]).ds;
+      const cats = s.cfg.cats.length ? s.cfg.cats : CAT_IDS;
+      return WORDS.filter(w => ds.includes(w.d) && cats.includes(w.cat));
+    }
+    function drawWord() {
+      const p = pool();
+      if (!p.length) { s.word = null; return; }
+      let fresh = p.filter(w => !s.used.includes(w.w));
+      if (!fresh.length) { s.used = []; fresh = p; }                    // acabou o pool: libera tudo
+      s.word = fresh[Math.floor(Math.random() * fresh.length)];
+      s.used.push(s.word.w);
+    }
+
+    // ---------- papéis (rodam para todo mundo jogar o mesmo tanto) ----------
+    // menos vezes neste papel ganha; empate vai para quem menos jogou no total (assim os papéis giram)
+    function pickRole(cands, counts) {
+      const on = api.onlinePids();
+      const ok = cands.filter(pid => on.has(pid));
+      const list = ok.length ? ok : cands;
+      const peso = pid => (counts[pid] || 0) * 1000 + (s.clueN[pid] || 0) + (s.guessN[pid] || 0);
+      return list.reduce((best, pid) => (peso(pid) < peso(best) ? pid : best), list[0]);
+    }
+    function assignRoles(t) {
+      const ps = alive(t);
+      s.clue = ps.length ? pickRole(ps, s.clueN) : null;
+      const rest = ps.filter(pid => pid !== s.clue);
+      s.guess = rest.length ? pickRole(rest, s.guessN) : null;
+      if (s.clue) s.clueN[s.clue] = (s.clueN[s.clue] || 0) + 1;
+      if (s.guess) s.guessN[s.guess] = (s.guessN[s.guess] || 0) + 1;
+    }
+
+    // ---------- fases ----------
+    function startTurn() {
+      clearRes(); api.clearTimer();
+      s.phase = 'ready'; s.word = null; s.turnWords = []; s.hits = 0;
+      const t = cur();
+      if (!t) return;
+      assignRoles(t);
+      api.setEvent(`Rodada ${s.round} de ${s.cfg.rounds} · Vez do Time ${s.turn + 1}. ${s.clue ? nameOf(s.clue) + ' dá as dicas' : ''}${s.guess ? ' e ' + nameOf(s.guess) + ' adivinha' : ''}.`, null);
+    }
+    function endTurn(why) {
+      clearRes(); api.clearTimer();
+      s.phase = 'result';
+      s.word = null;                                    // a palavra da vez que sobrou não conta
+      s.last = { team: s.turn, hits: s.hits, words: s.turnWords.slice(), clue: s.clue, guess: s.guess };
+      api.setEvent(why || `⏰ Tempo! Time ${s.turn + 1} fez ${s.hits} ${s.hits === 1 ? 'acerto' : 'acertos'}.`, null);
+      resT = setTimeout(() => { resT = null; advance(); api.broadcast(); }, RESULT_MS);
+    }
+    function advance() {
+      clearRes();
       s.turn++;
-      if (s.turn >= totalTurns()) return startDiscuss(s.cfg.discussSec * 1000);
-      api.setEvent(`Vez de ${nameOf(speaker())}: uma palavra de dica.`, (api.byPid(speaker()) || {}).color);
+      if (s.turn >= s.teams.length) { s.turn = 0; s.round++; }
+      if (s.round > s.cfg.rounds) return finish();
+      startTurn();
     }
-    function startDiscuss(ms) {
-      s.phase = 'discuss'; s.endVotes = []; s.votes = {}; s.discussMs = ms;
-      api.armTimer(ms);
-      api.setEvent(s.revote ? 'Empate! Mais 30 segundos e votem de novo.' : 'Discutam! Quem é o impostor?');
-    }
-    function startVote() {
-      s.phase = 'vote'; s.votes = {};
-      api.clearTimer();
-      api.setEvent('Votação! Cada um aponta um suspeito no celular.');
-    }
-    function tally() {
-      const cnt = {};
-      for (const [who, alvo] of Object.entries(s.votes)) if (alive().includes(who) && alive().includes(alvo)) cnt[alvo] = (cnt[alvo] || 0) + 1;
-      const max = Math.max(0, ...Object.values(cnt));
-      const tops = Object.keys(cnt).filter(k => cnt[k] === max);
-      api.clearTimer();
-      s.phase = 'result';
-      if (!max || tops.length !== 1) {                    // ninguém votou ou deu empate
-        s.result = { tie: true, tops, count: cnt, out: null, wasImp: false, over: s.revote >= 1, winner: s.revote >= 1 ? 'impostores' : null };
-        api.setEvent(s.revote >= 1 ? 'Empate de novo! O impostor escapou.' : 'Empate! Ninguém foi eliminado.');
-        if (s.result.over) return finish('impostores');
-        return;
-      }
-      const alvo = tops[0];
-      s.out.push(alvo);
-      const wasImp = isImp(alvo);
-      const fim = wasImp ? !impAlive().length : (s.impostors.length === 1 || impAlive().length >= innAlive().length);
-      s.result = { tie: false, tops, count: cnt, out: alvo, wasImp, over: fim, winner: fim ? (wasImp ? 'inocentes' : 'impostores') : null };
-      api.setEvent(`${nameOf(alvo)} foi eliminado… e ${wasImp ? 'ERA o impostor!' : 'não era o impostor.'}`, (api.byPid(alvo) || {}).color);
-      if (fim) finish(wasImp ? 'inocentes' : 'impostores');
-    }
-    function finish(winner) {                             // pontos da rodada
-      s.result = { ...(s.result || {}), over: true, winner };
-      const gain = {};
-      if (winner === 'inocentes') for (const pid of pids()) { if (!isImp(pid)) gain[pid] = 1; }
-      else for (const pid of s.impostors) gain[pid] = 2;
-      for (const [pid, g] of Object.entries(gain)) s.scores[pid] = (s.scores[pid] || 0) + g;
-      s.gain = gain;
-      // se os inocentes pegaram o impostor, ele ainda tenta adivinhar a palavra
-      s.needGuess = winner === 'inocentes' && s.impostors.some(p => api.byPid(p));
-    }
-    function toScores() {
-      s.phase = s.round >= s.cfg.rounds ? 'end' : 'scores';
-      const top = pids().sort((a, b) => (s.scores[b] || 0) - (s.scores[a] || 0))[0];
-      api.clearTimer();
-      api.setEvent(s.phase === 'end' ? `Fim de jogo! ${nameOf(top)} venceu com ${s.scores[top] || 0} pontos.` : 'Toque em "Próxima palavra" para continuar.');
-    }
-    function abortRound(why) {                            // o impostor saiu no meio: revela e segue
-      if (!['reveal', 'clues', 'discuss', 'vote'].includes(s.phase)) return;
-      api.clearTimer();
-      s.phase = 'result';
-      s.result = { tie: false, tops: [], count: {}, out: null, wasImp: false, over: true, winner: null, aborted: true };
-      s.gain = {}; s.needGuess = false;
-      api.setEvent(why || 'A rodada acabou sem vencedor.');
+    function finish() {
+      clearRes(); api.clearTimer();
+      s.phase = 'end'; s.word = null;
+      const best = Math.max(...s.teams.map(t => t.score));
+      const win = s.teams.map((t, i) => i).filter(i => s.teams[i].score === best);
+      api.setEvent(win.length > 1 ? `Empate entre ${win.map(i => 'Time ' + (i + 1)).join(' e ')} com ${best} pontos!` : `🏆 Time ${win[0] + 1} venceu com ${best} pontos!`, null);
     }
 
     const inst = {
       start() {
-        s.scores = {}; s.round = 0; s.used = []; s.phase = 'setup'; s.result = null;
-        api.clearTimer();
-        api.setEvent('Ajustem as regras no celular e toquem em "Começar".');
+        s.phase = 'setup'; s.cfg = defCfg(); s.round = 1; s.turn = 0; s.used = [];
+        s.clue = null; s.guess = null; s.clueN = {}; s.guessN = {}; s.word = null; s.turnWords = []; s.hits = 0; s.last = null;
+        ensureTeams(s.cfg.teams);
+        api.clearTimer(); clearRes();
+        api.setEvent('Ajustem as regras no celular e toquem em "Começar".', null);
       },
-      onTimeUp() {
-        if (s.phase === 'discuss') { startVote(); }
-      },
+
+      onTimeUp() { if (s.phase === 'play') endTurn(); },
+
       action(p, msg) {
         const me = p.pid;
         switch (msg.t) {
-          case 'config': {                                // qualquer jogador muda as regras antes de começar
+          case 'config': {                                     // qualquer jogador muda as regras
             if (s.phase !== 'setup') return;
             const c = msg.cfg || {};
-            if (c.impostors !== undefined) s.cfg.impostors = Number(c.impostors) === 2 ? 2 : 1;
-            if (c.hint !== undefined) s.cfg.hint = !!c.hint;
-            if (c.white !== undefined) s.cfg.white = !!c.white;
-            if (c.discussSec !== undefined) s.cfg.discussSec = [60, 90, 120, 180].includes(Number(c.discussSec)) ? Number(c.discussSec) : 90;
-            if (c.rounds !== undefined) s.cfg.rounds = [3, 5, 8, 10].includes(Number(c.rounds)) ? Number(c.rounds) : 5;
-            if (c.laps !== undefined) s.cfg.laps = Number(c.laps) === 2 ? 2 : 1;
-            if (Array.isArray(c.cats)) { const ok = CATEGORIES.map(x => x.id).filter(id => c.cats.includes(id)); if (ok.length) s.cfg.cats = ok; }
-            if (c.reset) s.cfg = JSON.parse(JSON.stringify(DEFAULT_CFG));
+            if (c.teams !== undefined) { const n = Number(c.teams); if (TEAM_OPTS.includes(n) && api.players.length >= 2 * n) { s.cfg.teams = n; ensureTeams(n); } }
+            if (c.auto !== undefined) s.cfg.auto = !!c.auto;
+            if (c.rounds !== undefined && ROUND_OPTS.includes(Number(c.rounds))) s.cfg.rounds = Number(c.rounds);
+            if (c.turnSec !== undefined && TIME_OPTS.includes(Number(c.turnSec))) s.cfg.turnSec = Number(c.turnSec);
+            if (c.diff !== undefined && DIFFS.some(d => d.id === c.diff)) s.cfg.diff = c.diff;
+            if (c.pass !== undefined) s.cfg.pass = !!c.pass;
+            if (Array.isArray(c.cats)) { const list = CAT_IDS.filter(id => c.cats.includes(id)); s.cfg.cats = list.length ? list : CAT_IDS.slice(); }
             api.setEvent(`${p.name} mudou as regras.`, p.color);
             return;
           }
+          case 'team': {                                       // times manuais: entrar num time
+            if (s.phase !== 'setup' || s.cfg.auto) return;
+            const i = Number(msg.i);
+            if (!(i >= 0 && i < s.teams.length)) return;
+            for (const t of s.teams) t.players = t.players.filter(x => x !== me);
+            s.teams[i].players.push(me);
+            api.setEvent(`${p.name} entrou no Time ${i + 1}.`, p.color);
+            return;
+          }
           case 'begin': {
-            if (s.phase !== 'setup') return;
-            if (api.players.length < 3) return;
-            s.scores = {}; s.round = 0; s.used = [];
-            newRound();
+            if (s.phase !== 'setup' || !canBegin()) return;
+            if (s.cfg.auto) autoTeams(); else ensureTeams(s.cfg.teams);
+            for (const t of s.teams) t.score = 0;
+            s.round = 1; s.turn = 0; s.used = []; s.clueN = {}; s.guessN = {}; s.last = null;
+            startTurn();
             return;
           }
-          case 'seen': {                                  // "já vi minha palavra"
-            if (s.phase !== 'reveal') return;
-            if (!s.seen.includes(me)) s.seen.push(me);
-            const faltam = pids().filter(x => !s.seen.includes(x) && online(x));
-            if (!faltam.length) startClues();
+          case 'go': {                                         // quem dá as dicas começa a vez
+            if (s.phase !== 'ready') return;
+            const t = cur();
+            if (!t || me !== s.clue) return;
+            s.phase = 'play'; s.turnWords = []; s.hits = 0;
+            drawWord();
+            api.armTimer(s.cfg.turnSec * 1000);
+            api.setEvent(`Time ${s.turn + 1} jogando! ${nameOf(s.clue)} dá as dicas.`, p.color);
             return;
           }
-          case 'clue': {
-            if (s.phase !== 'clues' || speaker() !== me) return;
-            const txt = String(msg.text || '').trim().replace(/\s+/g, ' ').slice(0, CLUE_MAX);
-            if (!txt || /\s/.test(txt)) return api.setEvent('A dica é UMA palavra só, sem espaço.', p.color);
-            if (norm(txt) === norm(s.word) || (s.white && norm(txt) === norm(s.white))) return api.setEvent(`${p.name} tentou uma dica que não vale. Escolha outra palavra!`, p.color);
-            const ditas = Object.values(s.clues).flat().map(norm);
-            if (ditas.includes(norm(txt))) return api.setEvent('Essa dica já foi dita. Escolha outra!', p.color);
-            (s.clues[me] = s.clues[me] || []).push(txt);
-            nextTurn();
+          case 'hit':
+          case 'pass': {                                       // só quem está dando as dicas marca
+            if (s.phase !== 'play' || me !== s.clue || !s.word) return;
+            if (msg.t === 'pass' && !s.cfg.pass) return;
+            const ok = msg.t === 'hit';
+            s.turnWords.push({ w: s.word.w, ok });
+            if (ok) { s.hits++; const t = cur(); if (t) t.score++; }
+            drawWord();
             return;
           }
-          case 'skip': {                                  // pular quem está offline
-            if (s.phase !== 'clues') return;
-            const sp = speaker();
-            if (!sp || online(sp)) return;
-            (s.clues[sp] = s.clues[sp] || []).push('—');
-            api.setEvent(`${nameOf(sp)} está sem conexão: vez pulada.`);
-            nextTurn();
+          case 'skip': {                                       // vez travada (alguém offline)
+            if (s.phase !== 'ready') return;
+            if (teamOf(me) !== s.turn) return;
+            api.setEvent(`${p.name} pulou a vez do Time ${s.turn + 1}.`, p.color);
+            s.last = { team: s.turn, hits: 0, words: [], clue: s.clue, guess: s.guess };
+            advance();
             return;
           }
-          case 'endnow': {                                // "votar agora": metade + 1 encerra a discussão
-            if (s.phase !== 'discuss') return;
-            const i = s.endVotes.indexOf(me);
-            if (i >= 0) s.endVotes.splice(i, 1); else s.endVotes.push(me);
-            if (s.endVotes.filter(x => alive().includes(x)).length >= maioria(alive().length)) startVote();
+          case 'next': {                                       // "Próximo time" na tela de resultado
+            if (s.phase !== 'result') return;
+            if (s.last && teamOf(me) !== s.last.team) return;
+            advance();
             return;
           }
-          case 'vote': {
-            if (s.phase !== 'vote' || s.out.includes(me)) return;
-            const alvo = String(msg.pid || '');
-            if (alvo === me || !alive().includes(alvo)) return;
-            s.votes[me] = alvo;
-            const faltam = alive().filter(x => !s.votes[x] && online(x));
-            if (!faltam.length) tally();
+          case 'again': {                                      // volta ao setup mantendo os times
+            if (s.phase !== 'end') return;
+            clearRes(); api.clearTimer();
+            s.phase = 'setup'; s.round = 1; s.turn = 0; s.used = []; s.clueN = {}; s.guessN = {};
+            s.word = null; s.turnWords = []; s.hits = 0; s.last = null;
+            for (const t of s.teams) t.score = 0;
+            s.cfg.teams = s.teams.length;
+            api.setEvent('Mesmos times. Ajustem as regras e toquem em "Começar".', null);
             return;
           }
-          case 'closevote': {                             // fecha com a maioria já votada (ninguém trava a sala)
-            if (s.phase !== 'vote') return;
-            if (Object.keys(s.votes).filter(x => alive().includes(x)).length < maioria(alive().length)) return;
-            tally();
-            return;
-          }
-          case 'guess': {                                 // chance final do impostor
-            if (s.phase !== 'guess' || !isImp(me) || s.guess) return;
-            const txt = String(msg.text || '').trim().slice(0, 40);
-            if (!txt) return;
-            const ok = norm(txt) === norm(s.word);
-            s.guess = { pid: me, text: txt, ok };
-            if (ok) s.scores[me] = (s.scores[me] || 0) + 1;
-            api.setEvent(ok ? `${p.name} adivinhou a palavra: ${s.word}! +1 ponto.` : `${p.name} chutou "${txt}" e errou. A palavra era ${s.word}.`, p.color);
-            toScores();
-            return;
-          }
-          case 'next': {
-            if (s.phase === 'result') {
-              if (s.result && s.result.aborted) { toScores(); return; }
-              if (s.result && !s.result.over) {           // empate sem eliminar, ou ainda sobrou impostor
-                if (s.result.tie) { s.revote = 1; return startDiscuss(TIE_MS); }
-                s.revote = 0; return startDiscuss(Math.max(30, Math.round(s.cfg.discussSec / 2)) * 1000);
-              }
-              if (s.needGuess) { s.phase = 'guess'; api.clearTimer(); api.setEvent('O impostor foi pego! Ele ainda pode adivinhar a palavra.'); return; }
-              return toScores();
-            }
-            if (s.phase === 'guess') { s.guess = s.guess || { pid: null, text: '', ok: false }; return toScores(); }
-            if (s.phase === 'scores') return newRound();
-            return;
-          }
-          case 'again': if (s.phase === 'end') inst.start(); return;
         }
       },
+
       rekey(o, n) {
-        const sw = obj => { if (obj[o] !== undefined) { obj[n] = obj[o]; delete obj[o]; } };
-        sw(s.clues); sw(s.scores); sw(s.votes);
-        for (const k of Object.keys(s.votes)) if (s.votes[k] === o) s.votes[k] = n;
-        const rep = arr => arr.map(x => x === o ? n : x);
-        s.impostors = rep(s.impostors); s.seen = rep(s.seen); s.order = rep(s.order);
-        s.endVotes = rep(s.endVotes); s.out = rep(s.out);
-        if (s.result) { if (s.result.out === o) s.result.out = n; if (s.result.tops) s.result.tops = rep(s.result.tops); }
-        if (s.guess && s.guess.pid === o) s.guess.pid = n;
+        for (const t of s.teams) t.players = t.players.map(x => (x === o ? n : x));
+        for (const m of [s.clueN, s.guessN]) if (m[o] !== undefined) { m[n] = m[o]; delete m[o]; }
+        if (s.clue === o) s.clue = n;
+        if (s.guess === o) s.guess = n;
+        if (s.last) { if (s.last.clue === o) s.last.clue = n; if (s.last.guess === o) s.last.guess = n; }
       },
+
       onPlayerLeave(pid) {
-        const era = isImp(pid);
-        s.impostors = s.impostors.filter(x => x !== pid);
-        s.seen = s.seen.filter(x => x !== pid);
-        s.order = s.order.filter(x => x !== pid);
-        s.endVotes = s.endVotes.filter(x => x !== pid);
-        s.out = s.out.filter(x => x !== pid);
-        delete s.clues[pid]; delete s.votes[pid];
-        for (const k of Object.keys(s.votes)) if (s.votes[k] === pid) delete s.votes[k];
-        if (api.players.length < 3) {                     // sem gente suficiente: volta para o menu
-          if (s.phase !== 'setup') { api.clearTimer(); s.phase = 'setup'; api.setEvent('Ficamos com menos de 3 jogadores. Ajustem as regras e comecem de novo.'); }
-          return;
+        for (const t of s.teams) t.players = t.players.filter(x => x !== pid);
+        delete s.clueN[pid]; delete s.guessN[pid];
+        if (s.phase === 'setup') return;
+        const era = s.clue === pid || s.guess === pid;
+        if (era && (s.phase === 'ready' || s.phase === 'play')) endTurn(`Um jogador saiu no meio da vez. Time ${s.turn + 1}: ${s.hits} ${s.hits === 1 ? 'acerto' : 'acertos'}.`);
+        if (s.teams.some(t => t.players.length < 2)) {
+          clearRes(); api.clearTimer();
+          s.phase = 'setup'; s.word = null; s.clue = null; s.guess = null;
+          s.cfg.auto = false; ensureTeams(s.teams.length);
+          api.setEvent('Um time ficou com menos de 2 jogadores. Refaçam os times.', null);
         }
-        if (era) return abortRound('O impostor saiu da sala! Rodada encerrada.');
-        if (s.turn >= totalTurns() && s.phase === 'clues') startDiscuss(s.cfg.discussSec * 1000);
       },
+
       view(me) {
-        const rev = revealed();
-        const out = {
-          phase: s.phase, round: s.round, rounds: s.cfg.rounds,
-          cfg: { ...s.cfg, impostorsReal: nImp() },
-          cats: CATEGORIES,
-          cat: (s.cfg.hint || rev) && s.phase !== 'setup' ? { id: s.cat, name: catName(s.cat), emoji: (CATEGORIES.find(c => c.id === s.cat) || {}).emoji } : null,
-          seen: s.seen, order: s.order, clues: s.clues, turn: s.turn, laps: s.cfg.laps,
-          speaker: speaker(), totalTurns: totalTurns(),
-          endVotes: s.endVotes, voted: Object.keys(s.votes).filter(x => alive().includes(x)),
-          out: s.out, revote: s.revote, result: s.result, guess: s.guess,
-          needGuess: !!s.needGuess, gain: s.gain || {}, scores: s.scores,
-          turnMs: s.discussMs, alive: alive(),
-          word: rev ? s.word : null,                       // a TV só vê a palavra no resultado
-          whiteWord: rev && s.cfg.white ? s.white : null,
-          impostors: rev ? s.impostors : null,
-          nAlive: alive().length, need: maioria(alive().length),
+        const eu = me ? me.pid : null;
+        const souClue = !!eu && eu === s.clue;
+        const publico = s.phase === 'result' || s.phase === 'end';
+        return {
+          phase: s.phase, round: s.round, turn: s.turn,
+          cfg: s.cfg, teamOpts: TEAM_OPTS.filter(n => api.players.length >= 2 * n), roundOpts: ROUND_OPTS, timeOpts: TIME_OPTS,
+          diffs: DIFFS.map(d => ({ id: d.id, name: d.name })), cats: CATS, catIds: CAT_IDS,
+          colors: TEAM_COLORS, canBegin: canBegin(),
+          teams: s.teams.map(t => ({ players: t.players, score: t.score })),
+          myTeam: eu ? (teamOf(eu) < 0 ? null : teamOf(eu)) : null,
+          clue: s.clue, guess: s.guess, hits: s.hits,
+          turnMs: s.cfg.turnSec * 1000, turnSec: s.cfg.turnSec, allowPass: s.cfg.pass,
+          // PRIVADO: só o celular de quem está dando as dicas recebe a palavra
+          word: souClue && s.phase === 'play' && s.word ? s.word.w : null,
+          wordCat: souClue && s.phase === 'play' && s.word ? s.word.cat : null,
+          turnWords: publico ? s.turnWords : (souClue ? s.turnWords : null),
+          last: publico ? s.last : null,
+          resultMs: RESULT_MS,
         };
-        if (me) {                                          // parte privada: só o dono vê
-          const imp = isImp(me.pid);
-          out.mine = s.phase === 'setup' ? null : {
-            impostor: imp && !s.cfg.white,
-            word: imp ? (s.cfg.white ? s.white : '') : s.word,
-            hint: imp && !s.cfg.white && s.cfg.hint ? catName(s.cat) : '',
-            seen: s.seen.includes(me.pid), out: s.out.includes(me.pid),
-            myClue: (s.clues[me.pid] || []).length, myVote: s.votes[me.pid] || null,
-            endVoted: s.endVotes.includes(me.pid), canGuess: s.phase === 'guess' && imp && !s.guess,
-          };
-        }
-        return out;
       },
-      serialize: () => ({ s }),
+
+      serialize: () => ({ kind: KIND, s }),
       restore(d) {
-        if (!d || !d.s) return;
+        // estado salvo de outro jogo (ou de outra versão): ignora com segurança e recomeça na preparação
+        if (!d || d.kind !== KIND || !d.s || d.s.kind !== KIND || !Array.isArray(d.s.teams)) { ensureTeams(s.cfg.teams); return; }
         s = { ...s, ...d.s };
-        s.cfg = { ...JSON.parse(JSON.stringify(DEFAULT_CFG)), ...(s.cfg || {}) };
-        if (s.phase === 'discuss' && !api.timerEnd) api.armTimer(s.discussMs || 60000);
+        s.cfg = { ...defCfg(), ...(s.cfg || {}) };
+        s.teams = s.teams.map(t => ({ players: Array.isArray(t && t.players) ? t.players : [], score: Number(t && t.score) || 0 }));
+        if (s.phase === 'setup') ensureTeams(s.cfg.teams);
+        if (s.phase === 'result') { clearRes(); resT = setTimeout(() => { resT = null; advance(); api.broadcast(); }, RESULT_MS); }
+        if (s.phase === 'play' && !api.timerEnd) api.armTimer(s.cfg.turnSec * 1000);   // o núcleo já rearma pelo core.timerEnd; isto é só o plano B
       },
     };
     return inst;

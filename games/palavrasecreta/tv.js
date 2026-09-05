@@ -1,159 +1,122 @@
-// Palavra Secreta — tela da TV. A palavra secreta só aparece no resultado.
+// Palavra Secreta — tela da TV. Placar público, cronômetro gigante. A TV nunca recebe a palavra.
 (() => {
+  let lastTick = -1, lastTurnTag = '', lastPhase = '';
   const style = `
-    .ps-stage { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; }
-    .ps-tag { font-size:clamp(15px,1.5vw,22px); font-weight:800; letter-spacing:3px; text-transform:uppercase; color:var(--mut); }
-    .ps-big { font-size:clamp(28px,4.2vw,70px); font-weight:900; line-height:1.05; }
-    .ps-mid { font-size:clamp(20px,2.4vw,38px); font-weight:800; }
-    .ps-ring { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; align-items:flex-start; }
-    .ps-p { min-width:150px; max-width:230px; padding:14px 16px; border-radius:18px; background:#182036; border:3px solid transparent; display:flex; flex-direction:column; gap:8px; align-items:center; animation:pspop .3s; }
-    .ps-p.now { border-color:#facc15; box-shadow:0 0 40px #facc1555; transform:scale(1.05); }
-    .ps-p.ok { border-color:#22c55e; }
-    .ps-p.dead { opacity:.35; }
-    .ps-p .who { font-size:clamp(16px,1.6vw,24px); }
-    .ps-p .cl { display:flex; flex-direction:column; gap:4px; }
-    .ps-p .cl b { font-size:clamp(17px,1.9vw,30px); font-weight:900; word-break:break-word; }
-    .ps-p .cl small { font-size:14px; color:var(--mut); }
-    .ps-p .st { font-size:22px; }
-    @keyframes pspop { from { transform:translateY(12px); opacity:0; } }
-    .ps-clock { font-size:clamp(70px,11vw,190px); font-weight:900; font-variant-numeric:tabular-nums; line-height:1; }
+    .ps-stage { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2vh; text-align:center; padding:0 2vw; }
+    .ps-logo { font-size:clamp(28px,3.4vw,58px); font-weight:900; letter-spacing:-1px; }
+    .ps-logo span { color:#2dd4bf; }
+    .ps-tname { font-size:clamp(30px,4.6vw,78px); font-weight:900; line-height:1; letter-spacing:-1px; }
+    .ps-roles { display:flex; gap:2vw; flex-wrap:wrap; justify-content:center; font-size:clamp(15px,1.5vw,24px); font-weight:800; color:#cbd5e1; }
+    .ps-roles small { display:block; font-size:clamp(11px,.85vw,15px); color:#8ba0b8; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; }
+    .ps-clock { font-size:clamp(90px,17vw,300px); font-weight:900; line-height:.9; font-variant-numeric:tabular-nums; letter-spacing:-4px; }
     .ps-clock.low { color:#ef4444; animation:pspulse .5s infinite alternate; }
-    @keyframes pspulse { to { transform:scale(1.05); } }
-    .ps-word { display:inline-block; padding:14px 40px; border-radius:22px; background:#0ea5e9; color:#04121f; font-size:clamp(30px,5vw,80px); font-weight:900; animation:psword .5s; }
-    @keyframes psword { 0% { transform:scale(.5) rotate(-4deg); opacity:0; } 70% { transform:scale(1.1); } 100% { transform:scale(1); } }
-    .ps-dots { font-size:clamp(30px,5vw,80px); font-weight:900; letter-spacing:14px; color:var(--mut); }
-    .ps-rank { width:100%; max-width:860px; display:flex; flex-direction:column; gap:10px; }
-    .ps-row { display:flex; align-items:center; gap:16px; padding:12px 20px; border-radius:16px; background:#182036; font-size:clamp(18px,2.1vw,30px); }
-    .ps-row .g { flex:1; text-align:left; }
-    .ps-row .p { font-weight:900; }
-    .ps-chip { padding:10px 18px; border-radius:12px; background:#182036; border:1px solid #2a3350; font-size:clamp(15px,1.5vw,22px); font-weight:800; }
-    .ps-chips { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+    @keyframes pspulse { to { transform:scale(1.07); } }
+    .ps-hits { font-size:clamp(18px,2vw,34px); font-weight:900; color:#2dd4bf; letter-spacing:2px; text-transform:uppercase; }
+    .ps-big { font-size:clamp(70px,12vw,220px); font-weight:900; line-height:1; }
+    .ps-sub { font-size:clamp(14px,1.4vw,22px); color:#9aa6c0; font-weight:700; }
+    .ps-list { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:80%; }
+    .ps-chip { padding:8px 16px; border-radius:99px; font-weight:800; font-size:clamp(13px,1.15vw,19px); background:#ffffff14; }
+    .ps-chip.no { color:#7e8ba3; text-decoration:line-through; }
+    .ps-sc { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:12px; background:#0b0e17; font-size:22px; font-weight:900; }
+    .ps-sc b { flex:1; }
+    .ps-bar { height:10px; border-radius:99px; background:#0b0e17; overflow:hidden; width:60%; }
+    .ps-bar i { display:block; height:100%; background:#14b8a6; transition:width .3s linear; }
   `;
-  let cur = null, lastK = '', lastPhase = '', step = 0, timers = [];
-  const kill = () => { timers.forEach(clearTimeout); timers = []; };
+  const tname = i => 'Time ' + (i + 1);
 
-  const ply = (c, pid) => c.C.players.find(p => p.pid === pid);
-  const dataKey = G => [G.phase, G.round, G.turn, G.seen.length, G.voted.length, G.endVotes.length, G.out.length, G.result ? 1 : 0, G.guess ? 1 : 0, JSON.stringify(G.clues), G.phase === 'setup' ? JSON.stringify(G.cfg) : ''].join('|');
-
-  function card(c, pid, extra) {
-    const p = ply(c, pid); if (!p) return '';
-    const G = c.G, cl = G.clues[pid] || [];
-    const cls = ['ps-p', G.speaker === pid ? 'now' : '', G.out.includes(pid) ? 'dead' : '', extra && extra.ok ? 'ok' : ''].join(' ');
-    return `<div class="${cls}"><span class="who">${c.nm(p)}</span>
-      ${cl.length ? `<div class="cl">${cl.map((x, i) => `<b>${c.esc(x)}</b>${i === 0 && cl.length > 1 ? '' : ''}`).join('')}</div>` : `<div class="cl"><small>${G.speaker === pid ? 'falando agora…' : '—'}</small></div>`}
-      ${extra && extra.st ? `<div class="st">${extra.st}</div>` : ''}</div>`;
+  function tick(c) {
+    const el = document.getElementById('ps-clock'); if (!el) return;
+    const G = c.G, r = c.remaining();
+    if (r === null) { el.textContent = '–'; el.classList.remove('low'); return; }
+    const n = Math.ceil(r);
+    el.textContent = n;
+    el.classList.toggle('low', r <= 10.05 && G.phase === 'play');
+    const bar = document.getElementById('ps-bar');
+    if (bar) bar.style.width = Math.min(100, r / (G.turnMs / 1000) * 100) + '%';
+    if (G.phase === 'play' && r > 0 && r <= 5.05 && n !== lastTick) { lastTick = n; c.beep(1046, .07, 'square', .16); }
   }
-
-  function stageHtml(c) {
-    const G = c.G, esc = c.esc; if (!G) return '';
-    const cat = G.cat ? `${G.cat.emoji} ${esc(G.cat.name)}` : '';
-    if (G.phase === 'setup') {
-      const cfg = G.cfg;
-      return `<div class="ps-stage"><div style="font-size:clamp(60px,9vw,140px)">🕵️‍♂️</div><div class="ps-big">Palavra Secreta</div>
-        <div class="ps-tag">ajustem as regras no celular</div>
-        <div class="ps-chips"><div class="ps-chip">${cfg.impostorsReal} impostor${cfg.impostorsReal > 1 ? 'es' : ''}</div>
-          <div class="ps-chip">${cfg.hint ? 'com dica de categoria' : 'sem dica'}</div>
-          <div class="ps-chip">${cfg.white ? 'Mister White ligado' : 'sem Mister White'}</div>
-          <div class="ps-chip">${cfg.discussSec}s de discussão</div>
-          <div class="ps-chip">${cfg.rounds} palavras</div>
-          <div class="ps-chip">${cfg.laps} volta${cfg.laps > 1 ? 's' : ''} de dicas</div></div>
-        <div class="ps-chips">${G.cats.map(k => `<div class="ps-chip" style="opacity:${cfg.cats.includes(k.id) ? 1 : .25}">${k.emoji} ${esc(k.name)}</div>`).join('')}</div></div>`;
-    }
-    if (G.phase === 'reveal') {
-      return `<div class="ps-stage"><div class="ps-tag">Rodada ${G.round} de ${G.rounds}${cat ? ' · ' + cat : ''}</div>
-        <div class="ps-big">👀 Vejam a palavra no celular</div>
-        <div class="ps-tag">ninguém mostra a tela para ninguém</div>
-        <div class="ps-ring">${c.C.players.map(p => `<div class="ps-p ${G.seen.includes(p.pid) ? 'ok' : ''}"><span class="who">${c.nm(p)}</span><div class="st">${G.seen.includes(p.pid) ? '✅ já vi' : '⏳'}</div></div>`).join('')}</div></div>`;
-    }
-    if (G.phase === 'clues') {
-      const sp = ply(c, G.speaker);
-      return `<div class="ps-stage"><div class="ps-tag">Rodada ${G.round} de ${G.rounds}${cat ? ' · ' + cat : ''} · dica ${Math.floor(G.turn / Math.max(1, G.order.length)) + 1} de ${G.laps}</div>
-        <div class="ps-big">${sp ? `${c.nm(sp)} fala uma palavra` : 'Dicas dadas'}</div>
-        <div class="ps-ring">${G.order.map(pid => card(c, pid)).join('')}</div></div>`;
-    }
-    if (G.phase === 'discuss') {
-      const r = c.remaining();
-      return `<div class="ps-stage"><div class="ps-tag">${G.revote ? 'empate · discussão relâmpago' : 'discussão'}${cat ? ' · ' + cat : ''}</div>
-        <div class="ps-clock ${r !== null && r <= 15 ? 'low' : ''}" id="timer">⏱ ${r === null ? '0:00' : c.fmt(r)}</div>
-        <div class="ps-ring">${G.order.filter(p => !G.out.includes(p)).map(pid => card(c, pid)).join('')}</div>
-        <div class="ps-tag">${G.endVotes.length} de ${G.need} querem votar agora</div></div>`;
-    }
-    if (G.phase === 'vote') {
-      return `<div class="ps-stage"><div class="ps-tag">votação${cat ? ' · ' + cat : ''}</div><div class="ps-big">🗳️ Quem é o impostor?</div>
-        <div class="ps-ring">${G.order.map(pid => card(c, pid, { st: G.out.includes(pid) ? '💀' : (G.voted.includes(pid) ? '✅ votou' : '🤔'), ok: G.voted.includes(pid) })).join('')}</div>
-        <div class="ps-tag">${G.voted.length} de ${G.nAlive} votaram · o voto é secreto</div></div>`;
-    }
-    if (G.phase === 'result') {
-      const R = G.result || {};
-      const alvo = ply(c, R.out);
-      if (R.aborted) return `<div class="ps-stage"><div style="font-size:90px">🚪</div><div class="ps-big">Rodada encerrada</div><div class="ps-mid">A palavra era <span class="ps-word">${esc(G.word || '')}</span></div></div>`;
-      if (R.tie) return `<div class="ps-stage"><div style="font-size:90px">🤝</div><div class="ps-big">Empate na votação!</div>
-        <div class="ps-mid">${R.over ? 'Empatou de novo: o impostor escapou.' : 'Ninguém foi eliminado. Mais 30 segundos.'}</div>
-        ${R.over ? `<div class="ps-mid">A palavra era <span class="ps-word">${esc(G.word || '')}</span> · impostor: ${(G.impostors || []).map(p => c.nm(ply(c, p))).join(' ')}</div>` : ''}</div>`;
-      if (step === 0) return `<div class="ps-stage"><div class="ps-tag">votação fechada</div><div class="ps-big">O mais votado foi…</div><div class="ps-dots">• • •</div></div>`;
-      if (step === 1) return `<div class="ps-stage"><div class="ps-tag">o mais votado foi</div><div class="ps-big" style="font-size:clamp(40px,7vw,110px)">${c.nm(alvo)}</div><div class="ps-dots">• • •</div></div>`;
-      return `<div class="ps-stage"><div class="ps-big" style="font-size:clamp(34px,5vw,80px)">${c.nm(alvo)} ${R.wasImp ? 'ERA o impostor! 🕵️‍♂️' : 'NÃO era o impostor. 😬'}</div>
-        ${G.word ? `<div class="ps-mid">A palavra era <span class="ps-word">${esc(G.word)}</span></div>` : ''}
-        ${G.whiteWord ? `<div class="ps-tag">o impostor tinha "${esc(G.whiteWord)}"</div>` : ''}
-        <div class="ps-mid">${R.winner === 'inocentes' ? '✅ Os inocentes venceram a rodada!' : R.winner === 'impostores' ? `😈 ${(G.impostors || []).map(p => c.nm(ply(c, p))).join(' ')} venceu!` : 'A caçada continua…'}</div></div>`;
-    }
-    if (G.phase === 'guess') {
-      return `<div class="ps-stage"><div style="font-size:90px">🎯</div><div class="ps-big">Chance final do impostor</div>
-        <div class="ps-mid">${(G.impostors || []).map(p => c.nm(ply(c, p))).join(' ')} está digitando um chute…</div>
-        <div class="ps-tag">acertar a palavra vale +1 ponto</div></div>`;
-    }
-    const ordem = [...c.C.players].sort((a, b) => (G.scores[b.pid] || 0) - (G.scores[a.pid] || 0));
-    const R = G.result || {};
-    return `<div class="ps-stage">
-      ${G.phase === 'end' ? `<div style="font-size:100px">🏆</div><div class="ps-big">${c.nm(ordem[0])} venceu!</div>`
-        : `<div class="ps-big">Palavra: <span class="ps-word">${esc(G.word || '')}</span></div>
-           <div class="ps-mid">${R.winner === 'inocentes' ? '✅ Inocentes venceram' : R.winner === 'impostores' ? '😈 Impostor venceu' : 'Sem vencedor'}${G.guess && G.guess.text ? ` · chute: "${esc(G.guess.text)}" ${G.guess.ok ? '✅' : '❌'}` : ''}</div>`}
-      <div class="ps-rank">${ordem.map((p, i) => `<div class="ps-row"><span style="min-width:44px">${i + 1}º</span>${c.nm(p)}<span class="g">${(G.gain || {})[p.pid] ? `+${G.gain[p.pid]}` : ''}</span><span class="p">${G.scores[p.pid] || 0}</span></div>`).join('')}</div>
-      <div class="ps-tag">${G.phase === 'end' ? 'toque em "Jogar de novo" no celular' : 'toque em "Próxima palavra" no celular'}</div></div>`;
-  }
-
-  function paint() { const el = document.getElementById('ps-st'); if (el && cur) el.innerHTML = stageHtml(cur); }
 
   ARCADE.register('palavrasecreta', {
     tv: {
-      mount() { return `<style>${style}</style><div id="ps-st" style="width:100%"></div>`; },
+      mount() { return `<style>${style}</style><div class="ps-stage" id="ps-stage"></div>`; },
+
       html(c) {
-        const G = c.G; if (!G) return {};
-        const suspense = G.phase === 'result';    // o painel não entrega o resultado antes do palco
-        const side = `<div class="box center"><div style="font-size:28px;font-weight:900">🕵️‍♂️ Palavra Secreta</div>
-            <p class="sub mut">${G.phase === 'setup' ? 'ajustando as regras' : `Palavra ${G.round} de ${G.rounds}`}${G.cat ? ` · ${G.cat.emoji} ${c.esc(G.cat.name)}` : ''}</p></div>
-          ${G.phase === 'discuss' ? '' : ''}
-          <div class="box"><p class="sub mut" style="margin-bottom:8px">Placar</p>${c.playersHtml({
-            info: p => `${(G.scores[p.pid] || 0) - (suspense ? (G.gain || {})[p.pid] || 0 : 0)} pts`,
-            tag: p => suspense ? '' : (G.out.includes(p.pid) ? ' 💀' : '') + ((G.impostors || []).includes(p.pid) ? ' 🕵️' : ''),
-          })}</div>
-          <div class="event">${suspense ? '🥁 revelando…' : (c.C.event ? c.hl(c.C.event.text) : '')}</div>`;
+        const { G, esc } = c;
+        if (!G || !G.teams) return { side: '' };
+        const col = i => G.colors[i % G.colors.length];
+        const ply = pid => c.C.players.find(p => p.pid === pid) || null;
+        let side = `<div class="box center"><p class="sub mut">${G.phase === 'setup' ? 'Escolhendo as regras' : `Rodada ${Math.min(G.round, G.cfg.rounds)} de ${G.cfg.rounds}`}</p>
+          <div style="font-size:26px;font-weight:900;margin-top:4px">🗝️ Palavra Secreta</div></div>`;
+        side += `<div class="box"><p class="sub mut" style="margin-bottom:8px">Placar</p>
+          <div style="display:flex;flex-direction:column;gap:10px">${G.teams.map((t, i) => `
+            <div class="ps-sc" style="border-left:7px solid ${col(i)};${i === G.turn && G.phase !== 'setup' && G.phase !== 'end' ? 'outline:2px solid #fff' : ''}">
+              <b style="color:${col(i)}">${tname(i)}</b><span>${t.score}</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 4px 4px 14px">${t.players.map(pid => {
+              const p = ply(pid); if (!p) return '';
+              const papel = pid === G.clue && G.phase !== 'setup' ? ' 🗝️' : pid === G.guess && G.phase !== 'setup' ? ' 👂' : '';
+              return `<span class="nm" style="background:#ffffff12;color:#cbd5e1;font-size:14px">${esc(p.name)}${papel}${p.on === false ? ' 📵' : ''}</span>`;
+            }).join('')}</div>`).join('')}</div></div>`;
+        side += `<div class="event">${c.C.event ? c.hl(c.C.event.text) : ''}</div>`;
         return { side };
       },
+
       after(c) {
-        const G = c.G; if (!G) return;
-        cur = c;
-        const k = dataKey(G);
-        if (k === lastK) return;
-        lastK = k;
-        const fase = `${G.phase}:${G.round}:${G.out.length}:${G.revote}`;
-        if (fase !== lastPhase) {
-          lastPhase = fase; kill(); step = 0;
-          if (G.phase === 'result' && G.result && !G.result.tie && !G.result.aborted) {
-            paint();
-            timers.push(setTimeout(() => { step = 1; paint(); c.chord([392, 523]); }, 1700));
-            timers.push(setTimeout(() => { step = 2; paint(); c.chord(G.result.wasImp ? [523, 659, 784, 1046] : [440, 349, 262]); }, 3600));
-            return;
+        const { G, esc } = c;
+        const st = document.getElementById('ps-stage');
+        if (!st || !G || !G.teams) return;
+        const col = i => G.colors[i % G.colors.length];
+        const ply = pid => c.C.players.find(p => p.pid === pid) || null;
+        const nome = pid => { const p = ply(pid); return p ? esc(p.name) : '—'; };
+        const nmc = pid => { const p = ply(pid); return p ? `<span class="nm" style="${c.nmStyle(p)}">${esc(p.name)}</span>` : '—'; };
+
+        const tag = `${G.phase}:${G.round}:${G.turn}:${G.hits}:${G.clue}:${G.guess}:${G.teams.map(t => t.score).join(',')}`;
+        if (tag !== lastPhase) {
+          lastPhase = tag;
+          let h = '';
+          if (G.phase === 'setup') {
+            h = `<div class="ps-logo">Palavra <span>Secreta</span></div>
+              <div class="ps-sub">Em times: um dá as dicas falando, o colega adivinha.</div>
+              <div class="ps-sub">Ajustem as regras no celular e toquem em “Começar”.</div>`;
+          } else if (G.phase === 'ready') {
+            h = `<div class="ps-tname" style="color:${col(G.turn)}">${tname(G.turn)}</div>
+              <div class="ps-roles"><div><small>🗝️ dá as dicas</small>${nmc(G.clue)}</div><div><small>👂 adivinha</small>${nmc(G.guess)}</div></div>
+              <div class="ps-sub">${nome(G.clue)} toca em “▶ Começar” no celular.</div>`;
+          } else if (G.phase === 'play') {
+            h = `<div class="ps-tname" style="color:${col(G.turn)}">${tname(G.turn)}</div>
+              <div class="ps-roles"><div><small>🗝️ dá as dicas</small>${nmc(G.clue)}</div><div><small>👂 adivinha</small>${nmc(G.guess)}</div></div>
+              <div class="ps-clock" id="ps-clock">–</div><div class="ps-bar"><i id="ps-bar"></i></div>
+              <div class="ps-hits">Rodada: ${G.hits} ${G.hits === 1 ? 'acerto' : 'acertos'}</div>`;
+          } else if (G.phase === 'result') {
+            const L = G.last || { team: G.turn, hits: 0, words: [] };
+            h = `<div class="ps-sub">Fim da rodada</div>
+              <div class="ps-tname" style="color:${col(L.team)}">${tname(L.team)}</div>
+              <div class="ps-big">${L.hits}</div><div class="ps-hits">${L.hits === 1 ? 'acerto' : 'acertos'}</div>
+              ${(L.words || []).length ? `<div class="ps-list">${L.words.map(w => `<span class="ps-chip ${w.ok ? '' : 'no'}">${w.ok ? '✅ ' : '⏭ '}${esc(w.w)}</span>`).join('')}</div>` : ''}`;
+          } else if (G.phase === 'end') {
+            const best = Math.max(...G.teams.map(t => t.score));
+            const win = G.teams.map((t, i) => i).filter(i => G.teams[i].score === best);
+            h = `<div style="font-size:clamp(60px,8vw,130px)">🏆</div>
+              <div class="ps-tname" style="color:${win.length > 1 ? '#fff' : col(win[0])}">${win.length > 1 ? 'Empate!' : tname(win[0]) + ' venceu!'}</div>
+              <div class="ps-hits">${win.map(i => tname(i)).join(' e ')} · ${best} ${best === 1 ? 'ponto' : 'pontos'}</div>
+              <div class="ps-sub">Toque em “Jogar de novo” no celular.</div>`;
           }
-          if (G.phase === 'clues') c.beep(660, .08, 'triangle', .12);
-          else if (G.phase === 'discuss') c.chord([523, 659]);
-          else if (G.phase === 'vote') c.chord([659, 523]);
-          else if (G.phase === 'end') c.chord([523, 659, 784, 1046]);
-          else if (G.phase === 'result') c.chord([392, 330]);
-          step = 2;
+          st.innerHTML = h;
         }
-        paint();
+
+        // aviso grande na troca de vez + sons
+        const t2 = `${G.round}:${G.turn}:${G.phase}`;
+        if (G.phase === 'ready' && t2 !== lastTurnTag) {
+          lastTurnTag = t2; lastTick = -1;
+          c.turnover(`<div class="round">Rodada ${G.round} de ${G.cfg.rounds}</div>
+            <div><small>AGORA JOGA</small><div class="who2" style="background:${col(G.turn)};color:#08211f">${tname(G.turn)}</div></div>
+            <div><small>🗝️ DÁ AS DICAS</small><div class="who2 sm" style="background:#fff;color:#111">${nome(G.clue)}</div></div>
+            <div><small>👂 ADIVINHA</small><div class="who2 sm" style="background:#fff;color:#111">${nome(G.guess)}</div></div>`, 3000);
+          c.chord([523, 659, 784]);
+        } else if (G.phase === 'result' && t2 !== lastTurnTag) { lastTurnTag = t2; c.chord([784, 587, 392]); }
+        else if (G.phase !== 'ready' && G.phase !== 'result') lastTurnTag = t2;
+        tick(c);
       },
     },
   });
+  setInterval(() => { const c = ARCADE.ctx(); if (c && c.C && c.C.gameId === 'palavrasecreta' && c.G) tick(c); }, 120);
 })();
