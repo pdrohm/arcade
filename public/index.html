@@ -101,7 +101,9 @@
 
   function act(a, el) {
     const c = ctx;
-    switch (a) {
+    // ações da tela de entrada e da prateleira só valem lá; dentro de um jogo, o jogo é quem trata (evita colisão de nomes)
+    const emJogo = c.S && c.you && c.C.screen === 'game';
+    switch (emJogo && ['cor', 'entrar', 'jogar', 'ir', 'criar'].includes(a) ? '' : a) {
       case 'ir': { const v = ($('#code').value || '').trim().toUpperCase(); if (v.length !== 4) return A.toast('O código tem 4 letras.'); return A.goRoom(v); }
       case 'criar': return A.createRoom();
       case 'trocar': if (confirm('Ir para outra sala? Seu lugar nesta sala fica guardado.')) location.href = '/'; return;

@@ -65,7 +65,7 @@
   const exportImg = () => { if (!cv) return ''; const out = document.createElement('canvas'); out.width = 480; out.height = 480; out.getContext('2d').drawImage(cv, 0, 0, 480, 480); return out.toDataURL('image/jpeg', 0.82); };
   const TOOLS = [['pen', '✏️', 'caneta'], ['eraser', '🧽', 'borracha'], ['line', '📏', 'reta'], ['rect', '▭', 'retângulo'], ['circle', '◯', 'círculo']];
   function toolsHtml() {
-    return `<div class="tsf-tools">${CORES.map(c => `<div class="tsf-cor ${tool !== 'eraser' && cor === c ? 'sel' : ''}" style="background:${c}" data-a="cor" data-c="${c}"></div>`).join('')}</div>
+    return `<div class="tsf-tools">${CORES.map(c => `<div class="tsf-cor ${tool !== 'eraser' && cor === c ? 'sel' : ''}" style="background:${c}" data-a="tcor" data-c="${c}"></div>`).join('')}</div>
       <div class="tsf-tools">${TOOLS.map(([k, ic, nome]) => `<div class="tsf-sz ${tool === k ? 'sel' : ''}" data-a="tool" data-k="${k}" title="${nome}">${ic}</div>`).join('')}
         <span style="flex:1"></span>
         <div class="tsf-sz ${hist.length ? '' : 'off'}" data-a="undo" title="desfazer">↶</div><div class="tsf-sz ${redo.length ? '' : 'off'}" data-a="redo" title="refazer">↷</div><div class="tsf-sz" data-a="limpar" title="limpar tudo">🗑</div></div>
@@ -76,7 +76,7 @@
     root.querySelectorAll('#tsf-tools [data-a]').forEach(el => el.onclick = ev => {
       ev.stopPropagation();
       const a = el.dataset.a;
-      if (a === 'cor') { cor = el.dataset.c; if (tool === 'eraser') tool = 'pen'; }
+      if (a === 'tcor') { cor = el.dataset.c; if (tool === 'eraser') tool = 'pen'; }
       else if (a === 'tool') tool = el.dataset.k;
       else if (a === 'tam') tam = Number(el.dataset.t);
       else if (a === 'undo') undo();

@@ -128,7 +128,7 @@
         if (G.phase === 'color') {
           if (G.wildBy === eu) {
             return `<div class="box center hi"><h2 style="font-size:26px">🌈 Escolha a cor</h2><p class="sub mut" style="margin-top:6px">A mesa vira essa cor.</p></div>
-              <div class="un-cores">${['r', 'y', 'g', 'b'].map(k => `<div class="un-cor" style="background:${HEX[k]}" data-a="cor" data-c="${k}">${NOME[k]}</div>`).join('')}</div>`;
+              <div class="un-cores">${['r', 'y', 'g', 'b'].map(k => `<div class="un-cor" style="background:${HEX[k]}" data-a="unoCor" data-c="${k}">${NOME[k]}</div>`).join('')}</div>`;
           }
           return `<div class="un-game"><div class="box center un-mesabox"><div class="big-emoji">🌈</div><p class="sub" style="margin-top:8px">${nm(ply(G.wildBy))} está escolhendo a cor…</p></div><div class="un-handwrap">${maoHtml()}</div></div>`;
         }
@@ -137,7 +137,7 @@
         if (G.phase === 'swap') {
           if (G.swapBy === eu) {
             return `<div class="box center hi"><h2 style="font-size:26px">🔁 Trocar de mão</h2><p class="sub mut" style="margin-top:6px">Escolha com quem você troca as cartas.</p></div>
-              <div style="display:flex;flex-direction:column;gap:10px">${G.order.filter(o => o.pid !== eu).map(o => { const p = ply(o.pid); return p ? `<button class="btn" data-a="trocar" data-pid="${o.pid}" style="display:flex;align-items:center;gap:12px;justify-content:flex-start"><span class="dot" style="background:${c.ci(p.color).hex};width:26px;height:26px"></span>${esc(p.name)} <span class="sub mut">${o.n} cartas</span></button>` : ''; }).join('')}</div>`;
+              <div style="display:flex;flex-direction:column;gap:10px">${G.order.filter(o => o.pid !== eu).map(o => { const p = ply(o.pid); return p ? `<button class="btn" data-a="unoTrocar" data-pid="${o.pid}" style="display:flex;align-items:center;gap:12px;justify-content:flex-start"><span class="dot" style="background:${c.ci(p.color).hex};width:26px;height:26px"></span>${esc(p.name)} <span class="sub mut">${o.n} cartas</span></button>` : ''; }).join('')}</div>`;
           }
           return `<div class="un-game"><div class="box center un-mesabox"><div class="big-emoji">🔁</div><p class="sub" style="margin-top:8px">${nm(ply(G.swapBy))} está trocando de mão…</p></div><div class="un-handwrap">${maoHtml()}</div></div>`;
         }
@@ -146,7 +146,7 @@
         function maoHtml() {
           if (!G.hand.length) return '';
           return `<div class="box" style="padding:0 4px"><div class="un-hand">${G.hand.map(card =>
-            cardHtml(card, card.ok ? 'ok' : '', '84px', card.ok ? `data-a="jogar" data-i="${card.i}"` : '')).join('')}</div>
+            cardHtml(card, card.ok ? 'ok' : '', '84px', card.ok ? `data-a="carta" data-i="${card.i}"` : '')).join('')}</div>
             <p class="sub center mut dica" style="padding:0 10px 12px;font-size:15px">${G.hand.length} cartas · ${G.hand.filter(x => x.ok).length ? 'as acesas dá para jogar' : minhaVez ? 'nenhuma serve: compre' : 'espere sua vez'}</p></div>`;
         }
 
@@ -208,11 +208,11 @@
         else if (a === 'cfgTarget') send({ t: 'config', cfg: { target: Number(el.dataset.v) } });
         else if (a === 'cfgTime') send({ t: 'config', cfg: { turnSec: Number(el.dataset.v) } });
         else if (a === 'begin') send({ t: 'begin' });
-        else if (a === 'jogar' || a === 'jogarComprada') send({ t: 'card', i: Number(el.dataset.i) });
+        else if (a === 'carta' || a === 'jogarComprada') send({ t: 'card', i: Number(el.dataset.i) });
         else if (a === 'comprar') send({ t: 'draw' });
         else if (a === 'passar') send({ t: 'pass' });
-        else if (a === 'cor') send({ t: 'color', c: el.dataset.c });
-        else if (a === 'trocar') send({ t: 'swap', pid: el.dataset.pid });
+        else if (a === 'unoCor') send({ t: 'color', c: el.dataset.c });
+        else if (a === 'unoTrocar') send({ t: 'swap', pid: el.dataset.pid });
         else if (a === 'uno') { ARCADE.beep(880, .18, 'square', .25); send({ t: 'uno' }); }
         else if (a === 'pegou') send({ t: 'catch' });
         else if (a === 'next') send({ t: 'next' });
