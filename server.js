@@ -74,9 +74,37 @@ function getRoom(code, create) {
   let r = rooms.get(code);
   if (!r && create) {
     if (rooms.size >= MAX_ROOMS) return null;   // teto de salas: barra enxurrada de "criar sala"
-    r = makeRoom(code); rooms.set(code, r); console.log(`  🚪 sala ${code} aberta`);
+    r = makeRoom(code); rooms.set(code, r); stats.totalRooms++; console.log(`  🚪 sala ${code} aberta`);
   }
   return r || null;
+}
+
+// ---------- métricas de uso (quantos estão jogando e se estamos perto dos tetos) ----------
+// senha do painel /stats: fica estável entre deploys (guardada no volume /data, fora do git).
+const STATS_KEY = (() => {
+  if (process.env.STATS_KEY) return process.env.STATS_KEY;
+  const f = path.join(path.dirname(SAVE_FILE), '.stats_key');
+  try { const k = fs.readFileSync(f, 'utf8').trim(); if (k) return k; } catch {}
+  const k = crypto.randomBytes(8).toString('hex');
+  try { fs.writeFileSync(f, k, { mode: 0o600 }); } catch {}   // só o dono lê o arquivo do segredo
+  return k;
+})();
+// comparação em tempo constante: não vaza o segredo por diferença de tempo de resposta
+function statsKeyOk(given) {
+  if (!given) return false;
+  const a = Buffer.from(given), b = Buffer.from(STATS_KEY);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+const stats = { peakRooms: 0, peakPlayers: 0, peakSockets: 0, totalRooms: 0, totalGames: 0, since: Date.now() };
+function snapshot() {
+  let players = 0, playing = 0;
+  for (const r of rooms.values()) { players += r.numPlayers ? r.numPlayers() : 0; if (r.playingNow && r.playingNow()) playing++; }
+  const sockets = (typeof wss !== 'undefined' && wss) ? wss.clients.size : 0;
+  const roomsN = rooms.size;
+  stats.peakRooms = Math.max(stats.peakRooms, roomsN);
+  stats.peakPlayers = Math.max(stats.peakPlayers, players);
+  stats.peakSockets = Math.max(stats.peakSockets, sockets);
+  return { rooms: roomsN, playing, players, sockets };
 }
 function closeRoom(code) {
   const r = rooms.get(code);
@@ -156,6 +184,7 @@ function makeRoom(code) {
   function startGame(id, byPlayer) {
     const mod = games.get(id);
     if (!mod) return;
+    stats.totalGames++;
     clearTimer();
     core.gameId = id;
     core.screen = 'game';
@@ -311,6 +340,8 @@ function makeRoom(code) {
   };
   room.tick = () => { if (markOnline()) broadcast(); };
   room.isEmpty = () => clients.size === 0;
+  room.numPlayers = () => core.players.length;
+  room.playingNow = () => core.screen === 'game';
   room.stop = () => clearTimeout(timerHandle);
   room.serialize = () => ({ core, gameId: core.gameId, gameState: game && typeof game.serialize === 'function' ? game.serialize() : null, lastActive: room.lastActive });
   room.restore = data => {
@@ -387,11 +418,40 @@ function serve(res, fp) {
   fs.createReadStream(fp).pipe(res);
 }
 function notFound(res) { res.writeHead(404, secHeaders({ 'Content-Type': 'text/plain' })); res.end('404'); }
+// página /stats (protegida por senha na URL): números de uso para ver do celular.
+function statsHtml() {
+  const s = snapshot();
+  const upMin = Math.round((Date.now() - stats.since) / 60000);
+  const up = upMin < 60 ? `${upMin} min` : `${Math.floor(upMin / 60)}h ${upMin % 60}min`;
+  const pct = (n, max) => Math.min(100, Math.round(n / max * 100));
+  const bar = (label, n, max) => `<div class="row"><span>${label}</span><b>${n} <small>/ ${max}</small></b></div><div class="bar"><i style="width:${pct(n, max)}%;background:${pct(n, max) > 80 ? '#ef4444' : pct(n, max) > 50 ? '#facc15' : '#22c55e'}"></i></div>`;
+  const big = (n, label) => `<div class="card"><div class="n">${n}</div><div class="l">${label}</div></div>`;
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="5"><title>Arcade · uso</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0b0e17;color:#e5e7eb;font:15px/1.5 system-ui,-apple-system,sans-serif;padding:18px}h1{font-size:20px;margin:0 0 2px}.sub{color:#94a3b8;font-size:13px;margin-bottom:18px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px}.card{background:#161b2c;border:1px solid #232a42;border-radius:14px;padding:16px;text-align:center}.n{font-size:34px;font-weight:900}.l{color:#94a3b8;font-size:13px;margin-top:2px}.box{background:#161b2c;border:1px solid #232a42;border-radius:14px;padding:16px;margin-bottom:12px}.row{display:flex;justify-content:space-between;margin:10px 0 4px}small{color:#64748b}.bar{height:8px;background:#0b0e17;border-radius:6px;overflow:hidden}.bar i{display:block;height:100%}.foot{color:#64748b;font-size:12px;text-align:center;margin-top:14px}</style></head>
+<body><h1>🕹️ Arcade — uso agora</h1><div class="sub">atualiza sozinho a cada 5s · no ar há ${up}</div>
+<div class="grid">${big(s.playing, 'jogos rolando')}${big(s.players, 'jogadores')}${big(s.rooms, 'salas abertas')}${big(s.sockets, 'conexões')}</div>
+<div class="box"><div class="sub" style="margin:0 0 4px">Perto dos limites?</div>${bar('Salas', s.rooms, MAX_ROOMS)}${bar('Conexões', s.sockets, MAX_SOCKETS)}</div>
+<div class="box"><div class="row"><span>Pico de jogadores</span><b>${stats.peakPlayers}</b></div><div class="row"><span>Pico de conexões</span><b>${stats.peakSockets}</b></div><div class="row"><span>Salas abertas (total)</span><b>${stats.totalRooms}</b></div><div class="row"><span>Partidas começadas (total)</span><b>${stats.totalGames}</b></div></div>
+<div class="foot">verde = tranquilo · amarelo = enchendo · vermelho = perto do teto</div></body></html>`;
+}
 const TV_UA = /smart-?tv|tizen|web0s|webos|bravia|android tv|googletv|crkey|aft[a-z]|hbbtv|netcast|viera|roku|philipstv|vidaa/i;
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
   // navegador de TV (Samsung/LG/Sony/Android TV/Fire TV/Chromecast/Roku…) abrindo a raiz -> vai direto para /tv
   if (url === '/' && TV_UA.test(req.headers['user-agent'] || '')) { res.writeHead(302, secHeaders({ Location: '/tv' })); return res.end(); }
+  // painel de uso, protegido por senha na URL: /stats?key=SEGREDO  (JSON: &fmt=json)
+  if (url === '/stats') {
+    // aceita a senha pelo header (Authorization: Bearer / X-Stats-Key) ou, para abrir no navegador, por ?key=
+    const m = (req.url.split('?')[1] || '').match(/(?:^|&)key=([^&]*)/);
+    const fromHeader = (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '') || req.headers['x-stats-key'] || '';
+    const given = fromHeader || (m ? decodeURIComponent(m[1]) : '');
+    if (!statsKeyOk(given)) { res.writeHead(403, secHeaders({ 'Content-Type': 'text/plain' })); return res.end('403'); }
+    if (/(?:^|&)fmt=json(?:&|$)/.test(req.url.split('?')[1] || '')) {
+      const body = JSON.stringify({ ...snapshot(), peak: { players: stats.peakPlayers, sockets: stats.peakSockets, rooms: stats.peakRooms }, total: { rooms: stats.totalRooms, games: stats.totalGames }, limits: { rooms: MAX_ROOMS, sockets: MAX_SOCKETS }, uptimeMin: Math.round((Date.now() - stats.since) / 60000) });
+      res.writeHead(200, secHeaders({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })); return res.end(body);
+    }
+    res.writeHead(200, secHeaders({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' })); return res.end(statsHtml());
+  }
   // arquivos de tela dos jogos: /games/<id>/(tv|phone).js
   const gm = url.match(/^\/games\/([a-z0-9_-]+)\/(tv|phone)\.js$/i);
   if (gm) {
@@ -528,7 +588,7 @@ wss.on('connection', (ws, req) => {
   ws.on('error', () => {});
 });
 setInterval(() => { for (const ws of wss.clients) { if (ws.isAlive === false) { ws.terminate(); continue; } ws.isAlive = false; ws.ping(); } }, 30000);
-setInterval(() => { for (const r of rooms.values()) r.tick(); }, 15000);
+setInterval(() => { for (const r of rooms.values()) r.tick(); snapshot(); }, 15000);   // snapshot() também amostra o pico
 setInterval(() => {
   const now = Date.now();
   for (const [code, r] of rooms) {
@@ -537,6 +597,12 @@ setInterval(() => {
     if (r.isEmpty() && idle > (r.everAttached ? ROOM_TTL_MS : EMPTY_TTL_MS)) closeRoom(code);
   }
   saveState();
+}, 60000);
+// linha de uso nos logs, 1x por minuto (só quando tem gente, para não poluir)
+setInterval(() => {
+  const s = snapshot();
+  if (!s.sockets && !s.rooms) return;
+  console.log(`  📊 agora: ${s.rooms} salas (${s.playing} jogando) · ${s.players} jogadores · ${s.sockets} conexões  |  pico: ${stats.peakRooms} salas / ${stats.peakPlayers} jogadores / ${stats.peakSockets} conexões  |  tetos: salas ${s.rooms}/${MAX_ROOMS}, conexões ${s.sockets}/${MAX_SOCKETS}`);
 }, 60000);
 
 loadGames();
@@ -555,4 +621,6 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`  Celulares: http://${ip}:${PORT}/\n`);
   }
   console.log('  A TV abre uma sala e mostra o código. Cada TV = uma sala. Cada sala = um jogo.\n');
+  const statsUrl = process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') : `http://localhost:${PORT}`;
+  console.log(`  📊 Uso ao vivo: ${statsUrl}/stats?key=${STATS_KEY}\n`);
 });
