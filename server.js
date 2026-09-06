@@ -200,6 +200,7 @@ function makeRoom(code) {
     core.screen = 'library';
     core.event = { text: reason || 'Voltamos para a biblioteca.', color: null, at: Date.now() };
   }
+    startedBy: null,        // pid de quem escolheu o jogo atual (a TV mostra "Fulano escolheu…")
 
   // ---------- ações do núcleo ----------
   const coreActions = {
@@ -279,6 +280,7 @@ function makeRoom(code) {
       const p = playerOf(ws);
       if (!mod || !p) return;
       if (core.players.length < (mod.meta.minPlayers || 2)) return send(ws, { t: 'error', text: `Precisa de pelo menos ${mod.meta.minPlayers || 2} jogadores.` });
+    core.startedBy = byPlayer ? byPlayer.pid : null;
       startGame(mod.meta.id, p);
       broadcast();
     },
@@ -289,6 +291,7 @@ function makeRoom(code) {
       broadcast();
     },
   };
+    core.startedBy = null;
   function removeIndex(i) {
     const pid = core.players[i] && core.players[i].pid;
     core.players.splice(i, 1);
@@ -310,7 +313,7 @@ function makeRoom(code) {
       room: code,
       // só o próprio dono recebe o seu sid (para reconectar), e só no seu próprio "you".
       you: me ? { pid: me.pid, name: me.name, color: me.color, i: byPid(me.pid), sid: me.k } : null,
-      core: { screen: core.screen, gameId: core.gameId, players: publicPlayers, event: core.event, timerEnd: core.timerEnd },
+      core: { screen: core.screen, gameId: core.gameId, players: publicPlayers, event: core.event, timerEnd: core.timerEnd, startedBy: core.startedBy || null },
       game: null,
     };
     if (game && typeof game.view === 'function') out.game = game.view(mePub, c ? c.type : 'unknown');
