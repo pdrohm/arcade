@@ -1,4 +1,5 @@
 // Palavra Secreta — tela da TV. Placar público, cronômetro gigante. A TV nunca recebe a palavra.
+'use strict';
 (() => {
   let lastTick = -1, lastTurnTag = '', lastPhase = '';
   const style = `
@@ -41,7 +42,7 @@
       mount() { return `<style>${style}</style><div class="ps-stage" id="ps-stage"></div>`; },
 
       html(c) {
-        const { G, esc } = c;
+        const G = c.G, esc = c.esc;
         if (!G || !G.teams) return { side: '' };
         const col = i => G.colors[i % G.colors.length];
         const ply = pid => c.C.players.find(p => p.pid === pid) || null;
@@ -61,7 +62,7 @@
       },
 
       after(c) {
-        const { G, esc } = c;
+        const G = c.G, esc = c.esc;
         const st = document.getElementById('ps-stage');
         if (!st || !G || !G.teams) return;
         const col = i => G.colors[i % G.colors.length];

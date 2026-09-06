@@ -1,4 +1,5 @@
 // Quem é mais provável? — tela da TV.
+'use strict';
 (() => {
   let lastKey = '';
   const style = `
@@ -17,7 +18,7 @@
   ARCADE.register('provavel', {
     tv: {
       html(c) {
-        const { G, esc, nm } = c; if (!G) return {};
+        const G = c.G, esc = c.esc, nm = c.nm; if (!G) return {};
         let stage = `<style>${style}</style>`;
         let side = `<div class="box center"><div style="font-size:28px;font-weight:900">👉 Quem é mais provável?</div><p class="sub mut">Pergunta ${G.round} de ${G.rounds}</p></div>`;
         if (G.phase === 'vote') {
@@ -25,7 +26,7 @@
             <div class="qm-tag">votem no celular</div><div class="qm-vs">${c.C.players.map(p => `<div class="qm-v ${G.voted.includes(p.pid) ? 'ok' : ''}" style="${c.nmStyle(p)}">${G.voted.includes(p.pid) ? '✓ ' : ''}${esc(p.name)}</div>`).join('')}</div></div>`;
           side += c.timerHtml('', G.turnMs);
         } else {
-          const cnt = G.count || {}, L = G.last, total = Math.max(1, ...Object.values(cnt));
+          const cnt = G.count || {}, L = G.last, total = Math.max(1, ...Object.keys(cnt).map(k => cnt[k]));
           const ordem = [...c.C.players].sort((a, b) => (cnt[b.pid] || 0) - (cnt[a.pid] || 0));
           stage += `<div class="qm-stage"><div class="qm-q" style="font-size:clamp(22px,2.8vw,44px)">${esc(G.q)}</div>
             <div class="qm-bars">${ordem.map(p => `<div class="qm-bar"><span class="n">${nm(p)}</span><div class="b" style="width:${Math.max(2, (cnt[p.pid] || 0) / total * 100)}%;background:${c.ci(p.color).hex}">${cnt[p.pid] || ''}</div>${L && L.tops.includes(p.pid) ? '👑' : ''}</div>`).join('')}</div>

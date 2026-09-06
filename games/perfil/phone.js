@@ -1,4 +1,5 @@
 // Perfil — tela do celular.
+'use strict';
 (() => {
   let showAnswer = false, ovRound = null, ovTurn = null, ovMed = null, lastRound = -1;
 
@@ -35,7 +36,7 @@
     phone: {
       html(c) {
         ensureStyle();
-        const { G, esc, nm } = c;
+        const G = c.G, esc = c.esc, nm = c.nm;
         if (!G || !G.order) return '<div class="box center"><p class="sub">Preparando…</p></div>';
         const ply = i => c.C.players.find(p => p.pid === G.order[i]);
         const meIdx = G.order.indexOf(c.you.pid);

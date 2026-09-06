@@ -1,4 +1,5 @@
 // Telefone Sem Fio — tela do celular, com quadro de desenho.
+'use strict';
 (() => {
   const SIZE = 640;                      // resolução interna do desenho (quadrado)
   const CORES = ['#111111', '#ef4444', '#f97316', '#facc15', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#8b5a2b', '#ffffff'];
@@ -42,7 +43,7 @@
     };
     const down = e => {
       e.preventDefault(); if (e.pointerType === 'mouse' && e.button !== 0) return;
-      try { cv.setPointerCapture(e.pointerId); } catch {}
+      try { cv.setPointerCapture(e.pointerId); } catch (err) {}
       desenhando = true; redo = [];
       hist.push(cx2.getImageData(0, 0, SIZE, SIZE)); if (hist.length > 30) hist.shift();
       snap = cx2.getImageData(0, 0, SIZE, SIZE);
@@ -66,7 +67,7 @@
   const TOOLS = [['pen', '✏️', 'caneta'], ['eraser', '🧽', 'borracha'], ['line', '📏', 'reta'], ['rect', '▭', 'retângulo'], ['circle', '◯', 'círculo']];
   function toolsHtml() {
     return `<div class="tsf-tools">${CORES.map(c => `<div class="tsf-cor ${tool !== 'eraser' && cor === c ? 'sel' : ''}" style="background:${c}" data-a="tcor" data-c="${c}"></div>`).join('')}</div>
-      <div class="tsf-tools">${TOOLS.map(([k, ic, nome]) => `<div class="tsf-sz ${tool === k ? 'sel' : ''}" data-a="tool" data-k="${k}" title="${nome}">${ic}</div>`).join('')}
+      <div class="tsf-tools">${TOOLS.map(function (t) { const k = t[0], ic = t[1], nome = t[2]; return `<div class="tsf-sz ${tool === k ? 'sel' : ''}" data-a="tool" data-k="${k}" title="${nome}">${ic}</div>`; }).join('')}
         <span style="flex:1"></span>
         <div class="tsf-sz ${hist.length ? '' : 'off'}" data-a="undo" title="desfazer">↶</div><div class="tsf-sz ${redo.length ? '' : 'off'}" data-a="redo" title="refazer">↷</div><div class="tsf-sz" data-a="limpar" title="limpar tudo">🗑</div></div>
       <div class="tsf-tools"><span class="sub mut">Traço</span>${[4, 8, 16, 28].map(t => `<div class="tsf-sz ${tam === t ? 'sel' : ''}" data-a="tam" data-t="${t}"><i style="width:${Math.min(30, t + 4)}px;height:${Math.min(30, t + 4)}px"></i></div>`).join('')}</div>`;
@@ -93,7 +94,7 @@
 
       html(c) {
         ensureStyle();
-        const { G, esc, nm } = c;
+        const G = c.G, esc = c.esc, nm = c.nm;
         if (!G) return '<div class="box center"><p class="sub">Preparando…</p></div>';
         const prog = () => `<div class="box"><p class="sub mut" style="margin-bottom:6px" id="tsf-progtxt">Rodada ${G.step + 1} de ${G.total} · ${G.done.length}/${G.order.length} entregaram</p>
           <div class="tsf-prog" id="tsf-prog">${G.order.map(pid => { const p = c.C.players.find(x => x.pid === pid); return p ? `<span class="nm" style="${c.nmStyle(p)};opacity:${G.done.includes(pid) ? 1 : .35}">${G.done.includes(pid) ? '✓ ' : ''}${esc(p.name)}</span>` : ''; }).join('')}</div></div>`;

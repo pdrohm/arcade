@@ -1,0 +1,149 @@
+// Confere se o código que roda no browser cabe na TV da casa (Chrome ~47, Samsung 2016).
+// Um só desses erros faz o browser parar de ler o arquivo inteiro: a TV fica branca e
+// não avisa nada. Ver docs/TV-ANTIGA.md.
+//
+//   node test/tv-compat.js
+//
+// Sem argumentos, confere shared/*.js, games/*/(tv|phone).js e os <script> de public/*.html.
+// Com `acorn` instalado (npm i -D acorn acorn-walk) a conferência é exata; sem ele, cai
+// num modo simples por texto, que pega os casos comuns mas pode deixar passar algum.
+'use strict';
+const fs = require('fs');
+const path = require('path');
+
+const RAIZ = path.join(__dirname, '..');
+const IGNORAR = ['games/kart/', 'shared/kart/', 'shared/game3d/'];   // 3D não roda nessa TV de qualquer jeito
+
+function alvos() {
+  const out = [];
+  for (const f of fs.readdirSync(path.join(RAIZ, 'shared'))) if (f.endsWith('.js')) out.push('shared/' + f);
+  const jogos = path.join(RAIZ, 'games');
+  for (const dir of fs.readdirSync(jogos)) for (const f of ['tv.js', 'phone.js']) {
+    const rel = 'games/' + dir + '/' + f;
+    if (fs.existsSync(path.join(RAIZ, rel))) out.push(rel);
+  }
+  for (const f of fs.readdirSync(path.join(RAIZ, 'public'))) if (f.endsWith('.html')) out.push('public/' + f);
+  return out.filter(f => !IGNORAR.some(x => f.startsWith(x)));
+}
+
+// Um HTML entra na conferência pelo maior <script> sem src (o script de tela).
+function fonte(rel) {
+  const txt = fs.readFileSync(path.isAbsolute(rel) ? rel : path.join(RAIZ, rel), 'utf8');
+  if (!rel.endsWith('.html')) return txt;
+  const blocos = txt.match(/<script>([\s\S]*?)<\/script>/g) || [];
+  if (!blocos.length) return '';
+  return blocos.map(b => b.replace(/^<script>/, '').replace(/<\/script>$/, '')).sort((a, b) => b.length - a.length)[0];
+}
+
+function carregar(nome) { try { return require(nome); } catch (err) { return null; } }
+const acorn = carregar('acorn'), walk = carregar('acorn-walk');
+
+// Funções que só existem em Chrome mais novo que o da TV. Não são erro de leitura:
+// o arquivo carrega e quebra na hora de usar, o que é ainda mais difícil de achar.
+const METODOS_NOVOS = Object.assign(Object.create(null), {
+  padStart: 'Chrome 57', padEnd: 'Chrome 57', trimStart: 'Chrome 66', trimEnd: 'Chrome 66',
+  flat: 'Chrome 69', flatMap: 'Chrome 69', matchAll: 'Chrome 73', replaceAll: 'Chrome 85',
+  at: 'Chrome 92', toSorted: 'Chrome 110', toReversed: 'Chrome 110', findLast: 'Chrome 97',
+});
+const GLOBAIS_NOVOS = Object.assign(Object.create(null), {
+  'Object.entries': 'Chrome 54', 'Object.values': 'Chrome 54', 'Object.fromEntries': 'Chrome 73',
+  'Array.flat': 'Chrome 69', 'globalThis': 'Chrome 71', 'structuredClone': 'Chrome 98',
+  'queueMicrotask': 'Chrome 71', 'BigInt': 'Chrome 67', 'ResizeObserver': 'Chrome 64',
+  'IntersectionObserver': 'Chrome 51', 'AbortController': 'Chrome 66',
+});
+
+const NOMES = {
+  AssignmentPattern: 'parâmetro padrão (x = 1)',
+  ObjectPattern: 'desestruturação { }',
+  ArrayPattern: 'desestruturação [ ]',
+  RestElement: 'parâmetro rest (...args)',
+  AwaitExpression: 'await',
+};
+
+function conferirAst(src) {
+  const falhas = [];
+  let ast;
+  try { ast = acorn.parse(src, { ecmaVersion: 2022, sourceType: 'script', locations: true }); }
+  catch (e) { return [{ linha: '?', o_que: 'o arquivo nem foi lido: ' + e.message }]; }
+  const add = (n, o_que) => falhas.push({ linha: n && n.loc ? n.loc.start.line : '?', o_que });
+  // Um global novo pode ser usado desde que o código pergunte antes se ele existe.
+  const usoProtegido = new Set();
+  const protegidos = new Set();
+  walk.full(ast, n => {
+    if (n.type === 'BinaryExpression' && n.operator === 'in' && n.left.type === 'Literal') protegidos.add(n.left.value);
+    if (n.type === 'UnaryExpression' && n.operator === 'typeof' && n.argument.type === 'Identifier') protegidos.add(n.argument.name);
+    if (n.type === 'MemberExpression' && n.object.type === 'Identifier' && n.object.name === 'window' && n.property.name) protegidos.add(n.property.name);
+  });
+  walk.full(ast, n => { if (n.type === 'Identifier' && protegidos.has(n.name)) usoProtegido.add(n); });
+  walk.full(ast, n => {
+    if (NOMES[n.type]) add(n, NOMES[n.type]);
+    if (n.type === 'CatchClause' && !n.param) add(n, 'catch sem variável');
+    if ((n.type === 'FunctionDeclaration' || n.type === 'FunctionExpression' || n.type === 'ArrowFunctionExpression') && n.async) add(n, 'função async');
+    if (n.type === 'BinaryExpression' && n.operator === '**') add(n, 'operador **');
+    if (n.type === 'ObjectExpression') for (const p of n.properties) if (p.type === 'SpreadElement') add(p, 'spread de objeto { ...x }');
+    if (n.type === 'ImportDeclaration' || n.type === 'ExportNamedDeclaration') add(n, 'import/export (módulo ES)');
+    if (n.type === 'ChainExpression') add(n, 'encadeamento opcional (?.)');
+    if (n.type === 'LogicalExpression' && n.operator === '??') add(n, 'operador ??');
+    if (n.type === 'AssignmentExpression' && ['??=', '||=', '&&='].indexOf(n.operator) >= 0) add(n, 'atribuição ' + n.operator);
+    // chamada de método novo: x.padStart(...)
+    if (n.type === 'CallExpression' && n.callee.type === 'MemberExpression' && !n.callee.computed && METODOS_NOVOS[n.callee.property.name])
+      add(n, n.callee.property.name + '() só existe a partir do ' + METODOS_NOVOS[n.callee.property.name]);
+    // uso de global novo: Object.entries, globalThis, ResizeObserver…
+    if (n.type === 'MemberExpression' && !n.computed && n.object.type === 'Identifier') {
+      const nome = n.object.name + '.' + (n.property.name || '');
+      if (GLOBAIS_NOVOS[nome]) add(n, nome + ' só existe a partir do ' + GLOBAIS_NOVOS[nome]);
+    }
+    if (n.type === 'Identifier' && GLOBAIS_NOVOS[n.name] && !usoProtegido.has(n)) add(n, n.name + ' só existe a partir do ' + GLOBAIS_NOVOS[n.name]);
+  });
+  return falhas;
+}
+
+// Modo simples (sem acorn): procura os padrões mais comuns linha a linha.
+const PADROES = [
+  [/\bcatch\s*\{/, 'catch sem variável'],
+  [/\basync\b/, 'função async'],
+  [/\bawait\b/, 'await'],
+  [/\{\s*\.\.\./, 'spread de objeto { ...x }'],
+  [/(^|[^*/])\*\*[^*]/, 'operador **'],
+  [/\b(const|let|var)\s*[{[]/, 'desestruturação'],
+  [/\bfunction\s*[A-Za-z0-9_$]*\s*\([^)]*[A-Za-z0-9_$]\s*=[^=>)]/, 'parâmetro padrão (x = 1)'],
+  [/^\s*(import|export)\s/, 'import/export (módulo ES)'],
+  [/\?\./, 'encadeamento opcional (?.)'],
+  [/\?\?/, 'operador ??'],
+  [/\.(padStart|padEnd|flat|flatMap|matchAll|replaceAll|trimStart|trimEnd|findLast)\(/, 'função só existente em Chrome novo'],
+  [/\bObject\.(entries|values|fromEntries)\(/, 'Object.entries/values/fromEntries (Chrome 54+)'],
+  [/\bglobalThis\b|\bstructuredClone\(/, 'global só existente em Chrome novo'],
+];
+function conferirTexto(src) {
+  const falhas = [];
+  src.split('\n').forEach((linha, i) => {
+    const limpa = linha.replace(/\/\/.*$/, '');
+    for (const [re, o_que] of PADROES) if (re.test(limpa)) falhas.push({ linha: i + 1, o_que });
+  });
+  return falhas;
+}
+
+const TEM_STRICT = /^\s*(\/\/[^\n]*\n|\/\*[\s\S]*?\*\/\s*|\s)*['"]use strict['"];/;
+const USA_BLOCO = /(^|[^.\w])(let|const|class)[\s({[]/;
+
+function main() {
+  const lista = process.argv.length > 2 ? process.argv.slice(2) : alvos();
+  let ruins = 0;
+  for (const rel of lista) {
+    const src = fonte(rel);
+    if (!src.trim()) continue;
+    const falhas = acorn && walk ? conferirAst(src) : conferirTexto(src);
+    if (USA_BLOCO.test(src) && !TEM_STRICT.test(src)) falhas.push({ linha: 1, o_que: "falta 'use strict'; no topo (sem ele a TV recusa todo let/const do arquivo)" });
+    if (!falhas.length) continue;
+    ruins++;
+    console.log('\n✗ ' + rel);
+    for (const f of falhas.sort((a, b) => a.linha - b.linha)) console.log('   linha ' + f.linha + ': ' + f.o_que);
+  }
+  if (!acorn || !walk) console.log('\n(conferência simples, por texto. Para a exata: npm i -D acorn acorn-walk)');
+  if (ruins) {
+    console.log('\n' + ruins + ' arquivo(s) que a TV da casa não consegue ler. Ver docs/TV-ANTIGA.md.');
+    process.exit(1);
+  }
+  console.log('✅ ' + lista.length + ' arquivo(s) conferido(s): a TV da casa consegue ler todos.');
+}
+main();

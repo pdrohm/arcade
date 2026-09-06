@@ -1,4 +1,5 @@
 // Imagem e Ação — tela da TV.
+'use strict';
 (() => {
   const COLS = 10, ROWS = 7, PAD = 2.2, GAP = 2.6, CW = (100 - 2 * PAD - (COLS - 1) * GAP) / COLS;
   const BH = 2 * PAD + (ROWS - 1) * GAP + ROWS * CW;
@@ -60,7 +61,7 @@
         const pts = PATH.map(p => [cx(p.col), cy(p.row)]);
         let arrows = '';
         for (let i = 0; i < pts.length - 1; i++) {
-          const [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
+          const p1 = pts[i], x1 = p1[0], y1 = p1[1], p2 = pts[i + 1], x2 = p2[0], y2 = p2[1];
           const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
           arrows += `<path d="M-0.55 -0.7 L0.35 0 L-0.55 0.7" transform="translate(${mx} ${my}) rotate(${ang})" fill="none" stroke="#6b5f48" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/>`;
         }
@@ -70,7 +71,7 @@
           <polyline points="${line}" fill="none" stroke="#d3c8ab" stroke-width="${CW * 0.5}" stroke-linejoin="round" stroke-linecap="round"/>
           <polyline points="${line}" fill="none" stroke="#fffdf5" stroke-width="0.22" stroke-dasharray="1.2 1" stroke-linejoin="round" opacity=".8"/>${arrows}</svg>`;
         const squares = G.board.map(sq => {
-          const { row, col } = PATH[sq.i];
+          const rc = PATH[sq.i], row = rc.row, col = rc.col;
           const k = sq.cat ? G.categories[sq.cat] : null;
           const cls = ['ia-sq', sq.allPlay ? 'all' : '', sq.start ? 'start' : '', sq.finish ? 'finish' : ''].join(' ');
           const st = `left:${cx(col) - CW / 2}%;top:${pctY(cy(row) - CW / 2)};width:${CW}%;height:${pctY(CW)};${k && !sq.start && !sq.finish ? `background:${k.color}` : ''}`;
@@ -83,7 +84,7 @@
       },
 
       html(c) {
-        const { G, esc, nm, hl } = c;
+        const G = c.G, esc = c.esc, nm = c.nm, hl = c.hl;
         const t = G.teams[G.turn];
         const ti = k => G.teamList.find(x => x.key === k);
         const drawerName = tt => { const pid = tt && G.drawers[tt.key]; const p = pid && c.C.players.find(x => x.pid === pid); return p ? p.name : null; };
@@ -102,13 +103,13 @@
 
         side += `<div class="event">${c.C.event ? hl(c.C.event.text) : ''}</div>`;
         side += `<div class="box" style="margin-top:auto"><p class="sub mut" style="margin-bottom:8px">Categorias</p>
-          <div style="display:flex;flex-direction:column;gap:7px">${Object.values(G.categories).map(k => `<div style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700"><i style="width:22px;height:22px;border-radius:6px;background:${k.color};display:inline-block"></i>${k.name}</div>`).join('')}
+          <div style="display:flex;flex-direction:column;gap:7px">${Object.keys(G.categories).map(kk => G.categories[kk]).map(k => `<div style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700"><i style="width:22px;height:22px;border-radius:6px;background:${k.color};display:inline-block"></i>${k.name}</div>`).join('')}
           <div style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700"><i style="width:22px;height:22px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center">⚡</i>Todos jogam</div></div></div>`;
         return { side };
       },
 
       after(c) {
-        const { G, esc } = c;
+        const G = c.G, esc = c.esc;
         const board = document.getElementById('ia-board'), center = document.getElementById('ia-center');
         if (!board || !center) return;
         const ti = k => G.teamList.find(x => x.key === k);
@@ -145,7 +146,7 @@
         if (t && G.target !== null && ['draw', 'judge', 'allplay'].includes(G.phase)) {
           const el = document.getElementById('ia-sq' + G.target); if (el) el.classList.add('active');
           if (!ghost) { ghost = document.createElement('div'); ghost.id = 'ia-ghost'; ghost.className = 'ia-ghost'; board.appendChild(ghost); }
-          const { row, col } = PATH[G.target];
+          const rc = PATH[G.target], row = rc.row, col = rc.col;
           ghost.style.left = cx(col) + '%'; ghost.style.top = pctY(cy(row));
           ghost.style.background = ti(t.key).hex + '55'; ghost.style.borderColor = ti(t.key).hex;
         } else if (ghost) ghost.remove();
@@ -158,23 +159,23 @@
             let el = document.getElementById('ia-pawn-' + tt.key);
             if (!el) { el = document.createElement('div'); el.id = 'ia-pawn-' + tt.key; el.className = 'ia-pawn'; el.style.background = ti(tt.key).hex; board.appendChild(el); }
             const gr = groups[posMap[tt.key]], k = gr.indexOf(tt.key), n = gr.length;
-            const { row, col } = PATH[posMap[tt.key]];
+            const rc = PATH[posMap[tt.key]], row = rc.row, col = rc.col;
             const ox = n > 1 ? (k % 2 ? .3 : -.3) : 0, oy = n > 2 ? (k < 2 ? -.3 : .3) : 0;
             el.style.left = (cx(col) + ox * CW) + '%'; el.style.top = pctY(cy(row) + oy * CW);
           }
           for (const el of board.querySelectorAll('.ia-pawn')) if (!G.teams.some(tt => 'ia-pawn-' + tt.key === el.id)) el.remove();
         };
-        (async () => {
+        (function () {
           if (animating) return; animating = true;
           for (const tt of G.teams) if (shown[tt.key] === undefined) shown[tt.key] = tt.pos;
-          let moved = true;
-          while (moved) {
-            moved = false;
+          function step() {
+            let moved = false;
             for (const tt of G.teams) { if (shown[tt.key] < tt.pos) { shown[tt.key]++; moved = true; } else if (shown[tt.key] > tt.pos) { shown[tt.key] = tt.pos; moved = true; } }
             place(shown);
-            if (moved) { c.beep(520, .05, 'square', .07); await new Promise(r => setTimeout(r, 260)); }
+            if (moved) { c.beep(520, .05, 'square', .07); setTimeout(step, 260); }
+            else animating = false;
           }
-          animating = false;
+          step();
         })();
 
         // vitória

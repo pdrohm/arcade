@@ -1,4 +1,5 @@
 // Stop — tela do celular.
+'use strict';
 (() => {
   let styled = false, saveT = null, autoSent = '';
   const style = `
@@ -37,7 +38,7 @@
       key(c) { const G = c.G; return G ? `${G.phase}:${G.round}:${G.review}:${G.stopBy ? 1 : 0}:${G.phase === 'setup' ? JSON.stringify(G.cfg) : ''}` : ''; },
       html(c) {
         ensureStyle();
-        const { G, esc, nm } = c;
+        const G = c.G, esc = c.esc, nm = c.nm;
         if (!G) return '';
         const ply = pid => c.C.players.find(p => p.pid === pid);
         const placar = () => `<div class="box"><p class="sub mut" style="margin-bottom:8px">Placar</p>${c.playersHtml({ info: p => `${G.scores[p.pid] || 0} pts${G.roundScores[p.pid] !== undefined ? ` (+${G.roundScores[p.pid]})` : ''}` })}</div>`;

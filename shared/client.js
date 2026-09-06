@@ -1,5 +1,8 @@
 // Núcleo das telas: conexão, identidade, ajudantes de desenho e registro de jogos.
 // Cada jogo registra suas telas com ARCADE.register(id, { tv:{...}, phone:{...} }).
+// A TV da casa é um Chrome de 2016: só entende let/const em modo estrito e não tem
+// parâmetro padrão, desestruturação, catch sem variável nem async/await. Ver docs/TV-ANTIGA.md.
+'use strict';
 window.ARCADE = (() => {
   const games = {};
   const $ = s => document.querySelector(s);
@@ -24,8 +27,8 @@ window.ARCADE = (() => {
   }
   // segredo da vaga: prova que este celular é o dono do pid. O servidor manda em you.sid;
   // guardamos e reenviamos ao (re)entrar. É o que impede outra pessoa de assumir sua vaga pelo pid.
-  const sid = () => { try { return localStorage.getItem('arcade_sid') || ''; } catch { return ''; } };
-  const saveSid = s => { try { if (s) localStorage.setItem('arcade_sid', s); } catch {} };
+  const sid = () => { try { return localStorage.getItem('arcade_sid') || ''; } catch (err) { return ''; } };
+  const saveSid = s => { try { if (s) localStorage.setItem('arcade_sid', s); } catch (err) {} };
   const form = () => JSON.parse(localStorage.getItem('arcade_me') || 'null') || { color: null, name: '' };
   const saveForm = f => localStorage.setItem('arcade_me', JSON.stringify(f));
   const prevName = () => localStorage.getItem('arcade_prev') || '';
@@ -43,9 +46,9 @@ window.ARCADE = (() => {
         else send({ t: 'watch', room });     // só olhar a sala (cores livres, quem já entrou) antes de escolher a cor
       }
     };
-    ws.onmessage = async e => {
+    ws.onmessage = e => {
       const m = JSON.parse(e.data);
-      if (m.t === 'init') { meta = m; await ensureGames(); return draw(); }
+      if (m.t === 'init') { meta = m; ensureGames().then(draw); return; }
       if (m.t === 'error') return toast(m.text);
       if (m.t === 'room') { if (m.code !== room) location.replace((kind === 'tv' ? '/tv/' : '/') + m.code); return; }
       if (m.t === 'noroom') { noRoom = true; S = null; you = null; return draw(); }
@@ -55,7 +58,7 @@ window.ARCADE = (() => {
         S = m; you = m.you;
         if (you && you.sid) saveSid(you.sid);   // guarda o segredo da vaga para reconectar como você
 
-        if (meta && S.core.gameId && !loaded.has(S.core.gameId)) { await loadGame(S.core.gameId); }
+        if (meta && S.core.gameId && !loaded.has(S.core.gameId)) { loadGame(S.core.gameId).then(draw); return; }
         draw();
       }
     };
@@ -92,13 +95,14 @@ window.ARCADE = (() => {
     return out;
   }
   const remaining = () => S && S.core.timerEnd ? Math.max(0, (S.core.timerEnd - (Date.now() + clockOffset)) / 1000) : null;
-  const fmt = r => { const t = Math.ceil(r); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+  const fmt = r => { const t = Math.ceil(r), s = t % 60; return `${Math.floor(t / 60)}:${s < 10 ? '0' : ''}${s}`; };
   function timerHtml(label, totalMs) {
     const r = remaining(); if (r === null) return '';
     const total = (totalMs || 120000) / 1000;
     return `<div class="box" style="padding:12px"><div class="timer ${r <= 15 ? 'low' : ''}" id="timer">⏱ ${fmt(r)}</div><div class="tbar"><i id="tbar" style="width:${Math.min(100, r / total * 100)}%"></i></div>${label ? `<p class="sub center" style="margin-top:6px">${label}</p>` : ''}</div>`;
   }
-  function playersHtml(opts = {}) {
+  function playersHtml(opts) {
+    opts = opts || {};
     const ps = S.core.players;
     if (!ps.length) return '<p class="sub center">Ninguém entrou ainda.</p>';
     return `<div class="players">${ps.map((p, i) => {
@@ -114,27 +118,36 @@ window.ARCADE = (() => {
     el.innerHTML = `<div class="turnover">${html}</div>`;
     clearTimeout(overT);
     overT = setTimeout(() => { el.innerHTML = ''; }, ms || 2600);
-    if (vibrate && navigator.vibrate) { try { navigator.vibrate(vibrate); } catch {} }
+    if (vibrate && navigator.vibrate) { try { navigator.vibrate(vibrate); } catch (err) {} }
   }
   function toast(t) { const el = $('#toast'); if (!el) return; el.textContent = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2800); }
 
   // ---------- som ----------
   let actx = null;
-  function beep(freq, dur, type = 'sine', vol = .22) {
+  function beep(freq, dur, type, vol) {
+    type = type || 'sine'; vol = vol === undefined ? .22 : vol;
     try {
       actx = actx || new (window.AudioContext || window.webkitAudioContext)();
       const o = actx.createOscillator(), g = actx.createGain();
       o.type = type; o.frequency.value = freq; g.gain.value = vol;
       o.connect(g); g.connect(actx.destination); o.start();
       g.gain.exponentialRampToValueAtTime(.001, actx.currentTime + dur); o.stop(actx.currentTime + dur);
-    } catch {}
+    } catch (err) {}
   }
-  const chord = (fs, t = 'triangle') => fs.forEach((f, i) => setTimeout(() => beep(f, .22, t, .2), i * 130));
+  const chord = (fs, t) => fs.forEach((f, i) => setTimeout(() => beep(f, .22, t || 'triangle', .2), i * 130));
   document.addEventListener('click', () => { if (actx && actx.state === 'suspended') actx.resume(); });
 
   // ---------- tela sempre acesa e reconexão ----------
   let wakeLock = null;
-  async function keepAwake() { try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch {} }
+  function keepAwake() {
+    try {
+      if (!('wakeLock' in navigator) || wakeLock) return;
+      navigator.wakeLock.request('screen').then(w => {
+        wakeLock = w;
+        w.addEventListener('release', () => { wakeLock = null; });
+      }, () => {});   // sem wakeLock (ou negado): a tela pode apagar, o resto funciona igual
+    } catch (err) {}
+  }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { keepAwake(); if (!ws || ws.readyState > 1) connect(); } });
   document.addEventListener('click', keepAwake);
   document.addEventListener('touchstart', keepAwake, { passive: true });

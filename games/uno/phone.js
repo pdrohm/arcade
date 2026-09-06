@@ -1,4 +1,5 @@
 // UNO — tela do celular. A mão só existe aqui: o servidor manda as cartas só para o dono delas.
+'use strict';
 (() => {
   const HEX = { r: '#ef4444', y: '#facc15', g: '#22c55e', b: '#3b82f6', w: '#111827' };
   const NOME = { r: 'Vermelho', y: 'Amarelo', g: 'Verde', b: 'Azul' };
@@ -91,7 +92,7 @@
 
       html(c) {
         ensure();
-        const { G, esc, nm } = c; if (!G || !c.you) return '';
+        const G = c.G, esc = c.esc, nm = c.nm; if (!G || !c.you) return '';
         const ply = pid => c.C.players.find(p => p.pid === pid);
         const eu = c.you.pid;
         const minhaVez = G.turn === eu;

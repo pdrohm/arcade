@@ -1,9 +1,10 @@
 // Quem é mais provável? — tela do celular.
+'use strict';
 (() => {
   ARCADE.register('provavel', {
     phone: {
       html(c) {
-        const { G, esc, nm } = c; if (!G) return '';
+        const G = c.G, esc = c.esc, nm = c.nm; if (!G) return '';
         const ply = pid => c.C.players.find(p => p.pid === pid);
         const ranking = () => `<div class="box"><p class="sub mut" style="margin-bottom:8px">Mais apontados da noite</p>${c.playersHtml({ info: p => `${'👑'.repeat(G.wins[p.pid] || 0)}` })}</div>`;
         if (G.phase === 'vote') {

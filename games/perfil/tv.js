@@ -1,4 +1,5 @@
 // Perfil — tela da TV.
+'use strict';
 (() => {
   const COLS = 13, ROWS = 10, PAD = 1.6, GAP = 0.9, CW = (100 - 2 * PAD - (COLS - 1) * GAP) / COLS;
   const BH = 2 * PAD + (ROWS - 1) * GAP + ROWS * CW;
@@ -42,7 +43,7 @@
     tv: {
       mount(c) {
         const G = c.G;
-        const pts = G.board.map(sq => { const { row, col } = cell(sq.i); return [cx(col), cy(row)]; });
+        const pts = G.board.map(sq => { const rc = cell(sq.i), row = rc.row, col = rc.col; return [cx(col), cy(row)]; });
         const line = pts.map(p => p.join(',')).join(' ');
         let arrows = '';
         for (let i = 0; i < G.board.length - 1; i++) {
@@ -51,7 +52,7 @@
           arrows += `<div class="pf-arrow" style="left:${x}%;top:${pctY(y)};font-size:clamp(6px,.75vw,11px)">${b.row !== a.row ? '▼' : (b.col > a.col ? '▶' : '◀')}</div>`;
         }
         const squares = G.board.map(sq => {
-          const { row, col } = cell(sq.i);
+          const rc = cell(sq.i), row = rc.row, col = rc.col;
           const tens = sq.i > 0 && sq.i % 10 === 0 && !sq.bonus && !sq.finish;
           const cls = ['pf-sq', sq.bonus ? 'bonus' : '', tens ? 'tens' : '', sq.start ? 'start' : '', sq.finish ? 'finish' : ''].join(' ');
           const label = sq.start ? 'INÍCIO' : sq.finish ? '🏁<br>FIM' : sq.bonus ? '?' : (tens ? sq.i : '');
@@ -68,7 +69,7 @@
       },
 
       html(c) {
-        const { G, esc, nm, hl } = c;
+        const G = c.G, esc = c.esc, nm = c.nm, hl = c.hl;
         const ply = i => c.C.players.find(p => p.pid === G.order[i]);
         const m = ply(G.mediator), g = ply(G.turn);
         const cat = G.categories[G.card ? G.card.cat : 'P'];
@@ -118,7 +119,7 @@
       },
 
       after(c) {
-        const { G } = c;
+        const G = c.G;
         const board = document.getElementById('pf-board');
         if (!board) return;
         // peões
@@ -130,30 +131,30 @@
             let el = document.getElementById('pf-pawn-' + pid);
             if (!el) { el = document.createElement('div'); el.id = 'pf-pawn-' + pid; el.className = 'pf-pawn'; board.appendChild(el); }
             el.style.background = c.ci(p.color).hex;
-            const at = posMap[pid] || 0, gr = Object.values(groups).length ? (groups[G.pos[pid] || 0] || [pid]) : [pid];
+            const at = posMap[pid] || 0, gr = Object.keys(groups).length ? (groups[G.pos[pid] || 0] || [pid]) : [pid];
             const k = gr.indexOf(pid), n = gr.length;
-            const { row, col } = cell(at);
+            const rc = cell(at), row = rc.row, col = rc.col;
             const ox = n > 1 ? (k % 2 ? .28 : -.28) : 0, oy = n > 2 ? (k < 2 ? -.28 : .28) : 0;
             el.style.left = (cx(col) + ox * CW) + '%';
             el.style.top = pctY(cy(row) + oy * CW);
           }
           for (const el of board.querySelectorAll('.pf-pawn')) if (!G.order.some(pid => 'pf-pawn-' + pid === el.id)) el.remove();
         };
-        (async () => {
+        (function () {
           if (animating) return; animating = true;
           for (const pid of G.order) if (shown[pid] === undefined) shown[pid] = G.pos[pid] || 0;
-          let moved = true;
-          while (moved) {
-            moved = false;
+          function step() {
+            let moved = false;
             for (const pid of G.order) {
               const alvo = G.pos[pid] || 0;
               if (shown[pid] < alvo) { shown[pid]++; moved = true; }
               else if (shown[pid] > alvo) { shown[pid]--; moved = true; }
             }
             place(shown);
-            if (moved) { c.beep(560, .04, 'square', .06); await new Promise(r => setTimeout(r, 110)); }
+            if (moved) { c.beep(560, .04, 'square', .06); setTimeout(step, 110); }
+            else animating = false;
           }
-          animating = false;
+          step();
         })();
 
         // aviso da instrução automática

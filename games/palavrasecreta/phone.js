@@ -1,4 +1,5 @@
 // Palavra Secreta — tela do celular. Só quem dá as dicas vê a palavra.
+'use strict';
 (() => {
   let styled = false, lastTurnTag = '', lastEnd = '';
   const style = `
@@ -34,7 +35,7 @@
 
       html(c) {
         ensureStyle();
-        const { G, esc, nm } = c;
+        const G = c.G, esc = c.esc, nm = c.nm;
         if (!G || !G.teams) return '<div class="box center"><p class="sub">Preparando…</p></div>';
         const ply = pid => c.C.players.find(p => p.pid === pid) || null;
         const col = i => G.colors[i % G.colors.length];

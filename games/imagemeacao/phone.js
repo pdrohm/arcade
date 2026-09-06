@@ -1,4 +1,5 @@
 // Imagem e Ação — tela do celular.
+'use strict';
 (() => {
   let reveal = false, lastRound = -1, ovTurn = null, ovRound = null;
 
@@ -27,7 +28,7 @@
     phone: {
       html(c) {
         ensureStyle();
-        const { G, esc, nm } = c;
+        const G = c.G, esc = c.esc, nm = c.nm;
         if (!G || !G.teamList) return '<div class="box center"><p class="sub">Preparando…</p></div>';
         const ti = k => G.teamList.find(x => x.key === k);
         const t = G.teams[G.turn];

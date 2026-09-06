@@ -1,4 +1,5 @@
 // Stop — tela da TV.
+'use strict';
 (() => {
   let lastKey = '';
   const style = `
@@ -21,7 +22,7 @@
   ARCADE.register('stop', {
     tv: {
       html(c) {
-        const { G, esc, nm } = c; if (!G) return {};
+        const G = c.G, esc = c.esc, nm = c.nm; if (!G) return {};
         const ply = pid => c.C.players.find(p => p.pid === pid);
         const placar = () => `<div class="box"><p class="sub mut" style="margin-bottom:8px">Placar</p>${c.playersHtml({ info: p => `${G.scores[p.pid] || 0} pts${G.roundScores[p.pid] !== undefined ? ` (+${G.roundScores[p.pid]})` : ''}` })}</div>`;
         let stage = `<style>${style}</style>`, side = `<div class="box center"><div style="font-size:30px;font-weight:900">🛑 Stop</div><p class="sub mut">Rodada ${G.round} de ${G.rounds}</p></div>`;

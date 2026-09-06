@@ -1,4 +1,5 @@
 // Stop Alfabeto — tela da TV.
+'use strict';
 (() => {
   const style = `
     .sa-stage { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(10px,2vh,26px); text-align:center; }
@@ -46,7 +47,7 @@
   ARCADE.register('stopalfabeto', {
     tv: {
       html(c) {
-        const { G, esc, nm } = c; if (!G) return {};
+        const G = c.G, esc = c.esc, nm = c.nm; if (!G) return {};
         const ply = pid => c.C.players.find(p => p.pid === pid);
         let stage = `<style>${style}</style>`;
         let side = `<div class="box center"><div style="font-size:28px;font-weight:900">🔤 Stop Alfabeto</div><p class="sub mut">${G.phase === 'setup' ? 'ajustem as regras no celular' : `Categoria ${G.round} · ${G.left} letras livres`}</p></div>`;

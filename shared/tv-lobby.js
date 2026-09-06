@@ -10,6 +10,10 @@
 //   GameShowcase   vitrine dos jogos (GamePreview = pôster com arte, nome e jogadores)
 //   Announce       avisos curtos: entrou, saiu, jogo liberado
 //   GameSelected   alguém escolheu um jogo no celular → transição para a partida
+//
+// A TV da casa é um Chrome de 2016: modo estrito obrigatório para let/const, e nada de
+// parâmetro padrão, desestruturação, catch sem variável nem async/await. Ver docs/TV-ANTIGA.md.
+'use strict';
 window.ARCADE.tvLobby = (() => {
   const A = window.ARCADE, esc = A.esc;
   let root = null, over = null, el = {}, prev = null, netsKey = '', gamesKey = '', trackObs = null;
@@ -120,9 +124,10 @@ window.ARCADE.tvLobby = (() => {
       const ini = chip.querySelector('.tvl-av span'); if (ini.textContent !== initial(p.name)) ini.textContent = initial(p.name);
       if (el.chips.children[i] !== chip) el.chips.insertBefore(chip, el.chips.children[i] || null);
     });
-    for (const [pid, chip] of have) if (!keep.has(pid) && !chip.classList.contains('out')) {
+    have.forEach((chip, pid) => {
+      if (keep.has(pid) || chip.classList.contains('out')) return;
       chip.classList.add('out'); setTimeout(() => chip.remove(), 420);
-    }
+    });
     el.count.textContent = ps.length ? `${plural(ps.length, 'jogador', 'jogadores')} na sala` : '';
     // ainda não dá para jogar nada? A dica é chamar gente, não escolher jogo.
     const need = Math.min(...(c.meta.games || []).map(g => g.minPlayers || 2), Infinity);

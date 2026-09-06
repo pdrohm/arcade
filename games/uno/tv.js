@@ -1,5 +1,6 @@
 // UNO — tela da TV. Palco fixo (a mesa) montado uma vez; o resto é atualizado em after().
 // A TV nunca mostra a mão de ninguém: só a quantidade de cartas de cada um.
+'use strict';
 (() => {
   const HEX = { r: '#ef4444', y: '#facc15', g: '#22c55e', b: '#3b82f6', w: '#111827' };
   const NOME = { r: 'Vermelho', y: 'Amarelo', g: 'Verde', b: 'Azul' };
@@ -79,7 +80,7 @@
       },
 
       html(c) {
-        const { G, esc } = c; if (!G) return {};
+        const G = c.G, esc = c.esc; if (!G) return {};
         const alvo = G.cfg.target ? `até ${G.cfg.target} pontos` : 'uma rodada só';
         let side = `<div class="box center"><div style="font-size:30px;font-weight:900">🃏 UNO</div>
           <p class="sub mut" style="margin-top:4px">${G.phase === 'setup' ? 'Ajustando as regras' : `Rodada ${G.round} · ${alvo}`}</p></div>`;
@@ -99,7 +100,7 @@
       },
 
       after(c) {
-        const { G, esc } = c; if (!G) return;
+        const G = c.G, esc = c.esc; if (!G) return;
         const $ = id => document.getElementById(id);
         const ply = pid => c.C.players.find(p => p.pid === pid);
         if (!$('un-table')) return;

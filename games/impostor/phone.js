@@ -1,4 +1,5 @@
 // Impostor — tela do celular. Cada um só vê a própria palavra.
+'use strict';
 (() => {
   let styled = false, aberto = false, lastRound = -1, ovKey = '';
   const style = `
@@ -54,7 +55,7 @@
       },
       html(c) {
         ensure();
-        const { G, esc } = c; if (!G || !c.you) return '';
+        const G = c.G, esc = c.esc; if (!G || !c.you) return '';
         const m = G.mine || {};
         const opt = (a, vals, cur, fmt) => `<div class="imp-opt">${vals.map(v => `<div class="imp-o ${v === cur ? 'sel' : ''}" data-a="${a}" data-v="${v}">${fmt ? fmt(v) : v}</div>`).join('')}</div>`;
 

@@ -1,4 +1,5 @@
 // Telefone Sem Fio — tela da TV: progresso das rodadas e, no fim, o álbum de cada corrente.
+'use strict';
 (() => {
   let lastKey = '', lastSound = '';
   const style = `
@@ -17,7 +18,7 @@
   ARCADE.register('telefone', {
     tv: {
       html(c) {
-        const { G, esc, nm } = c;
+        const G = c.G, esc = c.esc, nm = c.nm;
         if (!G) return { stage: '', side: '' };
         const ply = pid => c.C.players.find(p => p.pid === pid);
         let stage = `<style>${style}</style>`, side = '';

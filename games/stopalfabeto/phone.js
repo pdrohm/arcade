@@ -1,4 +1,5 @@
 // Stop Alfabeto — tela do celular (o controle).
+'use strict';
 (() => {
   let styled = false, lastFx = 0, lastTick = -1, turnTag = null;
   const style = `
@@ -38,7 +39,7 @@
       },
       html(c) {
         ensureStyle();
-        const { G, esc, nm } = c;
+        const G = c.G, esc = c.esc, nm = c.nm;
         if (!G || !c.you) return '';
         const me = c.you.pid;
         const ply = pid => c.C.players.find(p => p.pid === pid);

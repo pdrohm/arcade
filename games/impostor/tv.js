@@ -1,4 +1,5 @@
 // Impostor — tela da TV. A palavra secreta só aparece no resultado.
+'use strict';
 (() => {
   const style = `
     .imp-stage { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; }
