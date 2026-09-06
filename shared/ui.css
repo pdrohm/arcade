@@ -136,19 +136,19 @@ body.tv[data-screen="library"] .conn.off { color:#fca5a5; }
 body.tv[data-screen="library"] .conn.off::before { background:#ef4444; box-shadow:0 0 .6vw #ef4444; animation:pulse .6s infinite alternate; }
 
 #lobby { --glow:#f59e0b; --ink:#f6f1e7; --mut2:#8ea0c4; --amber:#f5a524;
-  position:fixed; top:0; left:0; right:0; bottom:0; width:100%; height:100%; display:grid; grid-template-rows:auto 1fr auto; grid-gap:1.2vw; gap:1.2vw; padding:1.6vw 2.6vw 2.4vw; overflow:hidden; isolation:isolate;
+  position:fixed; top:0; left:0; right:0; bottom:0; width:100%; height:100%; display:flex; flex-direction:column; padding:1.6vw 2.6vw 2.4vw; overflow:hidden; isolation:isolate;
   font-family:Rubik,"Segoe UI",system-ui,-apple-system,sans-serif; color:var(--ink); }
 #lobby::before { /* holofote: a cor do último acontecimento da sala (quem entrou, jogo liberado) */
   content:''; position:absolute; z-index:-2; left:50%; top:42%; width:110vw; height:70vw; transform:translate(-50%,-50%); pointer-events:none;
   background:radial-gradient(closest-side, rgba(245,165,36,.16), transparent 72%);
   background:radial-gradient(closest-side, color-mix(in srgb, var(--glow) 16%, transparent), transparent 72%); transition:--glow 1.6s ease; }
 #lobby::after { /* grão fino: tira a cara de tela plana sem chamar atenção */
-  content:''; position:absolute; top:0; left:0; right:0; bottom:0; z-index:-1; pointer-events:none; opacity:.055; mix-blend-mode:screen;
+  content:''; position:absolute; top:0; left:0; right:0; bottom:0; z-index:-1; pointer-events:none; opacity:.05;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 .tvl-display { font-family:"Bricolage Grotesque",Rubik,"Segoe UI",system-ui,sans-serif; font-weight:800; letter-spacing:-.025em; }
 
 /* ---- cabeçalho: identidade pequena + estado da sala ---- */
-.tvl-head { display:flex; align-items:center; justify-content:space-between; min-height:3vw; }
+.tvl-head { display:flex; align-items:center; justify-content:space-between; min-height:3vw; flex:none; }
 .tvl-brand { font-size:1.75vw; line-height:1; transition:opacity .5s; }
 .tvl-brand span, .tvl-title span { color:var(--amber); }
 #lobby[data-state="empty"] .tvl-brand { opacity:0; }
@@ -163,8 +163,9 @@ body.tv[data-screen="library"] .conn.off::before { background:#ef4444; box-shado
 #lobby[data-state="empty"] .tvl-pill-room { opacity:0; transform:translateY(-.6vw); }
 
 /* ---- miolo: herói (sala vazia) ou pessoas (sala com gente) + painel de entrada ---- */
-.tvl-main { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; grid-gap:2.4vw; gap:2.4vw; min-height:0; }
-.tvl-hero, .tvl-people { min-width:0; }
+.tvl-main { display:flex; align-items:center; flex:1; min-height:0; margin:1.2vw 0; }
+.tvl-hero, .tvl-people { flex:1; min-width:0; }
+.tvl-join { flex:none; margin-left:2.4vw; }
 #lobby[data-state="crowd"] .tvl-hero { display:none; }
 #lobby[data-state="empty"] .tvl-people { display:none; }
 
@@ -222,7 +223,7 @@ body.tv[data-screen="library"] .conn.off::before { background:#ef4444; box-shado
 .tvl-callout .tvl-phone { display:inline-block; animation:tvl-wiggle 3.2s ease-in-out infinite; transform-origin:50% 90%; }
 
 /* ---- vitrine de jogos: ambiente, não navegação ---- */
-.tvl-show { display:flex; flex-direction:column; height:24vh; min-height:0; transition:height .6s cubic-bezier(.2,.8,.2,1); }
+.tvl-show { display:flex; flex-direction:column; flex:none; height:24vh; min-height:0; transition:height .6s cubic-bezier(.2,.8,.2,1); }
 #lobby[data-state="crowd"] .tvl-show { height:27vh; }
 .tvl-show-k { display:flex; align-items:baseline; font-size:1.1vw; font-weight:800; color:var(--mut2); letter-spacing:.16em; text-transform:uppercase; padding:0 .4vw; }
 .tvl-show-k > * + * { margin-left:1vw; }

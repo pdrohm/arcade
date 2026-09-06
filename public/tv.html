@@ -6,8 +6,17 @@
 <title>Arcade da casa — TV</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Rubik:wght@500;600;700;800;900&display=swap">
 <link rel="stylesheet" href="/shared/ui.css">
+<!-- fontes: carregam sem travar a página (browser de TV pode demorar ou falhar; aí fica a fonte do sistema) -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Rubik:wght@500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
+<script>
+// Browser de TV não tem console: qualquer erro de script aparece num canto da tela.
+window.addEventListener('error', function (e) {
+  var el = document.getElementById('tverr') || document.body.appendChild(Object.assign(document.createElement('pre'), { id: 'tverr' }));
+  el.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99;max-width:60vw;margin:0;padding:8px 10px;border-radius:8px;background:#7f1d1d;color:#fff;font:600 14px/1.3 monospace;white-space:pre-wrap;opacity:.92';
+  el.textContent += (e.message || 'erro') + ' @ ' + String(e.filename || '').split('/').pop() + ':' + (e.lineno || '?') + '\n';
+});
+</script>
 </head>
 <body>
 <div id="lobby"></div>
