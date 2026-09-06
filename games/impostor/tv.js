@@ -3,7 +3,7 @@
 (() => {
   const style = `
     .imp-stage { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; }
-    .imp-tag { font-size:clamp(15px,1.5vw,22px); font-weight:800; letter-spacing:3px; text-transform:uppercase; color:var(--mut); }
+    .imp-tag { font-size:clamp(15px,1.5vw,22px); font-weight:800; letter-spacing:3px; text-transform:uppercase; color:#9aa6c0; }
     .imp-big { font-size:clamp(28px,4.2vw,70px); font-weight:900; line-height:1.05; }
     .imp-mid { font-size:clamp(20px,2.4vw,38px); font-weight:800; }
     .imp-ring { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; align-items:flex-start; }
@@ -14,7 +14,7 @@
     .imp-p .who { font-size:clamp(16px,1.6vw,24px); }
     .imp-p .cl { display:flex; flex-direction:column; gap:4px; }
     .imp-p .cl b { font-size:clamp(17px,1.9vw,30px); font-weight:900; word-break:break-word; }
-    .imp-p .cl small { font-size:14px; color:var(--mut); }
+    .imp-p .cl small { font-size:14px; color:#9aa6c0; }
     .imp-p .st { font-size:22px; }
     @keyframes imppop { from { transform:translateY(12px); opacity:0; } }
     .imp-clock { font-size:clamp(70px,11vw,190px); font-weight:900; font-variant-numeric:tabular-nums; line-height:1; }
@@ -22,7 +22,7 @@
     @keyframes imppulse { to { transform:scale(1.05); } }
     .imp-word { display:inline-block; padding:14px 40px; border-radius:22px; background:#0ea5e9; color:#04121f; font-size:clamp(30px,5vw,80px); font-weight:900; animation:impword .5s; }
     @keyframes impword { 0% { transform:scale(.5) rotate(-4deg); opacity:0; } 70% { transform:scale(1.1); } 100% { transform:scale(1); } }
-    .imp-dots { font-size:clamp(30px,5vw,80px); font-weight:900; letter-spacing:14px; color:var(--mut); }
+    .imp-dots { font-size:clamp(30px,5vw,80px); font-weight:900; letter-spacing:14px; color:#9aa6c0; }
     .imp-rank { width:100%; max-width:860px; display:flex; flex-direction:column; gap:10px; }
     .imp-row { display:flex; align-items:center; gap:16px; padding:12px 20px; border-radius:16px; background:#182036; font-size:clamp(18px,2.1vw,30px); }
     .imp-row .g { flex:1; text-align:left; }

@@ -138,7 +138,7 @@
             el.style.left = (cx(col) + ox * CW) + '%';
             el.style.top = pctY(cy(row) + oy * CW);
           }
-          for (const el of board.querySelectorAll('.pf-pawn')) if (!G.order.some(pid => 'pf-pawn-' + pid === el.id)) el.remove();
+          for (const el of Array.prototype.slice.call(board.querySelectorAll('.pf-pawn'))) if (!G.order.some(pid => 'pf-pawn-' + pid === el.id)) el.remove();
         };
         (function () {
           if (animating) return; animating = true;

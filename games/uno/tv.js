@@ -13,17 +13,19 @@
       border-radius:40px; background:radial-gradient(60% 60% at 50% 45%,#1d6b45,#0d3c27 70%,#082718);
       box-shadow:inset 0 0 0 10px #0f2a1c, inset 0 0 90px #0009, 0 30px 70px #000a; overflow:hidden; }
     .un-center { position:absolute; left:50%; top:47%; transform:translate(-50%,-50%); display:flex; align-items:center; gap:clamp(14px,2.4vw,42px); }
-    .uc { position:relative; width:var(--w,90px); aspect-ratio:2/3; border-radius:12%; background:#fff;
+    /* TV da sala (Chrome 47) não tem var/calc/aspect-ratio: as linhas fixas valem lá; os browsers novos sobrescrevem */
+    .uc { position:relative; width:90px; height:135px; width:var(--w,90px); aspect-ratio:2/3; border-radius:12%; background:#fff; /* tv-ok: valor fixo antes */
       box-shadow:0 8px 20px #0007, inset 0 0 0 6px #fff; display:flex; align-items:center; justify-content:center; overflow:hidden; }
     .uc .o { position:absolute; left:9%; top:11%; width:82%; height:78%; border-radius:50%; background:#ffffff2e; transform:rotate(-22deg); }
     .uc .o.rb { background:${ARCO}; opacity:.9; }
-    .uc .v { position:relative; font-weight:900; font-size:calc(var(--w,90px) * .58); line-height:1; color:#fff;
+    @supports (aspect-ratio:1) { .uc, .un-p .fan i { height:auto; } }   /* altura fixa só onde não existe aspect-ratio */
+    .uc .v { position:relative; font-weight:900; font-size:52px; font-size:calc(var(--w,90px) * .58); line-height:1; color:#fff; /* tv-ok: valor fixo antes */
       text-shadow:2px 3px 0 #0006, 0 0 10px #0004; letter-spacing:-2px; }
-    .uc .tl, .uc .br { position:absolute; font-weight:900; font-size:calc(var(--w,90px) * .2); color:#ffffffdd; }
+    .uc .tl, .uc .br { position:absolute; font-weight:900; font-size:18px; font-size:calc(var(--w,90px) * .2); color:#ffffffdd; } /* tv-ok: valor fixo antes */
     .uc .tl { left:8%; top:5%; } .uc .br { right:8%; bottom:5%; transform:rotate(180deg); }
     .uc.back { background:#111827; }
     .uc.back .o { background:${ARCO}; opacity:.85; }
-    .uc.back .v { font-size:calc(var(--w,90px) * .26); letter-spacing:1px; }
+    .uc.back .v { font-size:23px; font-size:calc(var(--w,90px) * .26); letter-spacing:1px; } /* tv-ok: valor fixo antes */
     .uc.play { animation:unpop .45s cubic-bezier(.2,1.4,.4,1); }
     @keyframes unpop { 0% { transform:translateY(-40px) rotate(-14deg) scale(.6); opacity:0; } 60% { transform:translateY(0) rotate(4deg) scale(1.12); } 100% { transform:none; } }
     .un-slot { position:relative; }
@@ -38,7 +40,7 @@
     .un-p { position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:6px; width:clamp(104px,11.5vw,168px); text-align:center; }
     .un-p .who { font-weight:900; font-size:clamp(14px,1.4vw,22px); padding:5px 14px; border-radius:11px; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
     .un-p .fan { display:flex; justify-content:center; height:clamp(30px,3.4vw,52px); }
-    .un-p .fan i { --fw:clamp(15px,1.6vw,24px); display:block; width:var(--fw); aspect-ratio:2/3; border-radius:16%; background:#111827; box-shadow:0 2px 5px #0008, inset 0 0 0 2px #ffffff44; margin-left:calc(var(--fw) * -0.45); }
+    .un-p .fan i { --fw:clamp(15px,1.6vw,24px); display:block; width:18px; height:27px; width:var(--fw); /* tv-ok: valor fixo antes */ aspect-ratio:2/3; border-radius:16%; background:#111827; box-shadow:0 2px 5px #0008, inset 0 0 0 2px #ffffff44; margin-left:calc(var(--fw) * -0.45); }
     .un-p .fan i:first-child { margin-left:0; }
     .un-p .cnt { font-size:clamp(13px,1.2vw,18px); font-weight:800; color:#cfe9d9; }
     .un-p.now { filter:drop-shadow(0 0 16px #fff); }

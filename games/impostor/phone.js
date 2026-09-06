@@ -6,7 +6,7 @@
     .imp-hid { border-radius:20px; background:linear-gradient(135deg,#0ea5e9,#1e3a8a); padding:34px 18px; text-align:center; font-size:22px; font-weight:900; line-height:1.3; }
     .imp-open { border-radius:20px; background:#0b0e17; border:3px solid #0ea5e9; padding:28px 18px; text-align:center; }
     .imp-open .w { font-size:40px; font-weight:900; line-height:1.15; word-break:break-word; }
-    .imp-open .k { font-size:16px; color:var(--mut); font-weight:800; letter-spacing:2px; text-transform:uppercase; }
+    .imp-open .k { font-size:16px; color:#9aa6c0; font-weight:800; letter-spacing:2px; text-transform:uppercase; }
     .imp-imp { border-color:#ef4444 !important; }
     .imp-imp .w { color:#ef4444; }
     .imp-o { padding:12px 16px; border-radius:12px; background:#2a3350; font-weight:900; font-size:18px; text-align:center; }

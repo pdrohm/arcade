@@ -141,7 +141,7 @@
         center.innerHTML = ch;
 
         // casa alvo + peão fantasma
-        board.querySelectorAll('.ia-sq.active').forEach(e => e.classList.remove('active'));
+        Array.prototype.slice.call(board.querySelectorAll('.ia-sq.active')).forEach(e => e.classList.remove('active'));
         let ghost = document.getElementById('ia-ghost');
         if (t && G.target !== null && ['draw', 'judge', 'allplay'].includes(G.phase)) {
           const el = document.getElementById('ia-sq' + G.target); if (el) el.classList.add('active');
@@ -163,7 +163,7 @@
             const ox = n > 1 ? (k % 2 ? .3 : -.3) : 0, oy = n > 2 ? (k < 2 ? -.3 : .3) : 0;
             el.style.left = (cx(col) + ox * CW) + '%'; el.style.top = pctY(cy(row) + oy * CW);
           }
-          for (const el of board.querySelectorAll('.ia-pawn')) if (!G.teams.some(tt => 'ia-pawn-' + tt.key === el.id)) el.remove();
+          for (const el of Array.prototype.slice.call(board.querySelectorAll('.ia-pawn'))) if (!G.teams.some(tt => 'ia-pawn-' + tt.key === el.id)) el.remove();
         };
         (function () {
           if (animating) return; animating = true;

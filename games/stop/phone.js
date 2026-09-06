@@ -30,7 +30,7 @@
   `;
   let spinTimer = null, spinFor = '';
   const ensureStyle = () => { if (styled) return; const el = document.createElement('style'); el.textContent = style; document.head.appendChild(el); styled = true; };
-  const collect = () => { const a = {}; document.querySelectorAll('[data-cat]').forEach(i => { a[i.dataset.cat] = i.value; }); return a; };
+  const collect = () => { const a = {}; Array.prototype.slice.call(document.querySelectorAll('[data-cat]')).forEach(i => { a[i.dataset.cat] = i.value; }); return a; };
   const save = () => { clearTimeout(saveT); saveT = setTimeout(() => ARCADE.send({ t: 'save', answers: collect() }), 250); };
 
   ARCADE.register('stop', {
@@ -111,7 +111,7 @@
         } else if (spinTimer && G.phase !== 'spin') { clearInterval(spinTimer); spinTimer = null; spinFor = ''; }
         const nc = document.getElementById('st-newcat');
         if (nc && !nc._st) { nc._st = true; nc.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ARCADE.games.stop.phone.act('cfgAddCat', null, c); } }); }
-        document.querySelectorAll('[data-cat]').forEach(i => { if (!i._st) { i._st = true; i.addEventListener('input', () => { save(); const cheio = [...document.querySelectorAll('[data-cat]')].every(x => x.value.trim().length >= 2); const b = document.getElementById('st-stop'); if (b) b.disabled = !cheio || !!G.stopBy; }); } });
+        Array.prototype.slice.call(document.querySelectorAll('[data-cat]')).forEach(i => { if (!i._st) { i._st = true; i.addEventListener('input', () => { save(); const cheio = [...document.querySelectorAll('[data-cat]')].every(x => x.value.trim().length >= 2); const b = document.getElementById('st-stop'); if (b) b.disabled = !cheio || !!G.stopBy; }); } });
         const prog = document.getElementById('st-prog');
         if (prog) prog.innerHTML = G.filled.map(f => { const p = c.C.players.find(x => x.pid === f.pid); return p ? `<span class="nm" style="${c.nmStyle(p)}">${c.esc(p.name)} ${f.n}/${G.cats.length}</span>` : ''; }).join('');
         const tag = `${G.round}:${G.phase}`;

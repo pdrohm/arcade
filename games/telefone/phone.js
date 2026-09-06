@@ -74,7 +74,7 @@
   }
   function refreshTools(root) { const t = root.querySelector('#tsf-tools'); if (t) { t.innerHTML = toolsHtml(); bindTools(root); } }
   function bindTools(root) {
-    root.querySelectorAll('#tsf-tools [data-a]').forEach(el => el.onclick = ev => {
+    Array.prototype.slice.call(root.querySelectorAll('#tsf-tools [data-a]')).forEach(el => el.onclick = ev => {
       ev.stopPropagation();
       const a = el.dataset.a;
       if (a === 'tcor') { cor = el.dataset.c; if (tool === 'eraser') tool = 'pen'; }

@@ -21,6 +21,9 @@ no Node e não tem essa limitação.
 | `async` / `await` | `.then()` |
 | `{ ...obj }` (spread de objeto) | `Object.assign({}, obj)` |
 | `a ** b` | `Math.pow(a, b)` |
+| `for (x of el.querySelectorAll(…))`, `[...lista]`, `lista.forEach` | `Array.prototype.slice.call(el.querySelectorAll(…))` |
+| `padStart`, `Object.values`, `Object.entries` | zero à esquerda na mão; `Object.keys(o).map(k => o[k])` |
+| `var(--cor)` no CSS (a TV **ignora a declaração inteira**) | escreva o valor. Precisa mesmo de `var()`? Ponha o valor fixo antes, na mesma regra, e marque a linha com `/* tv-ok */` |
 
 ## O que PODE, porque o Chrome 47 tem
 
@@ -28,8 +31,10 @@ Arrow function, template string (crase), `for...of`, propriedade abreviada, `Map
 `Promise`, `Object.assign`, spread em array (`[...x]`) e em chamada (`f(...x)`), e `class`
 (desde que o arquivo esteja em modo estrito).
 
-No CSS o cuidado é parecido: nada de `grid`, `gap` em flex, `inset`, `place-items`,
-`color-mix` sem cor de reserva, nem `mix-blend-mode`. Use `flex` com margens.
+No CSS o cuidado é parecido. Erro de verdade (some a declaração): `var(--x)`. Só desalinha,
+mas desalinha em TV até ~2020: `grid`, `gap` em flex, `inset`, `clamp()`, `aspect-ratio`,
+`place-items`, `mix-blend-mode`, `backdrop-filter`. Use `flex` com margens e valores fixos.
+`filter` precisa também de `-webkit-filter`.
 
 ## Como conferir antes de subir
 
@@ -39,7 +44,9 @@ O verificador lê cada arquivo e aponta a linha exata do problema:
 node test/tv-compat.js
 ```
 
-Ele roda sozinho junto com `npm test`. Se passar, a TV consegue ler os arquivos.
+Ele confere o que a TV carrega: `shared/*.js`, `games/*/tv.js`, `public/tv.html` e `shared/ui.css`.
+Erro (✗) é o que deixa a tela branca ou quebra o jogo. Aviso (⚠) é CSS que só desalinha.
+Sem instalar nada ele confere por texto; com `npm i -D acorn acorn-walk` a conferência é exata.
 
 ## Se a TV ficar branca mesmo assim
 

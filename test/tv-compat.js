@@ -4,7 +4,9 @@
 //
 //   node test/tv-compat.js
 //
-// Sem argumentos, confere shared/*.js, games/*/(tv|phone).js e os <script> de public/*.html.
+// Sem argumentos, confere o que a TV carrega: shared/*.js, games/*/tv.js, public/tv.html e shared/ui.css.
+// (phone.js e index.html rodam em celular moderno e ficam de fora.)
+// Uma linha com o comentário tv-ok é aceita: use quando a linha de cima já tem o valor fixo de reserva.
 // Com `acorn` instalado (npm i -D acorn acorn-walk) a conferência é exata; sem ele, cai
 // num modo simples por texto, que pega os casos comuns mas pode deixar passar algum.
 'use strict';
@@ -18,11 +20,11 @@ function alvos() {
   const out = [];
   for (const f of fs.readdirSync(path.join(RAIZ, 'shared'))) if (f.endsWith('.js')) out.push('shared/' + f);
   const jogos = path.join(RAIZ, 'games');
-  for (const dir of fs.readdirSync(jogos)) for (const f of ['tv.js', 'phone.js']) {
-    const rel = 'games/' + dir + '/' + f;
+  for (const dir of fs.readdirSync(jogos)) {
+    const rel = 'games/' + dir + '/tv.js';
     if (fs.existsSync(path.join(RAIZ, rel))) out.push(rel);
   }
-  for (const f of fs.readdirSync(path.join(RAIZ, 'public'))) if (f.endsWith('.html')) out.push('public/' + f);
+  out.push('public/tv.html');
   return out.filter(f => !IGNORAR.some(x => f.startsWith(x)));
 }
 
@@ -94,6 +96,17 @@ function conferirAst(src) {
       if (GLOBAIS_NOVOS[nome]) add(n, nome + ' só existe a partir do ' + GLOBAIS_NOVOS[nome]);
     }
     if (n.type === 'Identifier' && GLOBAIS_NOVOS[n.name] && !usoProtegido.has(n)) add(n, n.name + ' só existe a partir do ' + GLOBAIS_NOVOS[n.name]);
+    // NodeList (querySelectorAll, children…) não é iterável nem tem forEach no Chrome 47
+    const ehLista = x => x && (
+      (x.type === 'CallExpression' && x.callee.type === 'MemberExpression' && /^(querySelectorAll|getElementsBy\w+)$/.test(x.callee.property.name || '')) ||
+      (x.type === 'MemberExpression' && /^(children|childNodes)$/.test(x.property.name || '')));
+    if (n.type === 'ForOfStatement' && ehLista(n.right)) add(n, 'for...of numa NodeList (use Array.prototype.slice.call)');
+    if (n.type === 'SpreadElement' && ehLista(n.argument)) add(n, '[...NodeList] (use Array.prototype.slice.call)');
+    if (n.type === 'CallExpression' && n.callee.type === 'MemberExpression' && n.callee.property.name === 'forEach' && ehLista(n.callee.object)) add(n, 'NodeList.forEach (use Array.prototype.slice.call)');
+    // var(--x) dentro de string de estilo: o Chrome 47 ignora a declaração inteira
+    const semTvOk = txt => txt.split('\n').filter(l => /var\(--/.test(l) && !/tv-ok/.test(l)).length > 0;
+    if (n.type === 'TemplateElement' && semTvOk(n.value.raw)) add(n, 'var(--…) em CSS: a TV ignora a declaração inteira; escreva o valor (ou valor fixo antes + tv-ok)');
+    if (n.type === 'Literal' && typeof n.value === 'string' && semTvOk(n.value)) add(n, 'var(--…) em CSS: a TV ignora a declaração inteira; escreva o valor (ou valor fixo antes + tv-ok)');
   });
   return falhas;
 }
@@ -113,10 +126,15 @@ const PADROES = [
   [/\.(padStart|padEnd|flat|flatMap|matchAll|replaceAll|trimStart|trimEnd|findLast)\(/, 'função só existente em Chrome novo'],
   [/\bObject\.(entries|values|fromEntries)\(/, 'Object.entries/values/fromEntries (Chrome 54+)'],
   [/\bglobalThis\b|\bstructuredClone\(/, 'global só existente em Chrome novo'],
+  [/for\s*\((const|let|var)\s+\w+\s+of\s+[^)]*(querySelectorAll|getElementsBy|\.children|\.childNodes)/, 'for...of numa NodeList'],
+  [/\[\.\.\.[^\]]*(querySelectorAll|getElementsBy|\.children|\.childNodes)/, '[...NodeList]'],
+  [/(querySelectorAll|getElementsBy\w+)\([^)]*\)\.forEach|\.(children|childNodes)\.forEach/, 'NodeList.forEach'],
+  [/var\(--/, 'var(--…) em CSS'],
 ];
 function conferirTexto(src) {
   const falhas = [];
   src.split('\n').forEach((linha, i) => {
+    if (/tv-ok/.test(linha)) return;
     const limpa = linha.replace(/\/\/.*$/, '');
     for (const [re, o_que] of PADROES) if (re.test(limpa)) falhas.push({ linha: i + 1, o_que });
   });
@@ -126,13 +144,37 @@ function conferirTexto(src) {
 const TEM_STRICT = /^\s*(\/\/[^\n]*\n|\/\*[\s\S]*?\*\/\s*|\s)*['"]use strict['"];/;
 const USA_BLOCO = /(^|[^.\w])(let|const|class)[\s({[]/;
 
+// CSS: var() é erro (a declaração some); o resto só desalinha, então é aviso.
+const CSS_ERRO = [[/var\(--/, 'var(--…): a TV ignora a declaração inteira']];
+const CSS_AVISO = [[/display:\s*grid/, 'grid'], [/(^|[^-\w])gap:/, 'gap (em flex não funciona na TV)'], [/(^|[^-\w])inset:/, 'inset'], [/place-(items|content):/, 'place-items'],
+  [/clamp\(/, 'clamp()'], [/aspect-ratio:/, 'aspect-ratio'], [/mix-blend-mode/, 'mix-blend-mode'], [/backdrop-filter/, 'backdrop-filter']];
+function conferirCss(src) {
+  const erros = [], avisos = [];
+  src.split('\n').forEach((linha, i) => {
+    if (/tv-ok/.test(linha)) return;
+    const l = linha.replace(/\/\*.*?\*\//g, '');
+    for (const [re, o_que] of CSS_ERRO) if (re.test(l)) erros.push({ linha: i + 1, o_que });
+    for (const [re, o_que] of CSS_AVISO) if (re.test(l)) avisos.push({ linha: i + 1, o_que });
+  });
+  return { erros, avisos };
+}
+
 function main() {
   const lista = process.argv.length > 2 ? process.argv.slice(2) : alvos();
   let ruins = 0;
+  // folha de estilo comum
+  if (process.argv.length <= 2) {
+    const css = conferirCss(fs.readFileSync(path.join(RAIZ, 'shared/ui.css'), 'utf8'));
+    if (css.erros.length) { ruins++; console.log('\n✗ shared/ui.css'); for (const f of css.erros) console.log('   linha ' + f.linha + ': ' + f.o_que); }
+    if (css.avisos.length) { console.log('\n⚠ shared/ui.css (só desalinha na TV, não quebra):'); for (const f of css.avisos) console.log('   linha ' + f.linha + ': ' + f.o_que); }
+  }
   for (const rel of lista) {
     const src = fonte(rel);
     if (!src.trim()) continue;
     const falhas = acorn && walk ? conferirAst(src) : conferirTexto(src);
+    const avisos = [];
+    (src.match(/<style>[\s\S]*?<\/style>|const style = `[\s\S]*?`/g) || []).forEach(bloco => { for (const f of conferirCss(bloco).avisos) avisos.push(f.o_que); });
+    if (avisos.length && rel.endsWith('tv.js')) console.log('\n⚠ ' + rel + ' (CSS que só desalinha na TV): ' + [...new Set(avisos)].join(', '));
     if (USA_BLOCO.test(src) && !TEM_STRICT.test(src)) falhas.push({ linha: 1, o_que: "falta 'use strict'; no topo (sem ele a TV recusa todo let/const do arquivo)" });
     if (!falhas.length) continue;
     ruins++;

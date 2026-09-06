@@ -23,15 +23,19 @@ window.ARCADE.tvLobby = (() => {
   const initial = n => (String(n || '').match(/[A-Za-z0-9\u00C0-\u024F]/) || ['?'])[0].toUpperCase();   // sem \p{L}: o browser da TV é antigo
   const plural = (n, s, p) => `${n} ${n === 1 ? s : p}`;
   const short = u => String(u).replace(/^https?:\/\//, '').replace(/\/$/, '');
+  // querySelectorAll devolve uma NodeList; o Chrome 47 não percorre NodeList com for...of nem [...]
+  const qa = (raiz, sel) => Array.prototype.slice.call(raiz.querySelectorAll(sel));
+  const rgba = (hex, a) => { const h = String(hex).replace('#', ''); const n = parseInt(h.length === 3 ? h.replace(/(.)/g, '$1$1') : h, 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
   function avatar(c, p) {
     const col = c.ci(p.color);
-    return { style: `--c:${col.hex};--ink:${col.dark ? '#fff' : '#111'}`, html: `<span class="tvl-av"><span>${esc(initial(p.name))}</span></span>` };
+    return { style: `background:${col.hex};color:${col.dark ? '#fff' : '#111'}`, html: `<span class="tvl-av"><span>${esc(initial(p.name))}</span></span>` };
   }
 
   // ---------- montagem (uma vez) ----------
   function mount(node) {
     root = node;
     root.innerHTML = `
+      <div class="tvl-glow"></div>
       <header class="tvl-head">
         <div class="tvl-brand tvl-display">Arcade <span>da Casa</span></div>
         <div class="tvl-status">
@@ -62,7 +66,7 @@ window.ARCADE.tvLobby = (() => {
       </footer>
       <div class="tvl-announce"></div>`;
     const q = s => root.querySelector(s);
-    el = { codeSm: q('.tvl-code-sm'), dots: q('.tvl-dots'), n: q('.tvl-n'), code: q('.tvl-code'), chips: q('.tvl-chips'), count: q('.tvl-count'), hint: q('.tvl-hint'),
+    el = { glow: q('.tvl-glow'), codeSm: q('.tvl-code-sm'), dots: q('.tvl-dots'), n: q('.tvl-n'), code: q('.tvl-code'), chips: q('.tvl-chips'), count: q('.tvl-count'), hint: q('.tvl-hint'),
       joinK: q('.tvl-join-k'), qrs: q('.tvl-qrs'), joinHint: q('.tvl-join-hint'), showN: q('.tvl-show-n'), wrap: q('.tvl-track-wrap'), track: q('.tvl-track'), ann: q('.tvl-announce') };
     over = document.getElementById('tvl-over') || Object.assign(document.body.appendChild(document.createElement('div')), { id: 'tvl-over' });
     prev = null; netsKey = ''; gamesKey = '';
@@ -106,27 +110,28 @@ window.ARCADE.tvLobby = (() => {
 
   // Crachás: um por jogador, chaveados pelo pid. Quem entra aparece com "pop"; quem sai some com "drop".
   function PlayerList(c, ps) {
-    const have = new Map([...el.chips.querySelectorAll('.tvl-chip')].map(x => [x.dataset.pid, x]));
+    const have = new Map(qa(el.chips, '.tvl-chipw').map(x => [x.dataset.pid, x]));
     const keep = new Set();
     ps.forEach((p, i) => {
       keep.add(p.pid);
-      let chip = have.get(p.pid);
+      let w = have.get(p.pid);
       const av = avatar(c, p);
-      if (!chip) {
-        chip = document.createElement('div');
-        chip.className = 'tvl-chip'; chip.dataset.pid = p.pid;
-        chip.innerHTML = `${av.html}<span class="tvl-nm"></span>`;
+      if (!w) {   // wrapper faz o pop/drop; o crachá de dentro fica inclinado (um transform só por elemento)
+        w = document.createElement('div');
+        w.className = 'tvl-chipw'; w.dataset.pid = p.pid;
+        w.innerHTML = `<div class="tvl-chip">${av.html}<span class="tvl-nm"></span></div>`;
       }
+      const chip = w.firstElementChild;
       chip.style.cssText = av.style;
       chip.classList.toggle('off', p.on === false);
-      chip.classList.remove('out');
+      w.classList.remove('out');
       const nm = chip.querySelector('.tvl-nm'); if (nm.textContent !== p.name) nm.textContent = p.name;
       const ini = chip.querySelector('.tvl-av span'); if (ini.textContent !== initial(p.name)) ini.textContent = initial(p.name);
-      if (el.chips.children[i] !== chip) el.chips.insertBefore(chip, el.chips.children[i] || null);
+      if (el.chips.children[i] !== w) el.chips.insertBefore(w, el.chips.children[i] || null);
     });
-    have.forEach((chip, pid) => {
-      if (keep.has(pid) || chip.classList.contains('out')) return;
-      chip.classList.add('out'); setTimeout(() => chip.remove(), 420);
+    have.forEach((w, pid) => {
+      if (keep.has(pid) || w.classList.contains('out')) return;
+      w.classList.add('out'); setTimeout(() => w.remove(), 420);
     });
     el.count.textContent = ps.length ? `${plural(ps.length, 'jogador', 'jogadores')} na sala` : '';
     // ainda não dá para jogar nada? A dica é chamar gente, não escolher jogo.
@@ -147,7 +152,7 @@ window.ARCADE.tvLobby = (() => {
       el.showN.textContent = plural(games.length, 'jogo', 'jogos');
       fitTrack();
     }
-    for (const g of games) for (const node of el.track.querySelectorAll(`[data-id="${g.id}"]`)) {
+    for (const g of games) for (const node of qa(el.track, `[data-id="${g.id}"]`)) {
       const min = g.minPlayers || 2, max = g.maxPlayers || 8;
       const lock = n > 0 && (n < min || n > max);
       node.classList.toggle('lock', lock);
@@ -157,7 +162,7 @@ window.ARCADE.tvLobby = (() => {
     }
   }
   function GamePreview(g) {
-    return `<div class="tvl-poster" data-id="${esc(g.id)}" style="--c:${artColor(g)}">
+    return `<div class="tvl-poster" data-id="${esc(g.id)}">
       <div class="tvl-art" style="background:${g.art || 'linear-gradient(135deg,#334155,#0f172a)'}"></div>
       <div class="tvl-emoji">${g.emoji || '🎲'}</div>
       <div class="tvl-gname tvl-display">${esc(g.name)}</div>
@@ -168,7 +173,7 @@ window.ARCADE.tvLobby = (() => {
   // Se cabem, ficam parados e centralizados. Nada de navegação: é ambiente.
   function fitTrack() {
     if (!el.track || !el.wrap) return;
-    const posters = [...el.track.querySelectorAll('.tvl-poster')];
+    const posters = qa(el.track, '.tvl-poster');
     const singles = posters.filter(p => !p.dataset.dup);
     for (const p of posters) if (p.dataset.dup) p.remove();
     el.track.className = 'tvl-track';
@@ -176,8 +181,8 @@ window.ARCADE.tvLobby = (() => {
     const w = el.track.scrollWidth, avail = el.wrap.clientWidth;
     if (!singles.length || w <= avail) { el.track.classList.add('still'); return; }
     for (const p of singles) { const d = p.cloneNode(true); d.dataset.dup = '1'; el.track.appendChild(d); }
-    el.track.style.setProperty('--dur', `${Math.round(w / 26)}s`);   // ~26 px/s: dá para ler, não distrai
     el.track.style.animation = '';
+    el.track.style.animationDuration = `${Math.round(w / 26)}s`;   // ~26 px/s: dá para ler, não distrai
     void el.track.offsetWidth;
     el.track.classList.add('drift');
   }
@@ -197,13 +202,17 @@ window.ARCADE.tvLobby = (() => {
   // Jogos que acabaram de ficar disponíveis: um aviso só, mesmo que vários liberem juntos.
   function unlocked(list) {
     if (!list.length) return;
-    for (const g of list) for (const node of el.track.querySelectorAll(`[data-id="${g.id}"]`)) { node.classList.remove('unlocked'); void node.offsetWidth; node.classList.add('unlocked'); }
+    for (const g of list) for (const node of qa(el.track, `[data-id="${g.id}"]`)) { node.classList.remove('unlocked'); void node.offsetWidth; node.classList.add('unlocked'); }
     const g = list[0];
     const title = list.length === 1 ? `${g.emoji || ''} ${g.name}` : list.length === 2 ? `${list[0].name} e ${list[1].name}` : `${list[0].name}, ${list[1].name} e mais ${list.length - 2}`;
     announce({ kicker: list.length === 1 ? 'Novo jogo liberado' : `${list.length} jogos liberados`, title, color: artColor(g), ink: '#fff', ms: 2600 });
     glow(artColor(g));
   }
-  function glow(color) { if (root) root.style.setProperty('--glow', color); }
+  function glow(color) {   // holofote: apaga, troca a cor, acende (Chrome 47 não anima gradiente nem tem var())
+    if (!el.glow) return;
+    el.glow.style.opacity = '0';
+    setTimeout(() => { el.glow.style.background = `radial-gradient(closest-side, ${rgba(color, .16)}, rgba(0,0,0,0) 72%)`; el.glow.style.opacity = '1'; }, 300);
+  }
 
   // Avisos em fila: um de cada vez, curtos, sem interromper o lobby.
   const queue = []; let showing = false;
@@ -211,7 +220,7 @@ window.ARCADE.tvLobby = (() => {
   function pump() {
     if (showing || !queue.length || !el.ann) return;
     const a = queue.shift(); showing = true;
-    el.ann.innerHTML = `<div class="tvl-ann" style="--c:${a.color};--ink:${a.ink}"><small>${esc(a.kicker)}</small><b>${esc(a.title)}</b></div>`;
+    el.ann.innerHTML = `<div class="tvl-ann" style="background:${a.color};color:${a.ink}"><small>${esc(a.kicker)}</small><b>${esc(a.title)}</b></div>`;
     const node = el.ann.firstElementChild;
     setTimeout(() => { node.classList.add('out'); setTimeout(() => { if (node.parentNode) node.remove(); showing = false; pump(); }, 360); }, a.ms || 2200);
   }
@@ -223,8 +232,8 @@ window.ARCADE.tvLobby = (() => {
     const by = c.C.players.find(p => p.pid === c.C.startedBy);
     const av = by ? avatar(c, by) : null;
     clearTimeout(overT);
-    over.innerHTML = `<div class="tvl-over" style="--art:${g.art || '#1e293b'}"><div class="tvl-over-in">
-      ${by ? `<div class="tvl-who" style="${av.style}">${av.html}<span>${esc(by.name)}</span><em>escolheu…</em></div>` : `<div class="tvl-who" style="--c:#161d33;--ink:#c9d3ea"><em>Escolhido no celular…</em></div>`}
+    over.innerHTML = `<div class="tvl-over"><div class="tvl-over-art" style="background:${g.art || '#1e293b'}"></div><div class="tvl-over-in">
+      ${by ? `<div class="tvl-who" style="${av.style}">${av.html}<span>${esc(by.name)}</span><em>escolheu…</em></div>` : `<div class="tvl-who"><em>Escolhido no celular…</em></div>`}
       <div class="tvl-over-emoji">${g.emoji || '🎲'}</div>
       <div class="tvl-over-name tvl-display">${esc(g.name)}</div>
       <div class="tvl-over-tag">${esc(g.tagline || '')}</div>
