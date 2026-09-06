@@ -120,6 +120,7 @@ function freshCore() {
     gameId: null,
     players: [],            // { pid, name, color, on }  ordem = ordem de entrada
     event: null,            // { text, color, at }
+    startedBy: null,        // pid de quem escolheu o jogo atual (a TV mostra "Fulano escolheu…")
     timerEnd: null,         // cronômetro do jogo atual (o núcleo dispara onTimeUp)
   };
 }
@@ -189,6 +190,7 @@ function makeRoom(code) {
     core.gameId = id;
     core.screen = 'game';
     core.event = null;
+    core.startedBy = byPlayer ? byPlayer.pid : null;
     game = mod.create(makeApi());
     if (typeof game.start === 'function') game.start();
     if (!core.event) core.event = { text: `${mod.meta.name} começou!`, color: byPlayer ? byPlayer.color : null, at: Date.now() };
@@ -198,9 +200,9 @@ function makeRoom(code) {
     game = null;
     core.gameId = null;
     core.screen = 'library';
+    core.startedBy = null;
     core.event = { text: reason || 'Voltamos para a biblioteca.', color: null, at: Date.now() };
   }
-    startedBy: null,        // pid de quem escolheu o jogo atual (a TV mostra "Fulano escolheu…")
 
   // ---------- ações do núcleo ----------
   const coreActions = {
@@ -280,7 +282,6 @@ function makeRoom(code) {
       const p = playerOf(ws);
       if (!mod || !p) return;
       if (core.players.length < (mod.meta.minPlayers || 2)) return send(ws, { t: 'error', text: `Precisa de pelo menos ${mod.meta.minPlayers || 2} jogadores.` });
-    core.startedBy = byPlayer ? byPlayer.pid : null;
       startGame(mod.meta.id, p);
       broadcast();
     },
@@ -291,7 +292,6 @@ function makeRoom(code) {
       broadcast();
     },
   };
-    core.startedBy = null;
   function removeIndex(i) {
     const pid = core.players[i] && core.players[i].pid;
     core.players.splice(i, 1);
