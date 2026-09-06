@@ -46,12 +46,15 @@ const METODOS_NOVOS = Object.assign(Object.create(null), {
   padStart: 'Chrome 57', padEnd: 'Chrome 57', trimStart: 'Chrome 66', trimEnd: 'Chrome 66',
   flat: 'Chrome 69', flatMap: 'Chrome 69', matchAll: 'Chrome 73', replaceAll: 'Chrome 85',
   at: 'Chrome 92', toSorted: 'Chrome 110', toReversed: 'Chrome 110', findLast: 'Chrome 97',
+  append: 'Chrome 54', prepend: 'Chrome 54', replaceChildren: 'Chrome 86', toggleAttribute: 'Chrome 69',
+  finally: 'Chrome 63', allSettled: 'Chrome 76', any: 'Chrome 85', randomUUID: 'Chrome 92', replaceWith: 'Chrome 54',
 });
 const GLOBAIS_NOVOS = Object.assign(Object.create(null), {
   'Object.entries': 'Chrome 54', 'Object.values': 'Chrome 54', 'Object.fromEntries': 'Chrome 73',
   'Array.flat': 'Chrome 69', 'globalThis': 'Chrome 71', 'structuredClone': 'Chrome 98',
   'queueMicrotask': 'Chrome 71', 'BigInt': 'Chrome 67', 'ResizeObserver': 'Chrome 64',
-  'IntersectionObserver': 'Chrome 51', 'AbortController': 'Chrome 66',
+  'IntersectionObserver': 'Chrome 51', 'AbortController': 'Chrome 66', 'Proxy': 'Chrome 49', 'Reflect': 'Chrome 49',
+  'URLSearchParams': 'Chrome 49', 'Object.getOwnPropertyDescriptors': 'Chrome 54',
 });
 
 const NOMES = {
@@ -135,7 +138,8 @@ function conferirTexto(src) {
   const falhas = [];
   src.split('\n').forEach((linha, i) => {
     if (/tv-ok/.test(linha)) return;
-    const limpa = linha.replace(/\/\/.*$/, '');
+    // Array.prototype.slice.call(...) já transforma a NodeList em array: percorrer é seguro.
+    const limpa = linha.replace(/\/\/.*$/, '').replace(/Array\.prototype\.slice\.call\([^;]*\)/g, 'LISTA');
     for (const [re, o_que] of PADROES) if (re.test(limpa)) falhas.push({ linha: i + 1, o_que });
   });
   return falhas;
@@ -145,13 +149,35 @@ const TEM_STRICT = /^\s*(\/\/[^\n]*\n|\/\*[\s\S]*?\*\/\s*|\s)*['"]use strict['"]
 const USA_BLOCO = /(^|[^.\w])(let|const|class)[\s({[]/;
 
 // CSS: var() é erro (a declaração some); o resto só desalinha, então é aviso.
-const CSS_ERRO = [[/var\(--/, 'var(--…): a TV ignora a declaração inteira']];
-const CSS_AVISO = [[/display:\s*grid/, 'grid'], [/(^|[^-\w])gap:/, 'gap (em flex não funciona na TV)'], [/(^|[^-\w])inset:/, 'inset'], [/place-(items|content):/, 'place-items'],
-  [/clamp\(/, 'clamp()'], [/aspect-ratio:/, 'aspect-ratio'], [/mix-blend-mode/, 'mix-blend-mode'], [/backdrop-filter/, 'backdrop-filter']];
+const CSS_ERRO = [[/var\(--/, 'var(--…): a TV ignora a declaração inteira'],
+  [/[:\s,(]#[0-9a-fA-F]{4}(?![0-9a-fA-F])|[:\s,(]#[0-9a-fA-F]{8}(?![0-9a-fA-F])/, 'cor #rgba / #rrggbbaa: a TV ignora a declaração inteira; use rgba()'],
+  [/conic-gradient/, 'conic-gradient: a TV não tem; ponha um linear-gradient antes e marque tv-ok']];
+const CSS_AVISO = [];   // hoje nada é só aviso: o que a TV não lê deixa a tela diferente do computador
+CSS_ERRO.push(
+  [/display:\s*grid/, 'grid (a TV não tem): use flex com larguras em %'],
+  [/(^|[^-\w])(row-|column-)?gap:/, 'gap (a TV não tem, nem TVs até ~2020): margens nos filhos'],
+  [/(^|[^-\w])inset(-inline|-block)?:/, 'inset: use top/left/right/bottom'],
+  [/place-(items|content|self):/, 'place-*: use align-* e justify-*'],
+  [/clamp\(|(^|[^-\w.])min\(|(^|[^-\w.])max\(/, 'clamp()/min()/max(): ponha o valor calculado para 1920×1080 antes e marque tv-ok'],
+  [/aspect-ratio:/, 'aspect-ratio: ponha a altura explícita antes e devolva com @supports (aspect-ratio:1)'],
+  [/backdrop-filter/, 'backdrop-filter: a TV não tem; tire'],
+  [/^(?![\s\S]*-webkit-filter)[\s\S]*(^|[^-\w])filter:/, 'filter: precisa de -webkit-filter: com o mesmo valor na linha (ou tv-ok se já tem)'],
+  [/\d(dvh|svh|lvh|dvw|svw|lvw)\b/, 'unidade dvh/svh: a TV não tem; use vh'],
+  [/:is\(|:where\(|:has\(/, ':is()/:where()/:has(): a TV não tem'],
+  [/(^|[^-\w])(translate|rotate|scale):/, 'translate:/rotate:/scale: soltos: use transform:'],
+  [/(inline-size|block-size|margin-(inline|block)|padding-(inline|block)|border-(inline|block))/, 'propriedade lógica: a TV não tem; use width/height/margin-left…'],
+  [/display:\s*contents/, 'display:contents: a TV não tem'],
+  [/rgba?\([^)]*\//, 'rgb(r g b / a): a TV só lê rgba(r,g,b,a)'],
+  [/overflow:\s*clip/, 'overflow:clip: use hidden'],
+  [/text-wrap:/, 'text-wrap: a TV não tem'],
+  [/position:\s*sticky/, 'position:sticky: a TV não tem'],
+  [/(^|[^-])background-clip:\s*text/, 'background-clip:text precisa de -webkit-background-clip'],
+);
 function conferirCss(src) {
   const erros = [], avisos = [];
   src.split('\n').forEach((linha, i) => {
-    if (/tv-ok/.test(linha)) return;
+    // @supports é a própria rede de proteção: dentro dele o moderno é intencional.
+    if (/tv-ok/.test(linha) || /body\.phone/.test(linha) || /@supports/.test(linha)) return;
     const l = linha.replace(/\/\*.*?\*\//g, '');
     for (const [re, o_que] of CSS_ERRO) if (re.test(l)) erros.push({ linha: i + 1, o_que });
     for (const [re, o_que] of CSS_AVISO) if (re.test(l)) avisos.push({ linha: i + 1, o_que });
@@ -171,9 +197,21 @@ function main() {
   for (const rel of lista) {
     const src = fonte(rel);
     if (!src.trim()) continue;
+    if (rel.endsWith('.css')) {   // folha de estilo passada na mão
+      const css = conferirCss(src);
+      if (css.erros.length) { ruins++; console.log('\n✗ ' + rel); for (const f of css.erros) console.log('   linha ' + f.linha + ': ' + f.o_que); }
+      continue;
+    }
     const falhas = acorn && walk ? conferirAst(src) : conferirTexto(src);
     const avisos = [];
-    (src.match(/<style>[\s\S]*?<\/style>|const style = `[\s\S]*?`/g) || []).forEach(bloco => { for (const f of conferirCss(bloco).avisos) avisos.push(f.o_que); });
+    const reBloco = /<style>[\s\S]*?<\/style>|const style = `[\s\S]*?`|style="[^"]*"|style:'[^']*'/g;
+    let m;
+    while ((m = reBloco.exec(src))) {
+      const base = src.slice(0, m.index).split('\n').length;
+      const r = conferirCss(m[0]);
+      for (const f of r.avisos) avisos.push(f.o_que);
+      for (const f of r.erros) falhas.push({ linha: base + f.linha - 1, o_que: f.o_que });
+    }
     if (avisos.length && rel.endsWith('tv.js')) console.log('\n⚠ ' + rel + ' (CSS que só desalinha na TV): ' + [...new Set(avisos)].join(', '));
     if (USA_BLOCO.test(src) && !TEM_STRICT.test(src)) falhas.push({ linha: 1, o_que: "falta 'use strict'; no topo (sem ele a TV recusa todo let/const do arquivo)" });
     if (!falhas.length) continue;

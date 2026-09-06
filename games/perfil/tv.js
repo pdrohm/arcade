@@ -11,32 +11,57 @@
   let animating = false, lastAlert = '', alertT = null, lastRound = null, lastTurn = null, lastMed = null;
 
   const style = `
+    /* TV antiga (sem aspect-ratio): um espaçador dá a altura do tabuleiro (padding % = largura do tabuleiro) */
+    .pf-board::before { content:''; display:block; padding-top:${BH}%; }
+    @supports (aspect-ratio:1) { .pf-board::before { display:none; } }
     .pf-board { position:relative; width:100%; max-width:calc((100vh - 40px) * 13 / 10.4); border-radius:20px;
-      background:linear-gradient(160deg,#f6f1e4,#e6dfcc); box-shadow:0 30px 60px #0009, inset 0 0 0 6px #fff8, inset 0 0 0 8px #c9bfa6; }
-    .pf-board .track { position:absolute; inset:0; width:100%; height:100%; }
-    .pf-sq { position:absolute; border-radius:22%; background:#fffdf7; box-shadow:inset 0 -3px 0 #0001, 0 2px 3px #0002; display:flex; align-items:center; justify-content:center; font-weight:800; color:#a3977c; font-size:clamp(7px,.8vw,12px); }
-    .pf-sq.tens { background:#fff; color:#4b5563; font-size:clamp(8px,1vw,15px); font-weight:900; box-shadow:inset 0 -3px 0 #0002, 0 0 0 2px #c9bfa6; }
-    .pf-sq.bonus { background:#fbbf24; color:#7c2d12; font-size:clamp(12px,1.6vw,26px); box-shadow:inset 0 -3px 0 #0002, 0 0 0 3px #b45309; }
-    .pf-sq.start { background:#166534; color:#fff; font-size:clamp(7px,.75vw,11px); font-weight:900; text-align:center; line-height:1.05; }
-    .pf-sq.finish { background:repeating-linear-gradient(45deg,#111 0 6px,#fff 6px 12px); color:#111; text-shadow:0 0 3px #fff,0 0 4px #fff; font-size:clamp(7px,.75vw,11px); font-weight:900; text-align:center; line-height:1.05; }
+      background:linear-gradient(160deg,#f6f1e4,#e6dfcc); box-shadow:0 30px 60px rgba(0,0,0,0.6), inset 0 0 0 6px rgba(255,255,255,0.53), inset 0 0 0 8px #c9bfa6; }
+    .pf-board .track { position:absolute; top:0; left:0; width:100%; height:100%; }
+    .pf-sq { position:absolute; border-radius:22%; background:#fffdf7; box-shadow:inset 0 -3px 0 rgba(0,0,0,0.07), 0 2px 3px rgba(0,0,0,0.13); display:flex; align-items:center; justify-content:center; font-weight:800; color:#a3977c; font-size:12px; font-size:clamp(7px,.8vw,12px); } /* tv-ok */
+    .pf-sq.tens { background:#fff; color:#4b5563; font-size:15px; font-size:clamp(8px,1vw,15px); /* tv-ok */ font-weight:900; box-shadow:inset 0 -3px 0 rgba(0,0,0,0.13), 0 0 0 2px #c9bfa6; }
+    .pf-sq.bonus { background:#fbbf24; color:#7c2d12; font-size:26px; font-size:clamp(12px,1.6vw,26px); /* tv-ok */ box-shadow:inset 0 -3px 0 rgba(0,0,0,0.13), 0 0 0 3px #b45309; }
+    .pf-sq.start { background:#166534; color:#fff; font-size:11px; font-size:clamp(7px,.75vw,11px); /* tv-ok */ font-weight:900; text-align:center; line-height:1.05; }
+    .pf-sq.finish { background:repeating-linear-gradient(45deg,#111 0 6px,#fff 6px 12px); color:#111; text-shadow:0 0 3px #fff,0 0 4px #fff; font-size:11px; font-size:clamp(7px,.75vw,11px); /* tv-ok */ font-weight:900; text-align:center; line-height:1.05; }
     .pf-arrow { position:absolute; transform:translate(-50%,-50%); color:#8a7f66; font-weight:900; opacity:.65; pointer-events:none; }
-    .pf-pawn { position:absolute; width:4.2%; aspect-ratio:1; border-radius:50%; border:2.5px solid #fff; box-shadow:0 4px 8px #0007, 0 0 0 2px #0004; transition:left .35s ease, top .35s ease; z-index:5; transform:translate(-50%,-50%); }
+    .pf-pawn { position:absolute; width:4.2%; border-radius:50%; border:2.5px solid #fff; box-shadow:0 4px 8px rgba(0,0,0,0.47), 0 0 0 2px rgba(0,0,0,0.27); transition:left .35s ease, top .35s ease; z-index:5; transform:translate(-50%,-50%); }
+    .pf-pawn { aspect-ratio:1; } /* tv-ok */
+    /* TV antiga (sem aspect-ratio): um espaçador de largura zero dá a altura ao peão e à casinha do número */
+    .pf-pawn::before { content:''; display:block; padding-top:100%; }
     .pf-pawn.hop { animation:pfhop .3s; }
     @keyframes pfhop { 50% { transform:translate(-50%,-95%) scale(1.15); } }
-    .pf-nums { display:grid; grid-template-columns:repeat(10,1fr); gap:5px; }
-    .pf-num { aspect-ratio:1; border-radius:8px; background:#2a3350; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:15px; color:#e5e7eb; }
+    /* 10 colunas com 5px de vão, na conta (calc a TV tem): igualzinho ao grid de baixo */
+    .pf-nums { display:flex; flex-wrap:wrap; margin-bottom:-5px; }
+    .pf-nums { display:grid; grid-template-columns:repeat(10,1fr); gap:5px; } /* tv-ok */
+    .pf-num { width:calc((100% - 45px) / 10); margin:0 5px 5px 0; border-radius:8px; background:#2a3350; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:15px; color:#e5e7eb; }
+    .pf-num::before { content:''; display:block; padding-top:100%; }
+    .pf-num:nth-child(10n) { margin-right:0; }
+    .pf-num { aspect-ratio:1; } /* tv-ok */
+    @supports (display:grid) { .pf-nums { margin-bottom:0; } .pf-num { width:auto; margin:0; } .pf-num::before { display:none; } }
+    @supports (aspect-ratio:1) { .pf-pawn::before { display:none; } }
     .pf-num.used { background:#0b0e17; color:#4b5563; text-decoration:line-through; }
     .pf-num.sp { background:#7c3aed; color:#fff; }
     .pf-num.last { background:#f59e0b; color:#111; box-shadow:0 0 0 3px #fff; }
     .pf-clue { font-size:23px; font-weight:800; line-height:1.25; }
     .pf-clue small { display:block; color:#9aa6c0; font-size:13px; font-weight:700; margin-bottom:4px; }
     .pf-clue.sp { color:#c4b5fd; }
-    .pf-alert { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:#2e1065; border:4px solid #a78bfa; border-radius:24px; padding:28px 40px; text-align:center; z-index:15; box-shadow:0 30px 80px #000c; max-width:80%; animation:pfpop .35s; }
+    .pf-alert { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:#2e1065; border:4px solid #a78bfa; border-radius:24px; padding:28px 40px; text-align:center; z-index:15; box-shadow:0 30px 80px rgba(0,0,0,0.8); max-width:80%; animation:pfpop .35s; }
     .pf-alert small { display:block; color:#c4b5fd; font-weight:900; letter-spacing:1px; font-size:16px; }
     .pf-alert .t { font-size:42px; font-weight:900; color:#fff; margin:8px 0; line-height:1.15; }
     .pf-alert p { color:#e9d5ff; font-size:19px; margin:0; }
     @keyframes pfpop { from { transform:translate(-50%,-50%) scale(.6); opacity:0; } }
-    .pf-win { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#000c; z-index:20; gap:12px; border-radius:20px; }
+    .pf-win { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.8); z-index:20; border-radius:20px; }
+    .pf-win > * + * { margin-top:12px; }
+    /* linhas com espaço entre os filhos, no lugar do gap */
+    .pf-papeis { display:flex; margin-top:10px; flex-wrap:wrap; font-size:19px; }
+    .pf-papeis > * + * { margin-left:16px; }
+    .pf-pedidas { display:flex; flex-wrap:wrap; margin-bottom:-6px; }
+    .pf-pedidas > * { margin:0 6px 6px 0; }
+    /* as bolinhas de "dicas já pedidas" são pílulas: sem quadrado, sem espaçador */
+    .pf-num.pill { width:36px; padding:5px 0; margin:0 6px 6px 0; }
+    .pf-num.pill::before { display:none; }
+    .pf-num.pill { aspect-ratio:auto; } /* tv-ok */
+    .pf-especiais { margin-top:8px; }
+    .pf-especiais > * + * { margin-top:6px; }
   `;
 
   ARCADE.register('perfil', {
@@ -49,7 +74,7 @@
         for (let i = 0; i < G.board.length - 1; i++) {
           const a = cell(i), b = cell(i + 1);
           const x = (cx(a.col) + cx(b.col)) / 2, y = (cy(a.row) + cy(b.row)) / 2;
-          arrows += `<div class="pf-arrow" style="left:${x}%;top:${pctY(y)};font-size:clamp(6px,.75vw,11px)">${b.row !== a.row ? '▼' : (b.col > a.col ? '▶' : '◀')}</div>`;
+          arrows += `<div class="pf-arrow" style="left:${x}%;top:${pctY(y)};font-size:11px;font-size:clamp(6px,.75vw,11px)/* tv-ok */">${b.row !== a.row ? '▼' : (b.col > a.col ? '▶' : '◀')}</div>`;
         }
         const squares = G.board.map(sq => {
           const rc = cell(sq.i), row = rc.row, col = rc.col;
@@ -59,7 +84,7 @@
           return `<div class="${cls}" style="left:${cx(col) - CW / 2}%;top:${pctY(cy(row) - CW / 2)};width:${CW}%;height:${pctY(CW)}">${label}</div>`;
         }).join('');
         return `<style>${style}</style>
-          <div class="pf-board" id="pf-board" style="aspect-ratio:100 / ${BH}">
+          <div class="pf-board" id="pf-board" style="aspect-ratio:100 / ${BH}/* tv-ok */">
             <svg class="track" viewBox="0 0 100 ${BH}" preserveAspectRatio="none">
               <polyline points="${line}" fill="none" stroke="#b9ad90" stroke-width="${CW * 1.35}" stroke-linejoin="round" stroke-linecap="round" opacity=".55"/>
               <polyline points="${line}" fill="none" stroke="#efe7d2" stroke-width="${CW * 1.1}" stroke-linejoin="round" stroke-linecap="round"/>
@@ -79,7 +104,7 @@
         let side = `<div class="box"><div style="display:flex;justify-content:space-between;align-items:center">
             <span class="sub mut">Rodada ${G.round}</span>
             ${G.card ? `<span class="badge" style="background:${cat.color};color:${cat.text}">${cat.name}</span>` : ''}</div>
-          <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;font-size:19px">
+          <div class="pf-papeis">
             <span>${nm(m)} <span class="sub mut">📖 mediador</span></span>
             <span>${G.phase === 'chip' && G.chip ? nm(c.C.players.find(p => p.pid === G.chip.player)) + ' <span class="sub mut">🔵 ficha azul</span>' : nm(g) + ' <span class="sub mut">🎯 adivinha</span>'}</span>
           </div>${c.timerHtml('', G.turnMs)}</div>`;
@@ -105,8 +130,8 @@
           else side += `<div class="box"><div class="pf-clue"><small>Nova carta</small>${nm(g)} escolhe um número de 1 a 20 no celular.</div></div>`;
           const especiais = G.revealed.filter(r => r.type !== 'clue');
           if (G.revealed.length > 1) side += `<div class="box"><p class="sub mut" style="margin-bottom:6px">Dicas já pedidas</p>
-            <div style="display:flex;flex-wrap:wrap;gap:6px">${G.revealed.map(r => `<span class="pf-num ${r.type !== 'clue' ? 'sp' : ''}" style="width:36px;aspect-ratio:auto;padding:5px 0">${r.n}</span>`).join('')}</div>
-            ${especiais.length ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">${especiais.map(r => `<div class="sub" style="color:#c4b5fd">⚡ <b>${r.n}</b> ${esc(r.text)}</div>`).join('')}</div>` : ''}</div>`;
+            <div class="pf-pedidas">${G.revealed.map(r => `<span class="pf-num pill ${r.type !== 'clue' ? 'sp' : ''}">${r.n}</span>`).join('')}</div>
+            ${especiais.length ? `<div class="pf-especiais">${especiais.map(r => `<div class="sub" style="color:#c4b5fd">⚡ <b>${r.n}</b> ${esc(r.text)}</div>`).join('')}</div>` : ''}</div>`;
         }
 
         side += `<div class="box">${c.playersHtml({

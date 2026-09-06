@@ -2,24 +2,31 @@
 'use strict';
 (() => {
   const style = `
-    .sa-stage { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(10px,2vh,26px); text-align:center; }
-    .sa-tag { font-size:clamp(15px,1.5vw,24px); font-weight:800; letter-spacing:3px; text-transform:uppercase; color:#9aa6c0; }
-    .sa-cat { font-size:clamp(36px,6vw,110px); font-weight:900; line-height:1; background:linear-gradient(135deg,#f59e0b,#d946ef); -webkit-background-clip:text; background-clip:text; color:transparent; padding:0 10px; }
-    .sa-who { display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap; }
-    .sa-who .nm { font-size:clamp(24px,3vw,52px); padding:6px 22px; border-radius:16px; }
-    .sa-t { font-size:clamp(70px,12vw,190px); font-weight:900; line-height:.9; font-variant-numeric:tabular-nums; color:#fff; }
+    .sa-stage { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+    .sa-stage > * + * { margin-top:21.6px; margin-top:clamp(10px,2vh,26px); } /* tv-ok */
+    .sa-tag { font-size:24px; font-size:clamp(15px,1.5vw,24px); font-weight:800; letter-spacing:3px; text-transform:uppercase; color:#9aa6c0; } /* tv-ok */
+    .sa-cat { font-size:110px; font-size:clamp(36px,6vw,110px); font-weight:900; line-height:1; background:linear-gradient(135deg,#f59e0b,#d946ef); -webkit-background-clip:text; background-clip:text; color:transparent; padding:0 10px; } /* tv-ok */
+    .sa-who { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; margin:-9px; }   /* era gap:18px: margem de 9px em cada filho */
+    .sa-who > * { margin:9px; }
+    .sa-stage > * + .sa-who { margin-top:12.6px; margin-top:calc(clamp(10px,2vh,26px) - 9px); } /* tv-ok */
+    .sa-who .nm { font-size:52px; font-size:clamp(24px,3vw,52px); padding:6px 22px; border-radius:16px; } /* tv-ok */
+    .sa-t { font-size:190px; font-size:clamp(70px,12vw,190px); font-weight:900; line-height:.9; -webkit-font-feature-settings:"tnum"; font-variant-numeric:tabular-nums; color:#fff; } /* tv-ok */
     .sa-t.low { color:#ef4444; animation:pulse .5s infinite alternate; }
-    .sa-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(clamp(54px,5.2vw,96px),1fr)); gap:clamp(6px,.8vw,14px); width:100%; max-width:1100px; }
-    .sa-l { aspect-ratio:1; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:clamp(24px,3.4vw,58px); font-weight:900;
-      background:#182036; border:2px solid #2a3350; color:#fff; box-shadow:0 0 18px #f59e0b22; }
-    .sa-l.free { background:linear-gradient(160deg,#fde68a,#f59e0b); color:#3b1d00; border-color:#fff5; box-shadow:0 0 26px #f59e0b66; }
+    .sa-grid { display:flex; flex-wrap:wrap; width:100%; max-width:1114px; margin:-7px; }   /* era grid de 10 colunas com gap de 14px: 1114 = 1100 + 7 de cada lado */
+    .sa-stage > * + .sa-grid { margin-top:14.6px; margin-top:calc(clamp(10px,2vh,26px) - 7px); } /* tv-ok */
+    .sa-l { width:calc(10% - 14px); margin:7px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:58px; font-size:clamp(24px,3.4vw,58px); font-weight:900; /* tv-ok */
+      background:#182036; border:2px solid #2a3350; color:#fff; box-shadow:0 0 18px rgba(245,158,11,0.13); }
+    .sa-l::before { content:""; padding-top:100%; }   /* quadrado sem aspect-ratio: o ::before (item flex de largura 0) empurra a altura para igualar a largura */
+    .sa-l.free { background:linear-gradient(160deg,#fde68a,#f59e0b); color:#3b1d00; border-color:rgba(255,255,255,0.33); box-shadow:0 0 26px rgba(245,158,11,0.4); }
     .sa-l.used { color:#64748b; background:#101627; border-color:#1e263e; text-decoration:line-through; box-shadow:none; opacity:.55; position:relative; }
-    .sa-l.used i { position:absolute; bottom:4%; font-size:clamp(8px,.7vw,12px); font-style:normal; font-weight:800; opacity:.85; }
+    .sa-l.used i { position:absolute; bottom:4%; font-size:12px; font-size:clamp(8px,.7vw,12px); font-style:normal; font-weight:800; opacity:.85; } /* tv-ok */
     .sa-l.off { opacity:.12; background:#0b0e17; border-style:dashed; box-shadow:none; }
     .sa-l.pop { animation:sapop .55s cubic-bezier(.2,1.6,.4,1); }
     @keyframes sapop { 0% { transform:scale(1); } 35% { transform:scale(1.45) translateY(-14px) rotate(-6deg); } 100% { transform:scale(1); } }
-    .sa-ord { display:flex; flex-direction:column; gap:7px; }
-    .sa-p { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:12px; background:#0b0e17; border:2px solid transparent; font-size:18px; }
+    .sa-ord { display:flex; flex-direction:column; }
+    .sa-ord > * + * { margin-top:7px; }
+    .sa-p { display:flex; align-items:center; padding:9px 12px; border-radius:12px; background:#0b0e17; border:2px solid transparent; font-size:18px; }
+    .sa-p > * + * { margin-left:10px; }
     .sa-p.now { border-color:#f59e0b; background:#1d1704; }
     .sa-p.next { border-color:#2a3350; }
     .sa-p.dead { opacity:.35; }
@@ -27,15 +34,20 @@
     .sa-p .hp { font-size:17px; letter-spacing:1px; }
     .sa-p .hp.brk { animation:sabrk .8s; }
     @keyframes sabrk { 0%,100% { transform:none; } 20% { transform:scale(1.4) rotate(-8deg); } 60% { transform:scale(1.1) rotate(6deg); } }
-    .sa-big { font-size:clamp(26px,3.6vw,58px); font-weight:900; }
-    .sa-chip { padding:9px 16px; border-radius:12px; background:#182036; border:1px solid #2a3350; font-size:clamp(14px,1.4vw,21px); font-weight:800; }
-    .sa-chips { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; max-width:1000px; }
-    .sa-vote { display:flex; gap:18px; flex-wrap:wrap; justify-content:center; }
-    .sa-v { padding:14px 26px; border-radius:16px; font-size:clamp(16px,1.8vw,26px); font-weight:900; background:#182036; border:2px solid #2a3350; }
+    .sa-big { font-size:58px; font-size:clamp(26px,3.6vw,58px); font-weight:900; } /* tv-ok */
+    .sa-chip { padding:9px 16px; border-radius:12px; background:#182036; border:1px solid #2a3350; font-size:21px; font-size:clamp(14px,1.4vw,21px); font-weight:800; } /* tv-ok */
+    .sa-chips { display:flex; flex-wrap:wrap; justify-content:center; max-width:1010px; margin:-5px; }   /* era gap:10px e max-width:1000px: margem de 5px em cada filho */
+    .sa-chips > * { margin:5px; }
+    .sa-stage > * + .sa-chips { margin-top:16.6px; margin-top:calc(clamp(10px,2vh,26px) - 5px); } /* tv-ok */
+    .sa-vote { display:flex; flex-wrap:wrap; justify-content:center; margin:-9px; }   /* era gap:18px */
+    .sa-vote > * { margin:9px; }
+    .sa-stage > * + .sa-vote { margin-top:12.6px; margin-top:calc(clamp(10px,2vh,26px) - 9px); } /* tv-ok */
+    .sa-v { padding:14px 26px; border-radius:16px; font-size:26px; font-size:clamp(16px,1.8vw,26px); font-weight:900; background:#182036; border:2px solid #2a3350; } /* tv-ok */
     .sa-v.sim { border-color:#22c55e; } .sa-v.nao { border-color:#ef4444; } .sa-v.wait { opacity:.4; }
-    .sa-flash { position:fixed; inset:0; z-index:55; background:#070a12f2; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; animation:fade .25s; }
-    .sa-flash .k { font-size:clamp(18px,2vw,30px); font-weight:900; letter-spacing:5px; text-transform:uppercase; color:#9aa6c0; }
-    .sa-flash .v { font-size:clamp(44px,8vw,140px); font-weight:900; background:linear-gradient(135deg,#f59e0b,#d946ef); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .sa-flash { position:fixed; top:0; left:0; right:0; bottom:0; z-index:55; background:rgba(7,10,18,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; animation:fade .25s; }
+    .sa-flash > * + * { margin-top:20px; }
+    .sa-flash .k { font-size:30px; font-size:clamp(18px,2vw,30px); font-weight:900; letter-spacing:5px; text-transform:uppercase; color:#9aa6c0; } /* tv-ok */
+    .sa-flash .v { font-size:140px; font-size:clamp(44px,8vw,140px); font-weight:900; background:linear-gradient(135deg,#f59e0b,#d946ef); -webkit-background-clip:text; background-clip:text; color:transparent; } /* tv-ok */
   `;
   let lastFx = 0, lastTick = -1, brkPid = null;
 
@@ -65,7 +77,7 @@
 
         if (G.phase === 'end') {
           const w = ply(G.winner);
-          stage += `<div class="sa-stage"><div style="font-size:clamp(70px,12vw,180px);line-height:1">🏆</div>
+          stage += `<div class="sa-stage"><div style="font-size:180px;font-size:clamp(70px,12vw,180px);line-height:1 /* tv-ok */">🏆</div>
             <div class="sa-big">${w ? `${nm(w)} venceu!` : 'Fim de jogo.'}</div>
             <div class="sa-tag">toque em "Jogar de novo" no celular</div>
             <div class="sa-chips">${[...G.out].reverse().map((pid, i) => { const p = ply(pid); return p ? `<div class="sa-chip">${i + 2}º ${esc(p.name)} 💀</div>` : ''; }).join('')}</div></div>`;

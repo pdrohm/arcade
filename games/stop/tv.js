@@ -3,20 +3,25 @@
 (() => {
   let lastKey = '';
   const style = `
-    .st-stage { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; text-align:center; }
-    .st-letter { font-size:clamp(90px,16vw,220px); font-weight:900; line-height:1; color:#fff; background:#ef4444; border-radius:28px; padding:10px 40px; box-shadow:0 20px 60px #ef444466; }
-    .st-cats { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
-    .st-cat { padding:12px 22px; border-radius:14px; background:#182036; border:1px solid #2a3350; font-size:clamp(16px,1.8vw,26px); font-weight:800; }
-    .st-tbl { width:100%; max-width:900px; display:flex; flex-direction:column; gap:10px; }
-    .st-row { display:flex; align-items:center; gap:16px; padding:14px 20px; border-radius:16px; background:#182036; font-size:clamp(18px,2.2vw,32px); animation:stpop .3s; }
+    .st-stage { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+    .st-stage > * + * { margin-top:24px; }
+    .st-letter { font-size:220px; font-size:clamp(90px,16vw,220px); font-weight:900; line-height:1; color:#fff; background:#ef4444; border-radius:28px; padding:10px 40px; box-shadow:0 20px 60px rgba(239,68,68,0.4); } /* tv-ok */
+    .st-cats { display:flex; flex-wrap:wrap; justify-content:center; margin:-6px; }   /* era gap:12px: margem de 6px em cada filho */
+    .st-cats > * { margin:6px; }
+    .st-stage > * + .st-cats { margin-top:18px; }
+    .st-cat { padding:12px 22px; border-radius:14px; background:#182036; border:1px solid #2a3350; font-size:26px; font-size:clamp(16px,1.8vw,26px); font-weight:800; } /* tv-ok */
+    .st-tbl { width:100%; max-width:900px; display:flex; flex-direction:column; }
+    .st-tbl > * + * { margin-top:10px; }
+    .st-row { display:flex; align-items:center; padding:14px 20px; border-radius:16px; background:#182036; font-size:32px; font-size:clamp(18px,2.2vw,32px); animation:stpop .3s; } /* tv-ok */
+    .st-row > * + * { margin-left:16px; }
     .st-row .a { flex:1; text-align:left; font-weight:900; } .st-row .a.bad { color:#6b7280; text-decoration:line-through; }
     .st-row .p { font-weight:900; min-width:60px; }
     @keyframes stpop { from { transform:translateY(10px); opacity:0; } }
-    .st-big { font-size:clamp(28px,4vw,64px); font-weight:900; }
-    .st-spin { font-size:clamp(120px,22vw,300px); font-weight:900; line-height:1; color:#fff; background:#ef4444; border-radius:36px; padding:10px 60px; box-shadow:0 30px 80px #ef444466; }
+    .st-big { font-size:64px; font-size:clamp(28px,4vw,64px); font-weight:900; } /* tv-ok */
+    .st-spin { font-size:300px; font-size:clamp(120px,22vw,300px); font-weight:900; line-height:1; color:#fff; background:#ef4444; border-radius:36px; padding:10px 60px; box-shadow:0 30px 80px rgba(239,68,68,0.4); } /* tv-ok */
     .st-spin.done { animation:stspin .6s; background:#22c55e; }
     @keyframes stspin { 0% { transform:scale(.6) rotate(-8deg); } 60% { transform:scale(1.15) rotate(3deg); } 100% { transform:scale(1) rotate(0); } }
-    .st-chip { padding:10px 18px; border-radius:12px; background:#182036; border:1px solid #2a3350; font-size:clamp(15px,1.5vw,22px); font-weight:800; }
+    .st-chip { padding:10px 18px; border-radius:12px; background:#182036; border:1px solid #2a3350; font-size:22px; font-size:clamp(15px,1.5vw,22px); font-weight:800; } /* tv-ok */
   `;
   let spinTimer = null, spinFor = '';
   ARCADE.register('stop', {

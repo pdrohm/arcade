@@ -3,22 +3,38 @@
 (() => {
   let lastTick = -1, lastTurnTag = '', lastPhase = '';
   const style = `
-    .ps-stage { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2vh; text-align:center; padding:0 2vw; }
-    .ps-logo { font-size:clamp(28px,3.4vw,58px); font-weight:900; letter-spacing:-1px; }
+    .ps-stage { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 2vw; }
+    .ps-stage > * + * { margin-top:2vh; }
+    .ps-logo { font-size:58px; font-weight:900; letter-spacing:-1px; }
+    .ps-logo { font-size:clamp(28px,3.4vw,58px); } /* tv-ok */
     .ps-logo span { color:#2dd4bf; }
-    .ps-tname { font-size:clamp(30px,4.6vw,78px); font-weight:900; line-height:1; letter-spacing:-1px; }
-    .ps-roles { display:flex; gap:2vw; flex-wrap:wrap; justify-content:center; font-size:clamp(15px,1.5vw,24px); font-weight:800; color:#cbd5e1; }
-    .ps-roles small { display:block; font-size:clamp(11px,.85vw,15px); color:#8ba0b8; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; }
-    .ps-clock { font-size:clamp(90px,17vw,300px); font-weight:900; line-height:.9; font-variant-numeric:tabular-nums; letter-spacing:-4px; }
+    .ps-tname { font-size:78px; font-weight:900; line-height:1; letter-spacing:-1px; }
+    .ps-tname { font-size:clamp(30px,4.6vw,78px); } /* tv-ok */
+    .ps-roles { display:flex; flex-wrap:wrap; justify-content:center; font-size:24px; font-weight:800; color:#cbd5e1; }
+    .ps-roles { font-size:clamp(15px,1.5vw,24px); } /* tv-ok */
+    .ps-roles > * + * { margin-left:2vw; }
+    .ps-roles small { display:block; font-size:15px; color:#8ba0b8; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; }
+    .ps-roles small { font-size:clamp(11px,.85vw,15px); } /* tv-ok */
+    .ps-clock { font-size:300px; font-weight:900; line-height:.9; font-variant-numeric:tabular-nums; letter-spacing:-4px; }
+    .ps-clock { font-size:clamp(90px,17vw,300px); } /* tv-ok */
     .ps-clock.low { color:#ef4444; animation:pspulse .5s infinite alternate; }
     @keyframes pspulse { to { transform:scale(1.07); } }
-    .ps-hits { font-size:clamp(18px,2vw,34px); font-weight:900; color:#2dd4bf; letter-spacing:2px; text-transform:uppercase; }
-    .ps-big { font-size:clamp(70px,12vw,220px); font-weight:900; line-height:1; }
-    .ps-sub { font-size:clamp(14px,1.4vw,22px); color:#9aa6c0; font-weight:700; }
-    .ps-list { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:80%; }
-    .ps-chip { padding:8px 16px; border-radius:99px; font-weight:800; font-size:clamp(13px,1.15vw,19px); background:#ffffff14; }
+    .ps-hits { font-size:34px; font-weight:900; color:#2dd4bf; letter-spacing:2px; text-transform:uppercase; }
+    .ps-hits { font-size:clamp(18px,2vw,34px); } /* tv-ok */
+    .ps-big { font-size:220px; font-weight:900; line-height:1; }
+    .ps-big { font-size:clamp(70px,12vw,220px); } /* tv-ok */
+    .ps-sub { font-size:22px; color:#9aa6c0; font-weight:700; }
+    .ps-sub { font-size:clamp(14px,1.4vw,22px); } /* tv-ok */
+    .ps-list { display:flex; flex-wrap:wrap; justify-content:center; max-width:80%; margin-bottom:-8px; }
+    .ps-chip { padding:8px 16px; border-radius:99px; font-weight:800; font-size:19px; background:rgba(255,255,255,0.08); margin:0 4px 8px; }
+    .ps-chip { font-size:clamp(13px,1.15vw,19px); } /* tv-ok */
     .ps-chip.no { color:#7e8ba3; text-decoration:line-through; }
-    .ps-sc { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:12px; background:#0b0e17; font-size:22px; font-weight:900; }
+    .ps-sc { display:flex; align-items:center; padding:10px 14px; border-radius:12px; background:#0b0e17; font-size:22px; font-weight:900; }
+    .ps-sc > * + * { margin-left:12px; }
+    /* placar e crachás: as margens fazem o papel do gap */
+    .ps-teams > * + * { margin-top:10px; }
+    .ps-mates { display:flex; flex-wrap:wrap; padding:0 4px 4px 14px; margin-bottom:-6px; }
+    .ps-mates > * { margin:0 6px 6px 0; }
     .ps-sc b { flex:1; }
     .ps-bar { height:10px; border-radius:99px; background:#0b0e17; overflow:hidden; width:60%; }
     .ps-bar i { display:block; height:100%; background:#14b8a6; transition:width .3s linear; }
@@ -49,13 +65,13 @@
         let side = `<div class="box center"><p class="sub mut">${G.phase === 'setup' ? 'Escolhendo as regras' : `Rodada ${Math.min(G.round, G.cfg.rounds)} de ${G.cfg.rounds}`}</p>
           <div style="font-size:26px;font-weight:900;margin-top:4px">🗝️ Palavra Secreta</div></div>`;
         side += `<div class="box"><p class="sub mut" style="margin-bottom:8px">Placar</p>
-          <div style="display:flex;flex-direction:column;gap:10px">${G.teams.map((t, i) => `
+          <div class="ps-teams" style="display:flex;flex-direction:column">${G.teams.map((t, i) => `
             <div class="ps-sc" style="border-left:7px solid ${col(i)};${i === G.turn && G.phase !== 'setup' && G.phase !== 'end' ? 'outline:2px solid #fff' : ''}">
               <b style="color:${col(i)}">${tname(i)}</b><span>${t.score}</span></div>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 4px 4px 14px">${t.players.map(pid => {
+            <div class="ps-mates">${t.players.map(pid => {
               const p = ply(pid); if (!p) return '';
               const papel = pid === G.clue && G.phase !== 'setup' ? ' 🗝️' : pid === G.guess && G.phase !== 'setup' ? ' 👂' : '';
-              return `<span class="nm" style="background:#ffffff12;color:#cbd5e1;font-size:14px">${esc(p.name)}${papel}${p.on === false ? ' 📵' : ''}</span>`;
+              return `<span class="nm" style="background:rgba(255,255,255,0.07);color:#cbd5e1;font-size:14px">${esc(p.name)}${papel}${p.on === false ? ' 📵' : ''}</span>`;
             }).join('')}</div>`).join('')}</div></div>`;
         side += `<div class="event">${c.C.event ? c.hl(c.C.event.text) : ''}</div>`;
         return { side };
@@ -96,7 +112,7 @@
           } else if (G.phase === 'end') {
             const best = Math.max(...G.teams.map(t => t.score));
             const win = G.teams.map((t, i) => i).filter(i => G.teams[i].score === best);
-            h = `<div style="font-size:clamp(60px,8vw,130px)">🏆</div>
+            h = `<div style="font-size:130px;font-size:clamp(60px,8vw,130px)/* tv-ok */">🏆</div>
               <div class="ps-tname" style="color:${win.length > 1 ? '#fff' : col(win[0])}">${win.length > 1 ? 'Empate!' : tname(win[0]) + ' venceu!'}</div>
               <div class="ps-hits">${win.map(i => tname(i)).join(' e ')} · ${best} ${best === 1 ? 'ponto' : 'pontos'}</div>
               <div class="ps-sub">Toque em “Jogar de novo” no celular.</div>`;

@@ -2,33 +2,40 @@
 'use strict';
 (() => {
   const style = `
-    .imp-stage { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; }
-    .imp-tag { font-size:clamp(15px,1.5vw,22px); font-weight:800; letter-spacing:3px; text-transform:uppercase; color:#9aa6c0; }
-    .imp-big { font-size:clamp(28px,4.2vw,70px); font-weight:900; line-height:1.05; }
-    .imp-mid { font-size:clamp(20px,2.4vw,38px); font-weight:800; }
-    .imp-ring { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; align-items:flex-start; }
-    .imp-p { min-width:150px; max-width:230px; padding:14px 16px; border-radius:18px; background:#182036; border:3px solid transparent; display:flex; flex-direction:column; gap:8px; align-items:center; animation:imppop .3s; }
-    .imp-p.now { border-color:#facc15; box-shadow:0 0 40px #facc1555; transform:scale(1.05); }
+    .imp-stage { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+    .imp-stage > * + * { margin-top:20px; }   /* no lugar de gap:20px (a TV não tem gap) */
+    .imp-tag { font-size:22px; font-size:clamp(15px,1.5vw,22px); font-weight:800; letter-spacing:3px; text-transform:uppercase; color:#9aa6c0; } /* tv-ok: valor fixo antes */
+    .imp-big { font-size:70px; font-size:clamp(28px,4.2vw,70px); font-weight:900; line-height:1.05; } /* tv-ok: valor fixo antes */
+    .imp-mid { font-size:38px; font-size:clamp(20px,2.4vw,38px); font-weight:800; } /* tv-ok: valor fixo antes */
+    .imp-ring { display:flex; flex-wrap:wrap; justify-content:center; align-items:flex-start; margin-left:-7px; margin-right:-7px; margin-bottom:-14px; }
+    .imp-ring > * { margin:0 7px 14px; }   /* no lugar de gap:14px */
+    .imp-p { min-width:150px; max-width:230px; padding:14px 16px; border-radius:18px; background:#182036; border:3px solid transparent; display:flex; flex-direction:column; align-items:center; animation:imppop .3s; }
+    .imp-p > * + * { margin-top:8px; }   /* no lugar de gap:8px */
+    .imp-p.now { border-color:#facc15; box-shadow:0 0 40px rgba(250,204,21,0.33); transform:scale(1.05); }
     .imp-p.ok { border-color:#22c55e; }
     .imp-p.dead { opacity:.35; }
-    .imp-p .who { font-size:clamp(16px,1.6vw,24px); }
-    .imp-p .cl { display:flex; flex-direction:column; gap:4px; }
-    .imp-p .cl b { font-size:clamp(17px,1.9vw,30px); font-weight:900; word-break:break-word; }
+    .imp-p .who { font-size:24px; font-size:clamp(16px,1.6vw,24px); } /* tv-ok: valor fixo antes */
+    .imp-p .cl { display:flex; flex-direction:column; }
+    .imp-p .cl > * + * { margin-top:4px; }   /* no lugar de gap:4px */
+    .imp-p .cl b { font-size:30px; font-size:clamp(17px,1.9vw,30px); font-weight:900; word-break:break-word; } /* tv-ok: valor fixo antes */
     .imp-p .cl small { font-size:14px; color:#9aa6c0; }
     .imp-p .st { font-size:22px; }
     @keyframes imppop { from { transform:translateY(12px); opacity:0; } }
-    .imp-clock { font-size:clamp(70px,11vw,190px); font-weight:900; font-variant-numeric:tabular-nums; line-height:1; }
+    .imp-clock { font-size:190px; font-size:clamp(70px,11vw,190px); font-weight:900; -webkit-font-feature-settings:"tnum"; font-feature-settings:"tnum"; font-variant-numeric:tabular-nums; line-height:1; } /* tv-ok: valor fixo antes; tnum é o tabular-nums da TV */
     .imp-clock.low { color:#ef4444; animation:imppulse .5s infinite alternate; }
     @keyframes imppulse { to { transform:scale(1.05); } }
-    .imp-word { display:inline-block; padding:14px 40px; border-radius:22px; background:#0ea5e9; color:#04121f; font-size:clamp(30px,5vw,80px); font-weight:900; animation:impword .5s; }
+    .imp-word { display:inline-block; padding:14px 40px; border-radius:22px; background:#0ea5e9; color:#04121f; font-size:80px; font-size:clamp(30px,5vw,80px); font-weight:900; animation:impword .5s; } /* tv-ok: valor fixo antes */
     @keyframes impword { 0% { transform:scale(.5) rotate(-4deg); opacity:0; } 70% { transform:scale(1.1); } 100% { transform:scale(1); } }
-    .imp-dots { font-size:clamp(30px,5vw,80px); font-weight:900; letter-spacing:14px; color:#9aa6c0; }
-    .imp-rank { width:100%; max-width:860px; display:flex; flex-direction:column; gap:10px; }
-    .imp-row { display:flex; align-items:center; gap:16px; padding:12px 20px; border-radius:16px; background:#182036; font-size:clamp(18px,2.1vw,30px); }
+    .imp-dots { font-size:80px; font-size:clamp(30px,5vw,80px); font-weight:900; letter-spacing:14px; color:#9aa6c0; } /* tv-ok: valor fixo antes */
+    .imp-rank { width:100%; max-width:860px; display:flex; flex-direction:column; }
+    .imp-rank > * + * { margin-top:10px; }   /* no lugar de gap:10px */
+    .imp-row { display:flex; align-items:center; padding:12px 20px; border-radius:16px; background:#182036; font-size:30px; font-size:clamp(18px,2.1vw,30px); } /* tv-ok: valor fixo antes */
+    .imp-row > * + * { margin-left:16px; }   /* no lugar de gap:16px */
     .imp-row .g { flex:1; text-align:left; }
     .imp-row .p { font-weight:900; }
-    .imp-chip { padding:10px 18px; border-radius:12px; background:#182036; border:1px solid #2a3350; font-size:clamp(15px,1.5vw,22px); font-weight:800; }
-    .imp-chips { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+    .imp-chip { padding:10px 18px; border-radius:12px; background:#182036; border:1px solid #2a3350; font-size:22px; font-size:clamp(15px,1.5vw,22px); font-weight:800; } /* tv-ok: valor fixo antes */
+    .imp-chips { display:flex; flex-wrap:wrap; justify-content:center; margin-left:-5px; margin-right:-5px; margin-bottom:-10px; }
+    .imp-chips > * { margin:0 5px 10px; }   /* no lugar de gap:10px */
   `;
   let cur = null, lastK = '', lastPhase = '', step = 0, timers = [];
   const kill = () => { timers.forEach(clearTimeout); timers = []; };
@@ -50,7 +57,7 @@
     const cat = G.cat ? `${G.cat.emoji} ${esc(G.cat.name)}` : '';
     if (G.phase === 'setup') {
       const cfg = G.cfg;
-      return `<div class="imp-stage"><div style="font-size:clamp(60px,9vw,140px)">🕵️‍♂️</div><div class="imp-big">Impostor</div>
+      return `<div class="imp-stage"><div style="font-size:140px;font-size:clamp(60px,9vw,140px) /* tv-ok */">🕵️‍♂️</div><div class="imp-big">Impostor</div>
         <div class="imp-tag">ajustem as regras no celular</div>
         <div class="imp-chips"><div class="imp-chip">${cfg.impostorsReal} impostor${cfg.impostorsReal > 1 ? 'es' : ''}</div>
           <div class="imp-chip">${cfg.hint ? 'com dica' : 'sem dica'}</div>
@@ -92,8 +99,8 @@
         <div class="imp-mid">${R.over ? 'Empatou de novo: o impostor escapou.' : 'Ninguém foi eliminado. Mais 30 segundos.'}</div>
         ${R.over ? `<div class="imp-mid">A palavra era <span class="imp-word">${esc(G.word || '')}</span> · impostor: ${(G.impostors || []).map(p => c.nm(ply(c, p))).join(' ')}</div>` : ''}</div>`;
       if (step === 0) return `<div class="imp-stage"><div class="imp-tag">votação fechada</div><div class="imp-big">O mais votado foi…</div><div class="imp-dots">• • •</div></div>`;
-      if (step === 1) return `<div class="imp-stage"><div class="imp-tag">o mais votado foi</div><div class="imp-big" style="font-size:clamp(40px,7vw,110px)">${c.nm(alvo)}</div><div class="imp-dots">• • •</div></div>`;
-      return `<div class="imp-stage"><div class="imp-big" style="font-size:clamp(34px,5vw,80px)">${c.nm(alvo)} ${R.wasImp ? 'ERA o impostor! 🕵️‍♂️' : 'NÃO era o impostor. 😬'}</div>
+      if (step === 1) return `<div class="imp-stage"><div class="imp-tag">o mais votado foi</div><div class="imp-big" style="font-size:110px;font-size:clamp(40px,7vw,110px) /* tv-ok */">${c.nm(alvo)}</div><div class="imp-dots">• • •</div></div>`;
+      return `<div class="imp-stage"><div class="imp-big" style="font-size:80px;font-size:clamp(34px,5vw,80px) /* tv-ok */">${c.nm(alvo)} ${R.wasImp ? 'ERA o impostor! 🕵️‍♂️' : 'NÃO era o impostor. 😬'}</div>
         ${G.word ? `<div class="imp-mid">A palavra era <span class="imp-word">${esc(G.word)}</span></div>` : ''}
         ${G.whiteWord ? `<div class="imp-tag">o impostor tinha "${esc(G.whiteWord)}"</div>` : ''}
         <div class="imp-mid">${R.winner === 'inocentes' ? '✅ Os inocentes venceram a rodada!' : R.winner === 'impostores' ? `😈 ${(G.impostors || []).map(p => c.nm(ply(c, p))).join(' ')} venceu!` : 'A caçada continua…'}</div></div>`;
