@@ -14,11 +14,12 @@ const fs = require('fs');
 const path = require('path');
 
 const RAIZ = path.join(__dirname, '..');
-const IGNORAR = ['games/kart/', 'shared/kart/', 'shared/game3d/'];   // 3D não roda nessa TV de qualquer jeito
+const IGNORAR = ['shared/kart/simulation.js'];   // só o servidor roda a simulação; o resto do KART a TV carrega
 
 function alvos() {
   const out = [];
   for (const f of fs.readdirSync(path.join(RAIZ, 'shared'))) if (f.endsWith('.js')) out.push('shared/' + f);
+  for (const f of fs.readdirSync(path.join(RAIZ, 'shared', 'kart'))) if (f.endsWith('.js')) out.push('shared/kart/' + f);
   const jogos = path.join(RAIZ, 'games');
   for (const dir of fs.readdirSync(jogos)) {
     const rel = 'games/' + dir + '/tv.js';

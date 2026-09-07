@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0b0e17">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <title>Arcade da casa</title>
 <link rel="stylesheet" href="/shared/ui.css">
 </head>
@@ -18,7 +19,7 @@
 (() => {
   const A = ARCADE, $ = A.$, esc = A.esc;
   const app = $('#app');
-  let form = A.form(), pickTarget = null, ctx = null;
+  let form = A.form(), pickTarget = null, ctx = null, selectedGameId = null;
 
   function header(c) {
     const me = c.you && c.C.players.find(p => p.pid === c.you.pid);
@@ -53,9 +54,11 @@
 
   function biblioteca(c) {
     const n = c.C.players.length;
+    const selected = c.meta.games.find(g => g.id === selectedGameId);
+    if (selected) return detalhes(c, selected);
     return `<div class="shelf">${c.meta.games.map(g => {
       const off = n < (g.minPlayers || 2);
-      return `<div class="card ${off ? 'off' : ''}" ${off ? '' : `data-a="jogar" data-id="${g.id}"`}>
+      return `<div class="card ${off ? 'off' : ''}" data-a="detalhes" data-id="${g.id}">
         <div class="art" style="background:${g.art || 'linear-gradient(135deg,#334155,#0f172a)'}"></div>
         <div class="emoji">${g.emoji || '🎲'}</div>
         <div class="t">${esc(g.name)}</div><div class="d">${esc(g.tagline || '')}</div>
@@ -69,16 +72,43 @@
       <button class="btn ghost" data-a="trocar">🚪 Ir para outra sala</button>`;
   }
 
-  let lastKey = null, activeView = null;
+  function detalhes(c, g) {
+    const n = c.C.players.length, min = g.minPlayers || 2, max = g.maxPlayers || 8;
+    const falta = Math.max(0, min - n), cheio = n > max, podeComecar = !falta && !cheio;
+    const regras = Array.isArray(g.howTo) ? g.howTo : [];
+    const status = cheio ? `Este jogo aceita até ${max} jogadores.` : falta ? `Faltam ${falta} ${falta === 1 ? 'jogador' : 'jogadores'} para começar.` : `${n} jogadores prontos para jogar.`;
+    return `<div class="game-detail">
+      <div class="game-detail-hero" style="background:${g.art || 'linear-gradient(135deg,#334155,#0f172a)'}">
+        <div class="game-detail-emoji">${g.emoji || '🎲'}</div>
+        <h1>${esc(g.name)}</h1>
+        <p>${esc(g.tagline || '')}</p>
+      </div>
+      <div class="box game-detail-info">
+        <div class="game-detail-status ${podeComecar ? 'ready' : ''}">${esc(status)}</div>
+        <p class="sub mut">De ${min} a ${max} jogadores</p>
+      </div>
+      <div class="box game-rules">
+        <h2>Como funciona</h2>
+        ${regras.length ? `<ol>${regras.map(rule => `<li>${esc(rule)}</li>`).join('')}</ol>` : '<p class="sub">As regras aparecem quando o jogo começar.</p>'}
+      </div>
+      <button class="btn big ${podeComecar ? 'ok' : ''}" data-a="jogar" data-id="${esc(g.id)}" ${podeComecar ? '' : 'disabled'}>${podeComecar ? '▶️ Iniciar' : '🔒 Iniciar'}</button>
+      <button class="btn ghost" data-a="voltar-jogos">⬅️ Voltar aos jogos</button>
+    </div>`;
+  }
+
+  let lastKey = null, activeView = null, lastScreen = null;
   function render(c) {
     ctx = c;
-    const nextView = c.S && c.you && c.C.screen === 'game' && A.games[c.C.gameId] ? A.games[c.C.gameId].phone : null;
+    const screen = c.C && c.C.screen;
+    if (lastScreen === 'game' && screen === 'library') selectedGameId = null;
+    lastScreen = screen;
+    const nextView = c.S && c.C && c.you && screen === 'game' && A.games[c.C.gameId] ? A.games[c.C.gameId].phone : null;
     if (activeView !== nextView) {
       if (activeView && activeView.destroy) activeView.destroy();
       activeView = nextView;
       lastKey = null;
     }
-    if (!c.S) {                     // sem sala ainda: só a tela de código
+    if (!c.S || !c.C) {              // sem sala ainda: só a tela de código
       lastKey = null;
       app.innerHTML = lobby(c);
       app.querySelectorAll('[data-a]').forEach(el => el.onclick = ev => { ev.stopPropagation(); act(el.dataset.a, el); });
@@ -87,7 +117,7 @@
     }
     // Um jogo pode pedir para NÃO redesenhar a tela (ex.: quadro de desenho no meio do rabisco).
     // Se a chave for a mesma da última vez, só chama after() para atualizar por dentro.
-    const implK = c.C.screen === 'game' ? A.games[c.C.gameId] : null;
+    const implK = screen === 'game' ? A.games[c.C.gameId] : null;
     const key = implK && implK.phone && implK.phone.key ? c.C.screen + ':' + c.C.gameId + ':' + implK.phone.key(c) : null;
     if (key !== null && key === lastKey && c.you) { if (implK.phone.after) implK.phone.after(c); return; }
     lastKey = key;
@@ -110,7 +140,7 @@
     const c = ctx;
     // ações da tela de entrada e da prateleira só valem lá; dentro de um jogo, o jogo é quem trata (evita colisão de nomes)
     const emJogo = c.S && c.you && c.C.screen === 'game';
-    switch (emJogo && ['cor', 'entrar', 'jogar', 'ir', 'criar'].includes(a) ? '' : a) {
+    switch (emJogo && ['cor', 'entrar', 'detalhes', 'jogar', 'ir', 'criar'].includes(a) ? '' : a) {
       case 'ir': { const v = ($('#code').value || '').trim().toUpperCase(); if (v.length !== 4) return A.toast('O código tem 4 letras.'); return A.goRoom(v); }
       case 'criar': return A.createRoom();
       case 'trocar': if (confirm('Ir para outra sala? Seu lugar nesta sala fica guardado.')) location.href = '/'; return;
@@ -128,8 +158,10 @@
       }
       case 'sair': if (confirm('Sair da sala? Você perde seu lugar na ordem.')) { A.send({ t: 'leave' }); form.color = null; A.saveForm(form); } return;
       case 'kick': if (confirm(`Tirar "${el.dataset.name}" da sala? Só faça isso se esse celular não vai voltar.`)) A.send({ t: 'kick', pid: el.dataset.pid }); return;
+      case 'detalhes': selectedGameId = el.dataset.id; return render(c);
+      case 'voltar-jogos': selectedGameId = null; return render(c);
       case 'jogar': return A.send({ t: 'play', id: el.dataset.id });
-      case 'voltar': if (confirm('Sair do jogo e voltar para a biblioteca? A partida atual acaba.')) A.send({ t: 'quit' }); return;
+      case 'voltar': if (confirm('Sair do jogo e voltar para a biblioteca? A partida atual acaba.')) { selectedGameId = null; A.send({ t: 'quit' }); } return;
     }
     const impl = A.games[c.C.gameId];
     if (impl && impl.phone && impl.phone.act) impl.phone.act(a, el, c);

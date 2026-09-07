@@ -56,7 +56,7 @@ O que o núcleo já resolve para todos os jogos:
 
 | Pasta | Jogo |
 |---|---|
-| `games/kart` | KART — corrida 3D de 3 voltas e batalha de 2 minutos, 2–4 pilotos, controles no celular e tela dividida na TV |
+| `games/kart` | KART — corrida 2.5D de 3 voltas e batalha de 2 minutos, 2–4 pilotos, controles no celular e tela dividida na TV (Canvas 2D, roda em TV antiga) |
 | `games/imagemeacao` | Imagem e Ação — equipes, dado, desenho e cronômetro |
 | `games/perfil` | Perfil — 20 dicas, mediador, carta bônus e ficha azul. 5 categorias (Pessoa, Lugar, Coisa, Ano, Série ou Filme) e 400+ cartas em lotes `cardsN.js` (qualquer arquivo novo nessa pasta entra sozinho) |
 | `games/telefone` | Telefone Sem Fio — escreva, desenhe, descreva; álbum no fim (quadro de desenho no celular) |
@@ -123,13 +123,13 @@ O contexto `c` traz `S`, `C` (núcleo), `G` (a visão do seu jogo), `you`, `send
 # arcade
 
 
-## KART (3D)
+## KART (2.5D)
 
 Use a mesma sala: abra `/tv`, entre pelo QR nos celulares e escolha **KART**.
 O primeiro piloto escolhe **CORRIDA** ou **BATALHA**. Cada piloto escolhe personagem,
 kart e **ESTOU PRONTO**. O primeiro piloto toca **LARGAR**.
 
-- O computador da TV precisa de um navegador moderno com WebGL 2. Os celulares não carregam Three.js.
+- A TV desenha em Canvas 2D, no estilo dos jogos de corrida dos anos 90: não precisa de WebGL e roda no navegador da TV da sala. Os celulares não carregam o desenho.
 - O celular vira um controle na **horizontal** (em pé, ele pede para virar). Polegar esquerdo no
   volante analógico: pouco movimento vira pouco, até o fim vira tudo. Polegar direito: **DRIFT**, **ITEM** e **TURBO**.
 - O kart acelera sozinho. Segure **DRIFT** entrando na curva: a derrapagem trava o lado da curva,
@@ -141,7 +141,7 @@ kart e **ESTOU PRONTO**. O primeiro piloto toca **LARGAR**.
 - Uma queda breve de conexão freia o kart; voltar ao celular recupera o mesmo lugar.
 - Depois de reiniciar o servidor, uma partida em andamento volta à preparação. Resultados concluídos são mantidos.
 
-Three.js é servido pelo próprio Arcade, sem CDN ou compilação. `npm install` também instala essa dependência.
+Nada de biblioteca 3D: sprites e texturas são pintados em canvas na hora, sem imagens no servidor.
 O mesmo `Dockerfile` já copia as pastas necessárias. Não é preciso outro servidor de jogo.
 
 ### Testar
@@ -164,7 +164,7 @@ Jogos antigos mantêm seu contrato. Um jogo novo pode usar:
 - `input(player, msg)`: recebe mensagens `t: 'input'` da própria vaga autenticada sem salvar ou transmitir a sala inteira.
   Essas mensagens têm um limite de ritmo próprio no servidor (`INPUT_RATE`, 45/s), separado do limite geral de 20/s.
 - `api.stream()`: envia a visão privada de cada tela em `game-frame`; conexões lentas pulam quadros antigos.
-- `tvAction(msg)`: recebe mensagens da tela de TV, como a confirmação de que o 3D carregou.
+- `tvAction(msg)`: recebe mensagens da tela de TV, como a confirmação de que o desenho carregou.
 - `destroy()`: encerra recursos ao sair, trocar de jogo ou remover a sala.
 - `tv.frame(c)` / `phone.frame(c)`: atualizam quadros rápidos sem substituir o DOM.
 - `tv.destroy()` / `phone.destroy()`: removem renderizadores, eventos e controles ao sair.

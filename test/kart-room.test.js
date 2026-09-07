@@ -107,11 +107,11 @@ test('room → Kart → phone inputs → exit → existing game; room and invent
   await until(() => rejoined.game && rejoined.core.gameId === 'kart');
   rejoined.send({t:'kart-mode',mode:'battle'});
   await until(() => rejoined.game.mode === 'battle');
-  for (const url of ['/vendor/three/three.module.js','/vendor/three/three.core.js','/games/kart/tv.js','/games/kart/phone.js','/shared/kart/world.js']) {
+  for (const url of ['/games/kart/tv.js','/games/kart/phone.js','/shared/kart/world.js','/shared/kart/sprites.js','/shared/kart/render.js','/shared/kart/icons.js','/shared/kart/tv.css','/shared/kart/phone.css']) {
     const response = await fetch(`http://127.0.0.1:${port}${url}`); assert.equal(response.status,200,url);
-    assert.match(response.headers.get('content-type'),/javascript/);
+    assert.match(response.headers.get('content-type'),url.endsWith('.css')?/text\/css/:/javascript/);
   }
-  assert.equal((await fetch(`http://127.0.0.1:${port}/vendor/three/package.json`)).status,404);
+  assert.equal((await fetch(`http://127.0.0.1:${port}/vendor/three/three.module.js`)).status,404);
   assert.equal((await fetch(`http://127.0.0.1:${port}/games/kart/game.js`)).status,404);
 });
 
@@ -153,4 +153,36 @@ test('full 3-lap wire race and timed battle', { skip: process.env.KART_E2E !== '
   assert.ok(ps[0].game.world.time>=120);
   assert.equal(ps[0].game.world.results.length,2);
   ps[0].send({t:'quit'});await until(()=>tv.core.screen==='library');assert.equal(tv.core.players.length,2);
+});
+
+// Um piloto sozinho basta: a biblioteca deixa entrar e a largada acontece.
+test('solo: um jogador abre o Kart e larga sozinho', { timeout: 30000 }, async t => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'arcade-kart-solo-'));
+  const port = await freePort();
+  const server = spawn(process.execPath, ['server.js'], { cwd: path.resolve(__dirname, '..'), env: { ...process.env, PORT: String(port), STATE_FILE: path.join(dir, 'state.json'), STATS_KEY: 'test-only', NO_LAN: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  let output = ''; server.stdout.on('data', d => output += d); server.stderr.on('data', d => output += d);
+  const clients = [];
+  t.after(async () => { for (const c of clients) c.ws.terminate(); server.kill(); await new Promise(resolve => server.exitCode !== null ? resolve() : server.once('exit', resolve)); await rm(dir, { recursive: true, force: true }); });
+  await until(() => output.includes('ARCADE DA CASA'));
+  const add = async hello => { const c = await connect(port, hello); clients.push(c); return c; };
+  const tv = await add({ t: 'tv', room: 'SOLO' });
+  const a = await add({ t: 'join', room: 'SOLO', pid: 'alpha', name: 'Ana', color: 'roxo' });
+  assert.equal(require('../games/kart/game').meta.minPlayers, 1, 'a biblioteca anuncia 1 jogador');
+  a.send({ t: 'play', id: 'kart' });
+  await until(() => a.game && a.game.phase === 'setup');
+  assert.equal(a.errors.length, 0, 'nenhum erro de "poucos jogadores"');
+  assert.equal(a.game.roster.length, 1);
+  a.send({ t: 'kart-ready' });
+  await until(() => a.game.canStart);
+  tv.send({ t: 'kart-tv-ready', matchId: a.game.matchId });
+  a.send({ t: 'kart-start' });
+  await until(() => a.game.phase === 'countdown');
+  const pump = setInterval(() => a.send({ t: 'input', matchId: a.game.matchId, steer: 0, active: true, drift: false, item: false, boost: false }), 70);
+  t.after(() => clearInterval(pump));
+  await until(() => a.game.phase === 'playing');
+  await new Promise(resolve => setTimeout(resolve, 700));
+  clearInterval(pump);
+  assert.equal(a.game.world.karts.length, 1);
+  assert.ok(a.game.world.karts[0].speed > 0, 'o kart solo anda');
+  assert.ok(a.frames > 5, 'a TV recebe quadros');
 });

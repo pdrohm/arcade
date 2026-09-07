@@ -60,7 +60,24 @@ body.phone .card .emoji { position:absolute; right:-6px; top:-14px; font-size:96
 body.phone .card .t { position:relative; font-size:26px; font-weight:900; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,0.53); }
 body.phone .card .d { position:relative; font-size:15px; color:rgba(255,255,255,0.87); margin-top:4px; text-shadow:0 2px 6px rgba(0,0,0,0.53); }
 body.phone .card .n { position:relative; font-size:14px; color:rgba(255,255,255,0.8); margin-top:8px; font-weight:700; }
-body.phone .card.off { opacity:.45; cursor:default; }
+body.phone .card.off { opacity:.7; cursor:pointer; }
+body.phone .card.off:active { transform:scale(.98); }
+
+/* detalhes do jogo: explicação antes da decisão de iniciar */
+body.phone .game-detail { display:flex; flex-direction:column; gap:12px; }
+body.phone .game-detail-hero { position:relative; overflow:hidden; min-height:220px; border-radius:22px; padding:24px 20px; display:flex; flex-direction:column; justify-content:flex-end; box-shadow:0 12px 32px rgba(0,0,0,.25); }
+body.phone .game-detail-hero::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.62)); pointer-events:none; }
+body.phone .game-detail-hero > * { position:relative; z-index:1; }
+body.phone .game-detail-emoji { position:absolute; right:12px; top:8px; font-size:104px; line-height:1; opacity:.5; }
+body.phone .game-detail-hero h1 { font-size:32px; text-shadow:0 2px 8px rgba(0,0,0,.55); }
+body.phone .game-detail-hero p { margin-top:6px; color:rgba(255,255,255,.9); line-height:1.35; text-shadow:0 1px 5px rgba(0,0,0,.55); }
+body.phone .game-detail-info { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+body.phone .game-detail-info .sub { font-size:14px; text-align:right; }
+body.phone .game-detail-status { color:#fbbf24; font-weight:900; line-height:1.25; }
+body.phone .game-detail-status.ready { color:#4ade80; }
+body.phone .game-rules h2 { font-size:21px; margin-bottom:10px; }
+body.phone .game-rules ol { margin:0; padding-left:25px; color:#e2e8f0; line-height:1.45; }
+body.phone .game-rules li + li { margin-top:9px; }
 
 /* avisos e transições */
 .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#dc2626; color:#fff; padding:14px 20px; border-radius:14px; font-weight:800; opacity:0; transition:.3s; pointer-events:none; max-width:90vw; text-align:center; z-index:70; }

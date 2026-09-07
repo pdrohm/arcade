@@ -373,6 +373,8 @@ function makeRoom(code) {
       const p = playerOf(ws);
       if (!mod || !p) return;
       if (core.players.length < (mod.meta.minPlayers || 2)) return send(ws, { t: 'error', text: `Precisa de pelo menos ${mod.meta.minPlayers || 2} jogadores.` });
+      // Jogos com torcida (meta.spectators, ex.: KART) aceitam a sala cheia: só os primeiros entram na disputa, o resto assiste.
+      if (!mod.meta.spectators && core.players.length > (mod.meta.maxPlayers || MAX_PLAYERS_PER_ROOM)) return send(ws, { t: 'error', text: `Este jogo aceita no máximo ${mod.meta.maxPlayers || MAX_PLAYERS_PER_ROOM} jogadores.` });
       startGame(mod.meta.id, p);
       broadcast();
     },
@@ -585,12 +587,6 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, secHeaders({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })); return res.end(body);
     }
     res.writeHead(200, secHeaders({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' })); return res.end(statsHtml());
-  }
-  // Expose only the two browser modules, never the node_modules tree.
-  const vendor = { '/vendor/three/three.module.js': 'three.module.js', '/vendor/three/three.core.js': 'three.core.js' };
-  if (Object.prototype.hasOwnProperty.call(vendor, url)) {
-    const fp = path.join(__dirname, 'node_modules', 'three', 'build', vendor[url]);
-    return fs.existsSync(fp) ? serve(res, fp) : notFound(res);
   }
   // arquivos de tela dos jogos: /games/<id>/(tv|phone).js
   const gm = url.match(/^\/games\/([a-z0-9_-]+)\/(tv|phone)\.js$/i);

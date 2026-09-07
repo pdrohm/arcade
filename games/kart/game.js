@@ -6,17 +6,28 @@ const DRIVERS = ['Robô', 'Alien', 'Esqueleto', 'Gato', 'Cavaleiro', 'Geleia'];
 const KARTS = ['Faísca', 'Cometa', 'Tijolinho'];
 const INPUT_TTL = 350;
 module.exports = {
-  meta: { id: 'kart', name: 'KART', emoji: '🏎️', tagline: 'Acelere, derrape e dispute. Seu celular é o controle.', art: 'linear-gradient(180deg,#58c8f5 0,#9fdcfb 48%,#7fd35b 48.5%,#4aa848 100%)', minPlayers: 2, maxPlayers: 4 },
+  meta: {
+    id: 'kart', name: 'KART', emoji: '🏎️',
+    tagline: 'Acelere, derrape e dispute. Seu celular é o controle.',
+    art: 'linear-gradient(180deg,#58c8f5 0,#9fdcfb 48%,#7fd35b 48.5%,#4aa848 100%)',
+    minPlayers: 1, maxPlayers: 4, spectators: true,   // até 4 pilotos; quem sobra assiste e entra na próxima largada
+    howTo: [
+      'Escolha seu piloto e seu modo: corrida ou batalha.',
+      'Use o celular para acelerar, virar, derrapar e usar itens.',
+      'Na corrida, complete as voltas antes dos outros. Na batalha, sobreviva e faça pontos.',
+      'A TV mostra a pista, os carros e o resultado em tempo real.',
+    ],
+  },
   create(api) {
     let phase = 'setup', mode = 'race', matchId = crypto.randomUUID(), roster = [], world = null;
     let tvReady = false, countdown = 3, error = '', loop = null, inputs = new Map();
-    let previous = 0, accumulator = 0, streamClock = 0, phaseClock = 0, disposed = false, lastDiag = -Infinity;
+    let previous = 0, accumulator = 0, streamClock = 0, phaseClock = 0, disposed = false;
     const now = () => performance.now();
     function entrant(p, i) { return { pid: p.pid, name: p.name, color: api.colorInfo(p.color).hex, driver: i % DRIVERS.length, kart: 0, ready: false }; }
     function syncNames() {
       for (const p of roster) { const live = api.byPid(p.pid); if (live) p.name = live.name; }
     }
-    function canStart() { return roster.length >= 2 && roster.length <= 4 && roster.every(p => p.ready); }
+    function canStart() { return roster.length >= 1 && roster.length <= 4 && roster.every(p => p.ready); }
     function stopLoop() { clearInterval(loop); loop = null; inputs.clear(); }
     function publish() { if (!disposed) api.broadcast(); }
     function beginCountdown() { phase = 'countdown'; countdown = 3; phaseClock = 0; publish(); }
@@ -86,17 +97,6 @@ module.exports = {
         }
       },
       tvAction(msg) {
-        // A TV não tem console: quando o 3D não sobe, ela conta o que a tela tem e o servidor
-        // registra uma linha (no máximo uma a cada 20 s, com o texto cortado e sem quebras).
-        if (msg.t === 'kart-tv-3d') {
-          const n = now();
-          if (n - lastDiag > 20000) {
-            lastDiag = n;
-            const cut = v => String(v == null ? '' : v).replace(/[\r\n\t]+/g, ' ').slice(0, 200);
-            console.log(`[kart] TV sem 3D · webgl2=${msg.webgl2 === true} webgl1=${msg.webgl1 === true} módulos=${msg.modules === true} · ${cut(msg.renderer)} · ${cut(msg.error)} · ${cut(msg.ua)}`);
-          }
-          return false;
-        }
         if (msg.t !== 'kart-tv-ready' || msg.matchId !== matchId || tvReady) return false;
         tvReady = true;
         return true;
@@ -128,7 +128,7 @@ module.exports = {
         if (api.byPid(pid)) return;
         roster = roster.filter(p => p.pid !== pid); inputs.delete(pid);
         if (world) world.karts = world.karts.filter(p => p.pid !== pid);
-        if (phase !== 'setup' && roster.length < 2) api.exit('Poucos pilotos: voltamos para a biblioteca.');
+        if (phase !== 'setup' && roster.length < 1) api.exit('Sem pilotos: voltamos para a biblioteca.');
       },
       rekey(oldPid, newPid) {
         if (roster.some(p => p.pid === oldPid)) roster = roster.filter(p => p.pid !== newPid);

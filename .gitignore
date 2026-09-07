@@ -3,3 +3,4 @@ state.json
 *.log
 imagemeacao/state.json
 .lavish/
+.stats_auth.json
