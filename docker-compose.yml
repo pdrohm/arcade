@@ -18,7 +18,7 @@ services:
     cap_drop:
       - ALL                             # servidor node numa porta alta não precisa de nenhuma capability
     environment:
-      - PORT=47321
+      - PORT=9393
       - PUBLIC_URL=https://arcade.phmarques.com.br/
       - STATE_FILE=/data/state.json
       - NO_LAN=1                       # na VPS não existe "celular no mesmo Wi-Fi"
@@ -33,7 +33,7 @@ services:
       - "traefik.http.routers.arcade.entrypoints=websecure"
       - "traefik.http.routers.arcade.tls=true"
       - "traefik.http.routers.arcade.tls.certresolver=letsencrypt"
-      - "traefik.http.services.arcade.loadbalancer.server.port=47321"
+      - "traefik.http.services.arcade.loadbalancer.server.port=9393"
       # http -> https (o Let's Encrypt usa a porta 80 para validar o domínio)
       - "traefik.http.routers.arcade-http.rule=Host(`arcade.phmarques.com.br`)"
       - "traefik.http.routers.arcade-http.entrypoints=web"

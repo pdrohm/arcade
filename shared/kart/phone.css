@@ -1,0 +1,126 @@
+/* KART no celular: cartazes de papel creme com tinta roxa (#2a2250), botões que parecem adesivos
+   grossos. O controle de corrida vira um "gamepad" de tela inteira com o mesmo traço. */
+.kart-ui{--ink:#2a2250;--paper:#fff6e3;--sun:#ffcf3f;--coral:#ff6a5c;--mint:#43d9a0;--sky:#58c8f5;--grape:#7c5cff;--lilac:#c9b8ff;font-family:"Arial Rounded MT Bold","Nunito","Varela Round","Segoe UI",system-ui,sans-serif;color:var(--ink)}
+.kart-ui *{box-sizing:border-box}.kart-ui .ki{display:block;width:100%;height:100%}
+.kart-ui button{font-family:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* ---------- telas de preparação, torcida e resultado (dentro da casca do Arcade) ---------- */
+.kart-setup{position:relative;display:flex;flex-direction:column;gap:14px;padding:18px 14px 20px;border-radius:26px;border:4px solid var(--ink);background:radial-gradient(circle at 18% 12%,#fff 0 9%,transparent 9.5%),radial-gradient(circle at 30% 8%,#fff 0 12%,transparent 12.5%),radial-gradient(circle at 78% 18%,#fff 0 10%,transparent 10.5%),radial-gradient(circle at 88% 12%,#fff 0 7%,transparent 7.5%),linear-gradient(180deg,#58c8f5 0,#9fdcfb 46%,#7fd35b 46.5%,#63bd4c 100%);box-shadow:0 8px 0 var(--ink)}
+.kart-setup>*{position:relative}
+.ks-logo{align-self:center;transform:rotate(-4deg);line-height:.9;text-transform:uppercase;font-weight:900;text-align:center;margin:6px 0 2px}
+.ks-logo small{display:block;font-size:12px;letter-spacing:.35em;color:var(--ink)}
+.ks-logo b{display:block;font-size:56px;color:var(--sun);letter-spacing:-.02em;text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),2px 2px 0 var(--ink),-2px 2px 0 var(--ink),2px -2px 0 var(--ink),-2px -2px 0 var(--ink),0 7px 0 var(--ink),0 10px 0 var(--grape)}
+.ks-sub{align-self:center;padding:6px 16px;border-radius:99px;background:var(--ink);color:var(--paper);font-size:13px;font-weight:800;letter-spacing:.04em;text-align:center}
+.ks-block{padding:14px;border-radius:20px;border:3px solid var(--ink);background:var(--paper);box-shadow:0 5px 0 var(--ink)}
+.ks-title{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 10px;font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.ks-title small{font-size:12px;font-weight:700;color:#5d5488;text-transform:none;letter-spacing:0;text-align:right}
+.ks-modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ks-mode{display:flex;flex-direction:column;align-items:center;padding:12px 8px 10px;border-radius:18px;border:3px solid var(--ink);background:#fff;box-shadow:0 4px 0 var(--ink);transition:transform .1s,box-shadow .1s}
+.ks-mode .ki{width:46px;height:46px}
+.ks-mode b{font-size:18px;text-transform:uppercase;margin-top:6px}
+.ks-mode small{font-size:12px;font-weight:700;color:#5d5488;margin-top:2px;text-align:center}
+.ks-mode.sel{background:var(--sun);transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
+.ks-mode.sel::after{content:"✓";position:absolute;top:-10px;right:-8px;width:26px;height:26px;border-radius:50%;background:var(--mint);border:3px solid var(--ink);font-size:14px;font-weight:900;line-height:20px;text-align:center}
+.ks-mode{position:relative}.ks-mode:disabled{cursor:default;opacity:.85}
+.ks-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ks-choice{position:relative;display:flex;flex-direction:column;align-items:center;min-width:0;padding:10px 4px 8px;border-radius:18px;border:3px solid var(--ink);background:#fff;box-shadow:0 4px 0 var(--ink);transition:transform .1s,box-shadow .1s}
+.ks-choice:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.ks-choice .ks-portrait{width:64px;height:64px;border-radius:50%;border:3px solid var(--ink);overflow:hidden;background:#cfe2ee}
+.ks-choice .ks-portrait .ki{transform:scale(1.15) translateY(4%)}
+.ks-choice .ks-kart{width:74px;height:56px}
+.ks-choice b{font-size:13px;line-height:1.05;margin-top:6px;text-transform:uppercase;letter-spacing:.01em;text-align:center;overflow-wrap:anywhere;max-width:100%}
+.ks-choice.sel{background:var(--sun);transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
+.ks-choice.sel::after{content:"✓";position:absolute;top:-10px;right:-6px;width:26px;height:26px;border-radius:50%;background:var(--mint);border:3px solid var(--ink);font-size:14px;font-weight:900;line-height:20px;text-align:center}
+.ks-btn{width:100%;padding:18px 16px;border-radius:20px;border:4px solid var(--ink);background:var(--paper);box-shadow:0 6px 0 var(--ink);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;transition:transform .08s,box-shadow .08s}
+.ks-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
+.ks-btn:disabled{opacity:.5;cursor:default}
+.ks-btn.ready{background:var(--mint)}.ks-btn.ready.on{background:var(--paper)}.ks-btn.ready.on::before{content:"✓ ";color:var(--mint);text-shadow:1px 0 0 var(--ink),-1px 0 0 var(--ink),0 1px 0 var(--ink),0 -1px 0 var(--ink)}
+.ks-btn.go{display:flex;align-items:center;justify-content:center;background:var(--sun);font-size:26px;padding:20px}
+.ks-btn.go .ki{width:34px;height:34px;margin-right:10px}
+.ks-btn.ghost{background:transparent;border-color:var(--paper);color:var(--paper);box-shadow:none;font-size:16px;padding:12px}
+.ks-roster p{display:flex;align-items:center;margin:0;padding:6px 0;font-weight:800;font-size:16px}
+.ks-roster p+p{border-top:2px dashed #e6d9c1}
+.ks-roster .ks-portrait{flex:none;width:34px;height:34px;margin-right:10px;border-radius:50%;border:2px solid var(--ink);overflow:hidden}
+.ks-roster .ks-portrait .ki{transform:scale(1.15) translateY(4%)}
+.ks-roster span.nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ks-roster i{flex:none;width:12px;height:12px;border-radius:50%;border:2px solid var(--ink);margin-right:8px}
+.ks-tag{flex:none;margin-left:8px;padding:4px 10px;border-radius:99px;border:2px solid var(--ink);font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;background:var(--paper)}
+.ks-tag.ready{background:var(--mint)}.ks-tag.wait{color:#5d5488;animation:kart-blink 1.4s ease-in-out infinite}
+.ks-note{margin:0;text-align:center;font-size:14px;font-weight:800;color:var(--paper);text-shadow:1px 0 0 var(--ink),-1px 0 0 var(--ink),0 1px 0 var(--ink),0 -1px 0 var(--ink),0 2px 0 var(--ink)}
+.ks-error{display:flex;align-items:center;margin:0;padding:10px 14px;border-radius:16px;border:3px solid var(--ink);background:var(--coral);color:#fff;font-weight:800;font-size:15px}
+.ks-error .ki{flex:none;width:28px;height:28px;margin-right:10px}
+.ks-card{text-align:center;padding:22px 16px}
+.ks-card .ks-big{width:90px;height:90px;margin:0 auto 8px}
+.ks-card h2{font-size:24px;margin:0 0 6px;text-transform:uppercase}
+.ks-card p{margin:0;font-size:15px;font-weight:700;color:#5d5488;line-height:1.4}
+.ks-podium{display:flex;flex-direction:column;gap:8px}
+.ks-place{display:flex;align-items:center;padding:8px 12px 8px 8px;border-radius:99px;border:3px solid var(--ink);background:#fff;box-shadow:0 3px 0 var(--ink);font-weight:900}
+.ks-place .ks-n{flex:none;width:40px;height:40px;border-radius:50%;border:3px solid var(--ink);background:var(--paper);display:flex;align-items:center;justify-content:center;font-size:17px;margin-right:10px}
+.ks-place.p1 .ks-n{background:var(--sun)}.ks-place.p2 .ks-n{background:var(--lilac)}.ks-place.p3 .ks-n{background:#ff9e7a}
+.ks-place.p1{background:#fff3c4}
+.ks-place .ks-portrait{flex:none;width:36px;height:36px;margin-right:10px;border-radius:50%;border:2px solid var(--ink);overflow:hidden}
+.ks-place .ks-portrait .ki{transform:scale(1.15) translateY(4%)}
+.ks-place b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;text-transform:uppercase}
+.ks-place small{flex:none;font-size:12px;font-weight:800;color:#5d5488;margin-left:8px}
+.ks-place.me{outline:3px solid var(--grape);outline-offset:2px}
+/* ---------- controle (partida em andamento) ---------- */
+body.kart-driving{overflow:hidden;overscroll-behavior:none}
+body.kart-driving #app{max-width:none;padding:0;gap:0}
+body.kart-driving #app>.head,body.kart-driving #app>.btn.ghost{display:none}
+.kart-controller{--player-color:#f5b841;position:fixed;inset:0;z-index:20;height:100vh;height:100dvh;overflow:hidden;background:radial-gradient(ellipse at 8% 108%,#3b2f7a 0,transparent 55%),radial-gradient(ellipse at 96% -10%,#3f338a 0,transparent 50%),#2a2250;color:#fff6e3;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-touch-callout:none;padding:max(10px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));box-sizing:border-box}
+.kart-controller [hidden]{display:none!important}
+.kart-gamepad{height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:38px minmax(0,1fr) 20px;column-gap:clamp(24px,9vw,150px)}
+.kart-controller-header{grid-column:1/-1;display:flex;align-items:center;gap:12px;min-width:0}
+.kart-player{display:flex;align-items:center;max-width:46%;height:34px;padding:0 14px 0 3px;border-radius:99px;background:var(--paper);color:var(--ink);border:3px solid var(--ink);font-weight:900;font-size:13px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kart-player .ks-portrait{flex:none;width:26px;height:26px;margin-right:8px;border-radius:50%;border:2px solid var(--ink);overflow:hidden}
+.kart-player .ks-portrait .ki{transform:scale(1.15) translateY(4%)}
+.kart-player i{flex:none;width:9px;height:9px;margin-left:8px;border-radius:50%;background:var(--player-color);border:2px solid var(--ink)}
+#kart-status{flex:1;text-align:center;font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--sun)}
+.kart-controller-header button{flex:none;width:46px;height:34px;margin-left:auto;color:var(--ink);border:3px solid var(--ink);border-radius:12px;background:var(--paper);font:20px system-ui;box-shadow:0 3px 0 var(--ink)}
+.kart-stick-area{display:flex;min-width:0;min-height:0;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.kart-stick{--steer:0;position:relative;flex-shrink:0;width:min(32vw,65vh,290px);height:min(32vw,65vh,290px);width:min(32vw,65dvh,290px);height:min(32vw,65dvh,290px);border:4px solid var(--ink);border-radius:50%;background:radial-gradient(circle,#fff6e3 0 58%,#e9dcc7 59% 62%,#fff6e3 63%);box-shadow:0 8px 0 var(--ink),inset 0 0 0 6px #e9dcc7;touch-action:none;cursor:grab}
+.kart-stick:active{cursor:grabbing}
+.kart-stick::after{content:"";position:absolute;inset:-4px;border:4px solid var(--player-color);border-radius:50%;opacity:calc(.15 + var(--steer)*.85);pointer-events:none}
+.kart-stick-knob{position:absolute;left:30%;top:30%;width:40%;height:40%;border:4px solid var(--ink);border-radius:50%;background:var(--player-color);box-shadow:0 6px 0 var(--ink),inset -8px -10px 0 rgba(42,34,80,.18),inset 8px 10px 0 rgba(255,255,255,.35);display:grid;place-items:center;will-change:transform;pointer-events:none}
+.kart-stick-knob span{width:38%;height:38%;border-radius:50%;background:var(--paper);border:3px solid var(--ink)}
+.kart-stick-arrow{position:absolute;top:calc(50% - 23px);font-size:40px;line-height:46px;font-weight:900;color:var(--ink);opacity:.35;pointer-events:none}.kart-stick-arrow.left{left:10%}.kart-stick-arrow.right{right:10%}
+.kart-stick-label{padding:4px 12px;border-radius:99px;background:rgba(255,246,227,.12);font-size:10px;font-weight:900;letter-spacing:.24em;color:var(--lilac)}
+.kart-actions{align-self:center;justify-self:end;display:grid;width:100%;max-width:360px;height:min(70vh,310px);height:min(70dvh,310px);grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.kart-pad{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:64px;padding:8px;border:4px solid var(--ink);border-radius:28px;background:var(--paper);color:var(--ink);font:900 clamp(16px,3vw,23px)/1.1 inherit;font-family:inherit;touch-action:none;cursor:pointer;overflow:hidden;box-shadow:0 7px 0 var(--ink);user-select:none;-webkit-user-select:none;transition:transform .06s,box-shadow .06s}
+.kart-pad small{display:block;font-size:clamp(10px,1.7vw,12px);line-height:1.3;font-weight:900;margin-top:4px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
+.kart-pad .ki{width:clamp(34px,6vw,52px);height:clamp(34px,6vw,52px)}
+.kart-pad.held{transform:translateY(5px);box-shadow:0 2px 0 var(--ink);filter:brightness(1.08)}
+.kart-pad:focus-visible,.kart-stick:focus-visible,.ks-choice:focus-visible,.ks-btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.kart-drift{--charge:0;grid-column:2;grid-row:1/3;align-self:center;height:80%;background:var(--sun);border-radius:46%;font-size:clamp(24px,4.2vw,36px);letter-spacing:.02em}
+.kart-drift>*{position:relative;z-index:1}
+.kart-drift small{font-size:10px}
+.kart-drift-fill{position:absolute;z-index:0;left:0;right:0;bottom:0;top:0;background:var(--coral);transform:scaleY(var(--charge));transform-origin:bottom;pointer-events:none}
+.kart-drift.charged{background:var(--sky)}.kart-drift.charged .kart-drift-fill{background:#8fe3ff}
+.kart-drift.charged{box-shadow:0 7px 0 var(--ink),0 0 0 6px rgba(88,200,245,.45)}
+.kart-drift.held.charged{box-shadow:0 2px 0 var(--ink),0 0 0 6px rgba(88,200,245,.45)}
+.kart-item{grid-column:1;grid-row:1;background:var(--sky)}
+.kart-item.empty{background:#4a3f8a;border-color:var(--lilac);color:var(--lilac);box-shadow:0 7px 0 #1b1640}
+.kart-item.empty .kart-item-slot{width:clamp(34px,6vw,52px);height:clamp(34px,6vw,52px);border-radius:12px;border:3px dashed var(--lilac);opacity:.7}
+.kart-item.empty.held{box-shadow:0 2px 0 #1b1640}
+.kart-boost{grid-column:1;grid-row:2;background:var(--coral);color:#fff6e3}
+.kart-boost b{font-size:clamp(15px,2.6vw,20px)}
+.kart-boost small{margin-top:2px;opacity:.9}
+.kart-boost.cooldown{background:#4a3f8a;border-color:var(--lilac);color:var(--lilac);box-shadow:0 7px 0 #1b1640}
+.kart-boost.cooldown .ki path{fill:#6a5fb0}
+.kart-boost.cooldown.held{box-shadow:0 2px 0 #1b1640}
+.kart-help{grid-column:1/-1;margin:0;text-align:center;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--lilac);align-self:end;opacity:.8}
+.kart-rotate{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;gap:14px}
+.kart-rotate h2{font-size:24px;letter-spacing:.06em;margin:0;color:var(--sun);text-transform:uppercase}
+.kart-rotate p{font-size:15px;max-width:250px;line-height:1.5;margin:0;color:var(--lilac);font-weight:700}
+.kart-rotate-phone{font-size:0;width:54px;height:90px;border:4px solid var(--paper);border-radius:14px;position:relative;animation:kart-rotate 3s ease-in-out infinite;margin-bottom:18px;background:rgba(255,246,227,.08)}
+.kart-rotate-phone::after{content:"";position:absolute;bottom:7px;left:19px;width:10px;height:4px;border-radius:3px;background:var(--paper)}
+@keyframes kart-rotate{0%,20%{transform:rotate(0)}55%,90%{transform:rotate(90deg)}100%{transform:rotate(0)}}
+@keyframes kart-blink{50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.kart-rotate-phone{animation:none;transform:rotate(90deg)}.ks-tag.wait{animation:none}}
+@media(max-height:350px){.kart-gamepad{grid-template-rows:32px minmax(0,1fr) 14px;column-gap:7vw}.kart-stick{width:60dvh;height:60dvh}.kart-stick-label{display:none}.kart-actions{height:69dvh;gap:9px}.kart-pad{border-radius:20px}.kart-drift{border-radius:42%}.kart-help{font-size:9px}}
+/* Mouse/keyboard users retain a usable controller in a tall desktop window. */
+@media(orientation:portrait) and (pointer:fine){.kart-gamepad{grid-template-columns:minmax(0,1fr);grid-template-rows:38px minmax(0,1fr) minmax(0,1fr) 20px;gap:10px}.kart-stick{width:min(65vw,32dvh);height:min(65vw,32dvh)}.kart-actions{justify-self:center;width:90%;height:100%;max-height:300px}.kart-controller-header,.kart-help{grid-column:1}}
+/* Queda de conexão: o controle escurece e avisa; o núcleo reconecta sozinho e o aviso some. */
+.kart-conn{position:absolute;top:0;left:0;right:0;bottom:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;background:rgba(42,34,80,.92)}
+.kart-conn h2{margin:0;padding:10px 22px;border-radius:99px;background:var(--coral);border:3px solid var(--ink);font-size:20px;letter-spacing:.06em;color:#fff6e3}
+.kart-conn p{margin:0;font-size:15px;font-weight:700;color:var(--lilac);animation:kart-blink 1.2s ease-in-out infinite}
+.kart-controller.offline .kart-gamepad{opacity:.35;pointer-events:none}

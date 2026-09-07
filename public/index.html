@@ -69,9 +69,15 @@
       <button class="btn ghost" data-a="trocar">🚪 Ir para outra sala</button>`;
   }
 
-  let lastKey = null;
+  let lastKey = null, activeView = null;
   function render(c) {
     ctx = c;
+    const nextView = c.S && c.you && c.C.screen === 'game' && A.games[c.C.gameId] ? A.games[c.C.gameId].phone : null;
+    if (activeView !== nextView) {
+      if (activeView && activeView.destroy) activeView.destroy();
+      activeView = nextView;
+      lastKey = null;
+    }
     if (!c.S) {                     // sem sala ainda: só a tela de código
       lastKey = null;
       app.innerHTML = lobby(c);

@@ -56,6 +56,7 @@ O que o núcleo já resolve para todos os jogos:
 
 | Pasta | Jogo |
 |---|---|
+| `games/kart` | KART — corrida 3D de 3 voltas e batalha de 2 minutos, 2–4 pilotos, controles no celular e tela dividida na TV |
 | `games/imagemeacao` | Imagem e Ação — equipes, dado, desenho e cronômetro |
 | `games/perfil` | Perfil — 20 dicas, mediador, carta bônus e ficha azul. 5 categorias (Pessoa, Lugar, Coisa, Ano, Série ou Filme) e 400+ cartas em lotes `cardsN.js` (qualquer arquivo novo nessa pasta entra sozinho) |
 | `games/telefone` | Telefone Sem Fio — escreva, desenhe, descreva; álbum no fim (quadro de desenho no celular) |
@@ -120,3 +121,53 @@ ARCADE.register('meujogo', {
 
 O contexto `c` traz `S`, `C` (núcleo), `G` (a visão do seu jogo), `you`, `send`, `esc`, `nm`, `hl`, `playersHtml`, `timerHtml`, `turnover`, `beep` e `chord`. O visual comum está em `shared/ui.css`: use as classes `box`, `btn`, `pl`, `badge`, `nm`, `timer`.
 # arcade
+
+
+## KART (3D)
+
+Use a mesma sala: abra `/tv`, entre pelo QR nos celulares e escolha **KART**.
+O primeiro piloto escolhe **CORRIDA** ou **BATALHA**. Cada piloto escolhe personagem,
+kart e **ESTOU PRONTO**. O primeiro piloto toca **LARGAR**.
+
+- O computador da TV precisa de um navegador moderno com WebGL 2. Os celulares não carregam Three.js.
+- O celular vira um controle na **horizontal** (em pé, ele pede para virar). Polegar esquerdo no
+  volante analógico: pouco movimento vira pouco, até o fim vira tudo. Polegar direito: **DRIFT**, **ITEM** e **TURBO**.
+- O kart acelera sozinho. Segure **DRIFT** entrando na curva: a derrapagem trava o lado da curva,
+  o botão vai enchendo e, ao soltar com carga, sai um turbo. **ITEM** usa o item que só o seu celular mostra;
+  **TURBO** tem um tempo de recarga.
+- Vibração (quando o celular tem): pegou item, usou item, bateu, turbo de derrapagem.
+- Dois pilotos usam duas câmeras. Três ou quatro usam uma grade na mesma tela.
+- Depois do resultado, use **JOGAR DE NOVO** ou volte para a biblioteca. Nomes e cores ficam na sala.
+- Uma queda breve de conexão freia o kart; voltar ao celular recupera o mesmo lugar.
+- Depois de reiniciar o servidor, uma partida em andamento volta à preparação. Resultados concluídos são mantidos.
+
+Three.js é servido pelo próprio Arcade, sem CDN ou compilação. `npm install` também instala essa dependência.
+O mesmo `Dockerfile` já copia as pastas necessárias. Não é preciso outro servidor de jogo.
+
+### Testar
+
+```bash
+npm test
+npm run test:kart:e2e
+```
+
+O primeiro comando testa regras e conexões. O segundo também dirige uma corrida completa
+por WebSocket e espera uma batalha de 2 minutos terminar, sem acelerar o relógio.
+Os testes usam salas e arquivos de estado temporários; não alteram `state.json`.
+
+Arquitetura e limites: [docs/KART-ARCHITECTURE.md](docs/KART-ARCHITECTURE.md).
+
+### Extensões opcionais para jogos em tempo real
+
+Jogos antigos mantêm seu contrato. Um jogo novo pode usar:
+
+- `input(player, msg)`: recebe mensagens `t: 'input'` da própria vaga autenticada sem salvar ou transmitir a sala inteira.
+  Essas mensagens têm um limite de ritmo próprio no servidor (`INPUT_RATE`, 45/s), separado do limite geral de 20/s.
+- `api.stream()`: envia a visão privada de cada tela em `game-frame`; conexões lentas pulam quadros antigos.
+- `tvAction(msg)`: recebe mensagens da tela de TV, como a confirmação de que o 3D carregou.
+- `destroy()`: encerra recursos ao sair, trocar de jogo ou remover a sala.
+- `tv.frame(c)` / `phone.frame(c)`: atualizam quadros rápidos sem substituir o DOM.
+- `tv.destroy()` / `phone.destroy()`: removem renderizadores, eventos e controles ao sair.
+
+As transições de fase continuam usando `api.broadcast()`. A tela do celular pode usar `key(c)`
+para manter botões e toques durante atualizações. Nunca salve teclas pressionadas em `serialize()`.

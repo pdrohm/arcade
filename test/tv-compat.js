@@ -159,7 +159,7 @@ CSS_ERRO.push(
   [/(^|[^-\w])inset(-inline|-block)?:/, 'inset: use top/left/right/bottom'],
   [/place-(items|content|self):/, 'place-*: use align-* e justify-*'],
   [/clamp\(|(^|[^-\w.])min\(|(^|[^-\w.])max\(/, 'clamp()/min()/max(): ponha o valor calculado para 1920×1080 antes e marque tv-ok'],
-  [/aspect-ratio:/, 'aspect-ratio: ponha a altura explícita antes e devolva com @supports (aspect-ratio:1)'],
+  [/(^|[^-])aspect-ratio:/, 'aspect-ratio: ponha a altura explícita antes e devolva com @supports (aspect-ratio:1)'],
   [/backdrop-filter/, 'backdrop-filter: a TV não tem; tire'],
   [/^(?![\s\S]*-webkit-filter)[\s\S]*(^|[^-\w])filter:/, 'filter: precisa de -webkit-filter: com o mesmo valor na linha (ou tv-ok se já tem)'],
   [/\d(dvh|svh|lvh|dvw|svw|lvw)\b/, 'unidade dvh/svh: a TV não tem; use vh'],

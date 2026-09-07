@@ -1,0 +1,115 @@
+/* KART na TV: HUD e cartazes no mesmo estilo do mundo 3D (adesivos de papel creme, tinta roxa,
+   cantos redondos, cores de doce). Sem var(): a TV da sala não entende e some com a declaração. */
+body.kart-tv #game{display:block}body.kart-tv #stage{width:100%;height:calc(100vh - 32px);max-width:none;padding:0}body.kart-tv #side{display:none}
+#kart-stage{position:relative;width:100%;height:100%;min-height:400px;overflow:hidden;border-radius:22px;background:#cdeafb;font-family:"Arial Rounded MT Bold","Nunito","Varela Round","Segoe UI",system-ui,sans-serif;color:#2a2250}
+#kart-canvas{display:block;width:100%;height:100%}
+#kart-overlay,#kart-hud{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none}
+#kart-overlay{display:flex;align-items:center;justify-content:center}
+#kart-stage .ki{display:block;width:100%;height:100%}#kart-stage .kart-hint .ki{width:1.6em;height:1.6em;flex:none}#kart-stage .kart-others .kv-portrait{width:1.8em;height:1.8em;margin-right:.4em}
+/* Tipografia de cartaz: letras gordas com contorno de tinta. */
+.kart-stroke{color:#fff6e3;text-shadow:3px 0 0 #2a2250,-3px 0 0 #2a2250,0 3px 0 #2a2250,0 -3px 0 #2a2250,2px 2px 0 #2a2250,-2px 2px 0 #2a2250,2px -2px 0 #2a2250,-2px -2px 0 #2a2250,0 8px 0 #2a2250}
+.kart-sticker{background:#fff6e3;color:#2a2250;border:4px solid #2a2250;border-radius:22px;box-shadow:0 7px 0 #2a2250}
+/* ---------- HUD por câmera ---------- */
+.kart-view-hud{position:absolute;box-sizing:border-box;border:3px solid #2a2250;overflow:hidden}
+.kart-view-hud [hidden]{display:none}
+.kv-top,.kv-bottom{position:absolute;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:14px 16px}
+.kv-top{top:0}.kv-bottom{bottom:0;align-items:flex-end}
+.kv-name{display:flex;align-items:center;max-width:48%;padding:6px 16px 6px 6px;border-radius:99px;background:#fff6e3;border:3px solid #2a2250;box-shadow:0 5px 0 #2a2250;font-size:clamp(15px,1.45vw,24px);font-weight:900;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kv-portrait{flex:none;width:2.1em;height:2.1em;margin-right:.5em;border-radius:50%;border:3px solid #2a2250;overflow:hidden;background:#cfe2ee}
+.kv-portrait .ki{transform:scale(1.15) translateY(4%)}
+.kv-name strong{overflow:hidden;text-overflow:ellipsis}
+.kv-color{flex:none;width:.7em;height:.7em;margin-left:.5em;border-radius:50%;border:2px solid #2a2250}
+.kv-pos{flex:none;min-width:2.4em;height:2.4em;padding:0 .35em;display:flex;align-items:baseline;justify-content:center;border-radius:1.2em;background:#ffcf3f;border:4px solid #2a2250;box-shadow:0 6px 0 #2a2250;font-size:clamp(22px,2.4vw,42px);font-weight:900;line-height:2.1em;transform:rotate(4deg)}
+.kv-pos i{font-style:normal;font-size:.5em;margin-left:.08em}
+.kv-pos.p1{background:#ffcf3f}.kv-pos.p2{background:#c9b8ff}.kv-pos.p3{background:#ff9e7a}.kv-pos.p4{background:#fff6e3}.kv-pos.ko{background:#ff6a5c;color:#fff6e3}
+.kv-lap{display:flex;align-items:center;padding:8px 16px;border-radius:99px;background:#fff6e3;border:3px solid #2a2250;box-shadow:0 5px 0 #2a2250;font-size:clamp(13px,1.25vw,21px);font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+.kv-lap b{font-size:1.35em;margin:0 .15em}
+.kv-dots{display:inline-flex;margin-left:.6em}.kv-dots i{width:.75em;height:.75em;border-radius:50%;border:2px solid #2a2250;background:#fff6e3;margin-left:.25em}.kv-dots i.on{background:#43d9a0}
+.kv-lap.final{background:#ffcf3f}
+.kv-hp{display:flex;align-items:center;padding:8px 14px;border-radius:99px;background:#fff6e3;border:3px solid #2a2250;box-shadow:0 5px 0 #2a2250;font-size:clamp(13px,1.25vw,21px);font-weight:900}
+.kv-hp .kv-bar{width:9em;height:.9em;margin:0 .6em;border-radius:99px;border:2px solid #2a2250;background:#e9dcc7;overflow:hidden}
+.kv-hp .kv-bar i{display:block;height:100%;background:#43d9a0;transition:width .2s}
+.kv-hp .kv-bar i.mid{background:#ffcf3f}.kv-hp .kv-bar i.low{background:#ff6a5c}
+.kv-hp .kv-heart{color:#ff6a5c;font-size:1.2em;line-height:1}
+.kv-speed{position:relative;width:clamp(96px,9vw,150px);text-align:center;font-weight:900}
+.kv-speed svg{display:block;width:100%;height:auto;overflow:visible}
+.kv-speed .kv-gauge-bg{fill:none;stroke:#fff6e3;stroke-width:14;stroke-linecap:round}
+.kv-speed .kv-gauge-ink{fill:none;stroke:#2a2250;stroke-width:20;stroke-linecap:round}
+.kv-speed .kv-gauge{fill:none;stroke:#43d9a0;stroke-width:14;stroke-linecap:round;stroke-dasharray:126;transition:stroke .2s}
+.kv-speed.boost .kv-gauge{stroke:#ff6a5c}
+.kv-speed .kv-kmh{position:absolute;left:0;right:0;top:44%;font-size:clamp(17px,1.9vw,30px);line-height:1}
+.kv-speed .kv-kmh small{display:block;font-size:.42em;letter-spacing:.12em;margin-top:.15em}
+.kv-speed .kv-boost{position:absolute;left:50%;top:-2.4em;transform:translateX(-50%) rotate(-4deg);padding:3px 10px;border-radius:99px;background:#ff6a5c;color:#fff6e3;border:3px solid #2a2250;font-size:clamp(11px,1vw,16px);letter-spacing:.1em;white-space:nowrap;animation:kart-blink .35s steps(2) infinite}
+.kv-drift{height:10px;margin:8px 10px 0;border-radius:99px;border:2px solid #2a2250;background:#fff6e3;overflow:hidden}
+.kv-drift i{display:block;height:100%;width:0;background:#ffcf3f}
+.kv-drift i.charged{background:#58c8f5}
+.kv-clock{margin-left:.7em;padding:2px 8px;border-radius:99px;background:#2a2250;color:#fff6e3;font-variant-numeric:tabular-nums;font-size:.9em;letter-spacing:.06em}
+.kv-hp.low{background:#ff6a5c;color:#fff6e3}.kv-hp.low .kv-heart{color:#fff6e3}.kv-hp.low .kv-clock{animation:kart-blink .5s steps(2) infinite}
+.kart-respawn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-3deg);padding:10px 26px;font-size:clamp(20px,2.2vw,36px);font-weight:900;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.kart-flash{position:absolute;left:0;right:0;top:34%;text-align:center;font-size:clamp(56px,7vw,120px);font-weight:900;letter-spacing:.02em;animation:kart-flash .4s cubic-bezier(.2,1.6,.4,1)}
+.kart-flash small{display:block;font-size:.32em;letter-spacing:.14em;margin-top:.1em}
+@keyframes kart-flash{from{opacity:0;transform:scale(2) rotate(-6deg)}to{opacity:1;transform:scale(1) rotate(-3deg)}}
+@keyframes kart-blink{50%{opacity:.35}}
+/* ---------- Cartazes (lobby, carregando, contagem, resultado) ---------- */
+.kart-card{width:min(720px,86%);padding:34px 36px;text-align:center;font-size:18px}
+.kart-card h1{font-size:clamp(30px,4.2vw,58px);margin:10px 0;letter-spacing:-.01em}
+.kart-card h2{font-size:clamp(24px,3vw,40px);margin:8px 0}
+.kart-card p{font-size:clamp(15px,1.4vw,22px);margin:6px 0}
+.kart-card small{display:block;letter-spacing:.14em;font-weight:900;color:#7c5cff}
+.kart-logo{display:inline-block;transform:rotate(-4deg);line-height:.9;text-transform:uppercase;font-weight:900;letter-spacing:-.02em}
+.kart-logo span{display:block}
+.kart-logo .kl-arcade{font-size:clamp(14px,1.6vw,26px);letter-spacing:.35em;color:#2a2250;margin-left:.3em}
+.kart-logo .kl-kart{font-size:clamp(54px,7.5vw,120px);color:#ffcf3f;text-shadow:4px 0 0 #2a2250,-4px 0 0 #2a2250,0 4px 0 #2a2250,0 -4px 0 #2a2250,3px 3px 0 #2a2250,-3px 3px 0 #2a2250,3px -3px 0 #2a2250,-3px -3px 0 #2a2250,0 10px 0 #2a2250,0 14px 0 #7c5cff}
+.kart-logo.small .kl-kart{font-size:clamp(34px,4.5vw,70px)}.kart-logo.small .kl-arcade{font-size:clamp(11px,1.1vw,18px)}
+.kart-lobby{width:min(1500px,94%);display:flex;flex-direction:column;align-items:center;text-align:center}
+.kart-lobby .kart-track{display:inline-block;margin-top:18px;padding:10px 28px 14px;border-radius:18px;transform:rotate(1.5deg)}
+.kart-lobby .kart-track small{font-size:clamp(12px,1.1vw,18px);letter-spacing:.2em;color:#7c5cff}
+.kart-lobby .kart-track h1{font-size:clamp(26px,3.2vw,50px);margin:2px 0 0}
+.kart-roster{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;width:100%;margin:16px 0 6px}
+.kart-pilot{position:relative;width:clamp(170px,17vw,260px);margin:14px 8px 8px;padding:16px 14px 14px;text-align:center;transition:transform .2s}
+.kart-pilot.ready{transform:translateY(-6px)}
+.kart-pilot .kp-portrait{width:clamp(64px,6.4vw,100px);height:clamp(64px,6.4vw,100px);margin:0 auto 10px;border-radius:50%;border:4px solid #2a2250;overflow:hidden;box-shadow:0 5px 0 #2a2250}
+.kart-pilot .kp-portrait .ki{transform:scale(1.15) translateY(4%)}
+.kart-pilot strong{display:block;font-size:clamp(17px,1.7vw,28px);text-transform:uppercase;overflow-wrap:anywhere}
+.kart-pilot small{display:block;margin-top:4px;font-size:clamp(12px,1.05vw,17px);letter-spacing:.02em;color:#5d5488;font-weight:700}
+.kart-pilot .kp-kart{width:clamp(44px,4.6vw,72px);height:clamp(44px,4.6vw,72px);margin:6px auto 0}
+.kp-tag{position:absolute;top:-14px;right:-10px;padding:5px 12px;border-radius:99px;border:3px solid #2a2250;background:#fff6e3;font-size:clamp(11px,1vw,16px);font-weight:900;letter-spacing:.1em;transform:rotate(6deg);box-shadow:0 3px 0 #2a2250}
+.kp-tag.ready{background:#43d9a0}.kp-tag.wait{background:#fff6e3;animation:kart-blink 1.4s ease-in-out infinite}
+.kart-pilot.empty{border-style:dashed;background:rgba(255,246,227,.55);box-shadow:none;color:#5d5488}
+.kart-pilot.empty .kp-portrait{border-style:dashed;background:transparent;box-shadow:none;display:flex;align-items:center;justify-content:center;font-size:2.4em;color:#7c5cff}
+.kart-hint{display:inline-flex;align-items:center;margin-top:8px;padding:10px 22px;border-radius:99px;background:#2a2250;color:#fff6e3;font-size:clamp(14px,1.3vw,21px);font-weight:800}
+.kart-hint .ki{width:1.6em;height:1.6em;margin-right:.5em}
+.kart-hint.warn{background:#ff6a5c}
+.kart-loading{display:flex;flex-direction:column;align-items:center}
+.kart-loading .kart-wheel{width:110px;height:110px;margin-bottom:12px;animation:kart-spin 1s linear infinite}
+@keyframes kart-spin{to{transform:rotate(360deg)}}
+.kart-countdown{position:relative;display:flex;flex-direction:column;align-items:center}
+.kart-countdown b{font-size:clamp(150px,20vw,300px);font-weight:900;line-height:1;color:#ffcf3f;text-shadow:5px 0 0 #2a2250,-5px 0 0 #2a2250,0 5px 0 #2a2250,0 -5px 0 #2a2250,4px 4px 0 #2a2250,-4px 4px 0 #2a2250,4px -4px 0 #2a2250,-4px -4px 0 #2a2250,0 16px 0 #2a2250;animation:kart-pop .5s cubic-bezier(.2,1.8,.4,1)}
+.kart-lights{display:flex;margin-top:8px;padding:10px 14px;border-radius:99px}
+.kart-lights i{width:clamp(22px,2.4vw,40px);height:clamp(22px,2.4vw,40px);margin:0 6px;border-radius:50%;border:3px solid #2a2250;background:#e9dcc7}
+.kart-lights i.on{background:#ff6a5c;box-shadow:0 0 0 4px rgba(255,106,92,.35)}
+.kart-lights i.go{background:#43d9a0;box-shadow:0 0 0 4px rgba(67,217,160,.4)}
+@keyframes kart-pop{from{transform:scale(.45) rotate(-18deg);opacity:.4}to{transform:scale(1) rotate(-4deg);opacity:1}}
+.kart-results{position:relative;width:min(1100px,92%);display:flex;flex-direction:column;align-items:center;text-align:center}
+.kart-results .kr-kicker{margin-top:22px;letter-spacing:.2em;font-weight:900;color:#fff6e3;text-shadow:2px 0 0 #2a2250,-2px 0 0 #2a2250,0 2px 0 #2a2250,0 -2px 0 #2a2250;font-size:clamp(13px,1.2vw,20px)}
+.kart-podium{display:flex;align-items:flex-end;justify-content:center;width:100%;margin-top:26px}
+.kpd{position:relative;width:clamp(170px,19vw,290px);margin:0 8px;padding:16px 14px 0;text-align:center;border-bottom-left-radius:0;border-bottom-right-radius:0;box-shadow:none}
+.kpd .kp-portrait{width:clamp(66px,7vw,110px);height:clamp(66px,7vw,110px);margin:0 auto 8px;border-radius:50%;border:4px solid #2a2250;overflow:hidden}
+.kpd .kp-portrait .ki{transform:scale(1.15) translateY(4%)}
+.kpd strong{display:block;font-size:clamp(16px,1.6vw,26px);text-transform:uppercase;overflow-wrap:anywhere}
+.kpd small{display:block;margin:4px 0 12px;font-size:clamp(12px,1.05vw,17px);color:#5d5488;font-weight:700;letter-spacing:.02em}
+.kpd .kpd-step{margin:0 -18px;padding:10px 0 0;border:4px solid #2a2250;border-bottom:0;border-radius:18px 18px 0 0;font-size:clamp(28px,3.4vw,54px);font-weight:900;line-height:1}
+.kpd-1{z-index:2}.kpd-1 .kpd-step{height:clamp(70px,8vw,120px);background:#ffcf3f}.kpd-2 .kpd-step{height:clamp(46px,5.5vw,84px);background:#c9b8ff}.kpd-3 .kpd-step{height:clamp(30px,3.8vw,60px);background:#ff9e7a}
+.kpd-1 .kp-portrait{box-shadow:0 0 0 6px #ffcf3f}
+.kpd .kpd-crown{position:absolute;left:50%;top:-30px;width:56px;height:56px;transform:translateX(-50%) rotate(-8deg)}
+.kart-podium-base{width:min(100%,900px);height:22px;border-radius:0 0 22px 22px;background:#2a2250}
+.kart-others{display:flex;flex-wrap:wrap;justify-content:center;margin-top:14px}
+.kart-others span{display:inline-flex;align-items:center;margin:6px;padding:8px 16px;border-radius:99px;font-size:clamp(13px,1.2vw,20px);font-weight:900}
+.kart-others .kv-portrait{width:1.8em;height:1.8em}
+.kart-confetti{position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;pointer-events:none}
+.kart-confetti i{position:absolute;top:-20px;width:12px;height:20px;border-radius:4px;border:2px solid #2a2250;animation:kart-fall 3.2s linear infinite}
+@keyframes kart-fall{to{transform:translateY(110vh) rotate(720deg)}}
+.kart-confetti i:nth-child(6n){background:#ff6a5c}.kart-confetti i:nth-child(6n+1){background:#ffcf3f}.kart-confetti i:nth-child(6n+2){background:#43d9a0}.kart-confetti i:nth-child(6n+3){background:#58c8f5}.kart-confetti i:nth-child(6n+4){background:#7c5cff}.kart-confetti i:nth-child(6n+5){background:#ff9ecb}
+.kart-fail{width:min(760px,86%);padding:34px 36px;text-align:center;font-size:18px}
+.kart-fail h2{font-size:clamp(22px,2.8vw,38px);margin:0 0 12px}.kart-fail p{margin:6px 0;font-size:clamp(15px,1.4vw,22px)}
+@media(prefers-reduced-motion:reduce){.kart-confetti i,.kart-countdown b,.kart-flash,.kart-loading .kart-wheel{animation:none}}

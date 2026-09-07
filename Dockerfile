@@ -13,8 +13,8 @@ COPY public/ ./public/
 COPY games/ ./games/
 
 # As salas ficam num volume, para sobreviver a um restart ou a uma imagem nova.
-ENV PORT=47321 STATE_FILE=/data/state.json NO_LAN=1
+ENV PORT=9393 STATE_FILE=/data/state.json NO_LAN=1
 RUN mkdir -p /data
-EXPOSE 47321
+EXPOSE 9393
 
 CMD ["node", "server.js"]

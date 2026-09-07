@@ -52,6 +52,14 @@ window.ARCADE = (() => {
       if (m.t === 'error') return toast(m.text);
       if (m.t === 'room') { if (m.code !== room) location.replace((kind === 'tv' ? '/tv/' : '/') + m.code); return; }
       if (m.t === 'noroom') { noRoom = true; S = null; you = null; return draw(); }
+      if (m.t === 'game-frame') {
+        if (!S || S.core.screen !== 'game' || m.gameId !== S.core.gameId || !m.game) return;
+        if (S.game && S.game.matchId && S.game.matchId !== m.game.matchId) return;
+        S.game = m.game;
+        const view = games[m.gameId] && games[m.gameId][kind];
+        if (view && view.frame) view.frame(ctx());
+        return;
+      }
       if (m.t === 'state') {
         clockOffset = m.now - Date.now();
         noRoom = false;
@@ -63,12 +71,14 @@ window.ARCADE = (() => {
       }
     };
     ws.onclose = () => {
+      const view = S && games[S.core.gameId] && games[S.core.gameId][kind];
+      if (view && view.disconnect) view.disconnect();
       const el = $('#conn'); if (el) { el.textContent = 'sem conexão… reconectando'; el.className = 'conn off'; }
       clearTimeout(reconnectT); reconnectT = setTimeout(connect, 1200);
     };
     ws.onerror = () => ws.close();
   }
-  const send = o => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
+  const send = o => { if (ws && ws.readyState === 1 && (o.t !== 'input' || ws.bufferedAmount < 4096)) ws.send(JSON.stringify(o)); };
 
   // ---------- carregar as telas dos jogos sob demanda ----------
   function loadGame(id) {
