@@ -10,7 +10,7 @@ module.exports = {
   create(api) {
     let phase = 'setup', mode = 'race', matchId = crypto.randomUUID(), roster = [], world = null;
     let tvReady = false, countdown = 3, error = '', loop = null, inputs = new Map();
-    let previous = 0, accumulator = 0, streamClock = 0, phaseClock = 0, disposed = false;
+    let previous = 0, accumulator = 0, streamClock = 0, phaseClock = 0, disposed = false, lastDiag = -Infinity;
     const now = () => performance.now();
     function entrant(p, i) { return { pid: p.pid, name: p.name, color: api.colorInfo(p.color).hex, driver: i % DRIVERS.length, kart: 0, ready: false }; }
     function syncNames() {
@@ -86,6 +86,17 @@ module.exports = {
         }
       },
       tvAction(msg) {
+        // A TV não tem console: quando o 3D não sobe, ela conta o que a tela tem e o servidor
+        // registra uma linha (no máximo uma a cada 20 s, com o texto cortado e sem quebras).
+        if (msg.t === 'kart-tv-3d') {
+          const n = now();
+          if (n - lastDiag > 20000) {
+            lastDiag = n;
+            const cut = v => String(v == null ? '' : v).replace(/[\r\n\t]+/g, ' ').slice(0, 200);
+            console.log(`[kart] TV sem 3D · webgl2=${msg.webgl2 === true} webgl1=${msg.webgl1 === true} módulos=${msg.modules === true} · ${cut(msg.renderer)} · ${cut(msg.error)} · ${cut(msg.ua)}`);
+          }
+          return false;
+        }
         if (msg.t !== 'kart-tv-ready' || msg.matchId !== matchId || tvReady) return false;
         tvReady = true;
         return true;

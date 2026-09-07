@@ -3,12 +3,34 @@
 // O 3D só é carregado quando o navegador tem WebGL 2 e módulos; caso contrário mostra um aviso.
 // Visual: "adesivos" de papel creme com tinta roxa, iguais aos do celular e ao mundo 3D.
 (function () {
-  var A=ARCADE, scene=null, context=null, generation=0, failure='', loading=false, readyId=null, hudKey='', overlayKey='', lastLap={}, flashUntil={};
+  var A=ARCADE, scene=null, context=null, generation=0, failure='', loading=false, readyId=null, hudKey='', overlayKey='', lastLap={}, flashUntil={}, reported=false;
   var TRACKS={race:'Circuito Aurora',battle:'Forte Prisma'}, MODES={race:'CORRIDA · 3 VOLTAS',battle:'BATALHA · 2 MINUTOS'};
-  function stop(){generation++;if(scene)scene.dispose();scene=null;context=null;loading=false;failure='';readyId=null;hudKey='';overlayKey='';lastLap={};flashUntil={};document.body.classList.remove('kart-tv');}
-  function fail(text){failure=text;overlayKey='';var e=document.getElementById('kart-overlay');if(e)e.innerHTML='<div class="kart-fail kart-sticker"><h2>KART precisa de uma TV com navegador 3D</h2><p>'+A.esc(text)+'</p><p>Abra a sala em um computador com Chrome, Edge ou Firefox atualizado.</p></div>';}
-  function init(token){if(token!==generation||!context)return;try{scene=new A.KartScene(document.getElementById('kart-canvas'));scene.update(context.G);loading=false;refresh(context);}catch(e){loading=false;if(scene)scene.dispose();scene=null;fail('Não foi possível iniciar o 3D. '+String(e.message||e));}}
-  function load(){if(scene||loading||failure)return;var probe=document.createElement('script');if(!('noModule' in probe)||!window.WebGL2RenderingContext){fail('Este navegador não tem suporte a WebGL 2 e módulos JavaScript.');return;}loading=true;var token=generation;if(A.KartScene){init(token);return;}probe.type='module';probe.src='/shared/kart/scene.js';probe.onload=function(){probe.remove();if(A.KartScene)init(token);else if(token===generation){loading=false;fail('O motor 3D não carregou. Atualize a página para tentar de novo.');}};probe.onerror=function(){probe.remove();if(token===generation){loading=false;fail('Não foi possível carregar o motor 3D. Atualize a página para tentar de novo.');}};document.head.appendChild(probe);}
+  function stop(){generation++;if(scene)scene.dispose();scene=null;context=null;loading=false;failure='';readyId=null;hudKey='';overlayKey='';lastLap={};flashUntil={};reported=false;document.body.classList.remove('kart-tv');}
+  // A TV não tem console. Quando o 3D não sobe, a página conta aqui o que a tela tem, mostra na
+  // caixa (para uma foto resolver) e manda a mesma linha para o log do servidor.
+  function diagnose(){
+    var info={ua:navigator.userAgent,modules:('noModule' in document.createElement('script')),webgl2:false,webgl1:false,renderer:'',error:''};
+    var canvas=document.createElement('canvas'),gl=null;
+    try{gl=canvas.getContext('webgl2');}catch(e){info.error=String(e.message||e);}
+    if(gl)info.webgl2=true;
+    if(!gl){try{gl=canvas.getContext('webgl')||canvas.getContext('experimental-webgl');}catch(e2){}
+      if(gl)info.webgl1=true;}
+    if(gl){
+      try{var d=gl.getExtension('WEBGL_debug_renderer_info');info.renderer=String(d?gl.getParameter(d.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER));}catch(e3){}
+      try{var lose=gl.getExtension('WEBGL_lose_context');if(lose)lose.loseContext();}catch(e4){}
+    }
+    return info;
+  }
+  function fail(text){
+    failure=text;overlayKey='';
+    var info=diagnose();
+    if(!reported){reported=true;try{A.send({t:'kart-tv-3d',ua:info.ua,webgl2:info.webgl2,webgl1:info.webgl1,modules:info.modules,renderer:info.renderer,error:String(text)});}catch(e){}}
+    var linha='WebGL 2: '+(info.webgl2?'sim':'não')+' · WebGL 1: '+(info.webgl1?'sim':'não')+' · módulos: '+(info.modules?'sim':'não')+(info.renderer?' · '+info.renderer:'');
+    var e=document.getElementById('kart-overlay');
+    if(e)e.innerHTML='<div class="kart-fail kart-sticker"><h2>KART precisa de uma tela com 3D</h2><p>'+A.esc(text)+'</p><p>Os outros jogos do Arcade funcionam nesta TV. Para o KART, abra a sala em um computador com Chrome, Edge ou Firefox atualizado.</p><p class="kart-fail-info">'+A.esc(linha)+'</p><p class="kart-fail-info">'+A.esc(info.ua)+'</p></div>';
+  }
+  function init(token){if(token!==generation||!context)return;try{scene=new A.KartScene(document.getElementById('kart-canvas'));scene.update(context.G);loading=false;refresh(context);}catch(e){loading=false;if(scene)scene.dispose();scene=null;fail('Não foi possível iniciar o 3D: '+String(e.message||e));}}
+  function load(){if(scene||loading||failure)return;var probe=document.createElement('script');if(!('noModule' in probe)||!window.WebGL2RenderingContext){fail('Este navegador não tem WebGL 2 ou não entende módulos JavaScript.');return;}loading=true;var token=generation;if(A.KartScene){init(token);return;}probe.type='module';probe.src='/shared/kart/scene.js';probe.onload=function(){probe.remove();if(A.KartScene)init(token);else if(token===generation){loading=false;fail('O motor 3D não carregou. Atualize a página para tentar de novo.');}};probe.onerror=function(){probe.remove();if(token===generation){loading=false;fail('Não foi possível carregar o motor 3D. Atualize a página para tentar de novo.');}};document.head.appendChild(probe);}
   // Ícones (SVG) vêm de um arquivo comum com o celular; até carregar, os retratos ficam vazios e
   // o cartaz é redesenhado quando o arquivo chega.
   function icons(){if(window.KartIcons||document.getElementById('kart-icons-js'))return;var s=document.createElement('script');s.id='kart-icons-js';s.src='/shared/kart/icons.js';s.onload=function(){hudKey='';overlayKey='';if(context)refresh(context);};document.head.appendChild(s);}

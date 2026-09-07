@@ -112,4 +112,5 @@ body.kart-tv #game{display:block}body.kart-tv #stage{width:100%;height:calc(100v
 .kart-confetti i:nth-child(6n){background:#ff6a5c}.kart-confetti i:nth-child(6n+1){background:#ffcf3f}.kart-confetti i:nth-child(6n+2){background:#43d9a0}.kart-confetti i:nth-child(6n+3){background:#58c8f5}.kart-confetti i:nth-child(6n+4){background:#7c5cff}.kart-confetti i:nth-child(6n+5){background:#ff9ecb}
 .kart-fail{width:min(760px,86%);padding:34px 36px;text-align:center;font-size:18px}
 .kart-fail h2{font-size:clamp(22px,2.8vw,38px);margin:0 0 12px}.kart-fail p{margin:6px 0;font-size:clamp(15px,1.4vw,22px)}
+.kart-fail-info{margin-top:14px;padding:8px 12px;border-radius:12px;background:#efe4cd;color:#5d5488;font-family:monospace;font-size:clamp(11px,1vw,15px);line-height:1.4;overflow-wrap:anywhere}
 @media(prefers-reduced-motion:reduce){.kart-confetti i,.kart-countdown b,.kart-flash,.kart-loading .kart-wheel{animation:none}}

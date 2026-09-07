@@ -1,9 +1,31 @@
 import * as THREE from '/vendor/three/three.module.js';
 // Motor mínimo: um renderizador, uma cena, várias câmeras (uma por jogador) e o buffer de quadros.
 // A luz é de desenho animado: céu claro, sol quente e sombra em degraus (os materiais toon fazem o resto).
+// Algumas TVs e computadores antigos anunciam WebGL 2 e mesmo assim recusam o contexto. Tentamos
+// do mais bonito ao mais simples antes de desistir, e a mensagem final diz o que a tela realmente tem.
+const CONTEXT_TRIES = [
+  { antialias: true, powerPreference: 'high-performance' },
+  { antialias: true },
+  { antialias: false },
+  { antialias: false, alpha: false, depth: true, stencil: false, failIfMajorPerformanceCaveat: false },
+];
+export function acquireContext(canvas) {
+  let detail = '';
+  for (const attributes of CONTEXT_TRIES) {
+    try { const gl = canvas.getContext('webgl2', attributes); if (gl) return gl; }
+    catch (e) { detail = e && e.message ? e.message : String(e); }
+  }
+  let legacy = null;
+  const probe = document.createElement('canvas');
+  try { legacy = probe.getContext('webgl') || probe.getContext('experimental-webgl'); } catch (e) { /* nem WebGL 1 existe */ }
+  if (legacy) { const lose = legacy.getExtension('WEBGL_lose_context'); if (lose) lose.loseContext(); }
+  throw new Error(legacy
+    ? 'esta tela só tem WebGL 1, e o KART precisa de WebGL 2.'
+    : 'esta tela não abriu o WebGL 2.' + (detail ? ' ' + detail : ''));
+}
 export class Game3D {
   constructor(canvas) {
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ canvas, context: acquireContext(canvas), antialias: true });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.25));
     this.renderer.setScissorTest(true);
     this.scene = new THREE.Scene();
