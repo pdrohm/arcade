@@ -20,6 +20,27 @@ function makeBoard() {
 }
 const BOARD = makeBoard();
 
+// Quadro de desenho: o celular manda traços em coordenadas 0..DRAW_SIZE; a TV redesenha no tamanho dela.
+const DRAW_SIZE = 640, MAX_OPS = 3000, MAX_BATCH = 40, MAX_PTS = 160;
+const isHex = c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c);
+const isInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+const isPt = a => Array.isArray(a) && a.length === 2 && isInt(a[0], 0, DRAW_SIZE) && isInt(a[1], 0, DRAW_SIZE);
+// Devolve o traço limpo (só os campos esperados, nos limites) ou null.
+function cleanOp(op) {
+  if (!op || typeof op !== 'object') return null;
+  if (op.t === 'u' || op.t === 'y' || op.t === 'c') return { t: op.t };
+  if (!isInt(op.id, 0, 1e9) || !isHex(op.c) || !isInt(op.w, 1, 96)) return null;
+  if (op.t === 's') {
+    if (!Array.isArray(op.p) || op.p.length < 2 || op.p.length > MAX_PTS || op.p.length % 2 || !op.p.every(v => isInt(v, 0, DRAW_SIZE))) return null;
+    return { t: 's', id: op.id, c: op.c, w: op.w, p: op.p };
+  }
+  if (op.t === 'f') {
+    if (!['l', 'r', 'o'].includes(op.k) || !isPt(op.a) || !isPt(op.b)) return null;
+    return { t: 'f', id: op.id, k: op.k, c: op.c, w: op.w, a: op.a, b: op.b };
+  }
+  return null;
+}
+
 const used = { P: new Set(), O: new Set(), A: new Set(), D: new Set(), L: new Set() };
 function drawCard(cat) {
   const pool = WORDS[cat];
@@ -39,7 +60,8 @@ module.exports = {
     minPlayers: 2, maxPlayers: 8,
     howTo: [
       'Cada um escolhe uma equipe. Dentro da equipe, a ordem de desenhar é a ordem de entrada.',
-      'Na vez da equipe, o desenhista joga o dado e vê a palavra. Só ele.',
+      'Na vez da equipe, quem faz a carta joga o dado e vê a palavra. Só ele.',
+      'Ele escolhe: desenhar no celular (o desenho aparece na TV) ou fazer mímica.',
       'A TV mostra a casa alvo. O peão só anda se a equipe acertar.',
       'Acertou ou errou, a vez passa para a próxima equipe. Ninguém joga duas vezes seguidas.',
       'Casa ⚡: todas as equipes desenham a mesma palavra. Quem acertar primeiro anda.',
@@ -54,7 +76,11 @@ module.exports = {
       dice: null, target: null, card: null,
       drawers: {},           // key -> pid de quem desenha nesta vez
       timeUp: false, winner: null,
+      mode: null,            // como a equipe mostra a palavra: 'desenho' (quadro no celular → TV) | 'mimica'
+      boards: {},            // key -> traços do quadro da equipe (só existe no modo desenho)
     };
+    // Enquanto um lote de traços é transmitido (api.stream), a TV recebe só o que é novo daquele quadro.
+    let streamFrom = null;   // { key, from }
 
     const team = k => s.teams.find(t => t.key === k) || null;
     const cur = () => s.teams[s.turn] || null;
@@ -83,7 +109,7 @@ module.exports = {
 
     function nextTurn(reason) {
       api.clearTimer();
-      s.card = null; s.target = null; s.timeUp = false;
+      s.card = null; s.target = null; s.timeUp = false; s.mode = null; s.boards = {};
       if (s.teams.length) s.turn = (s.turn + 1) % s.teams.length;
       s.phase = 'roll'; s.round++;
       const t = cur();
@@ -94,7 +120,7 @@ module.exports = {
     function finishIfWon(t) {
       if (t.pos < LAST) return false;
       api.clearTimer();
-      s.card = null; s.target = null; s.timeUp = false;
+      s.card = null; s.target = null; s.timeUp = false; s.mode = null; s.boards = {};
       s.phase = 'win'; s.winner = t.key;
       api.setEvent(`A equipe ${info(t.key).name} venceu!`, null);
       return true;
@@ -103,7 +129,7 @@ module.exports = {
     const inst = {
       start() {
         s.phase = 'setup'; s.teams = []; s.turn = 0; s.round = 0;
-        s.dice = null; s.target = null; s.card = null; s.drawers = {}; s.winner = null;
+        s.dice = null; s.target = null; s.card = null; s.drawers = {}; s.winner = null; s.mode = null; s.boards = {};
         api.setEvent('Escolham as equipes no celular. Precisa de 2 equipes ou mais.', null);
       },
 
@@ -175,8 +201,11 @@ module.exports = {
             const t = cur();
             if (!['draw', 'allplay'].includes(s.phase) || api.timerEnd || !isDrawer(me, t)) return;
             s.timeUp = false;
+            s.mode = msg.mode === 'mimica' ? 'mimica' : 'desenho';
+            s.boards = {};
+            if (s.mode === 'desenho') for (const k of Object.keys(s.drawers)) if (s.drawers[k]) s.boards[k] = [];
             api.armTimer(ROUND_MS);
-            api.setEvent('Desenhando! Tempo correndo.', null);
+            api.setEvent(s.mode === 'mimica' ? '🎭 Mímica! Tempo correndo.' : '🎨 Desenhando! Olhe o quadro na TV.', null);
             return;
           }
           case 'result': {
@@ -204,6 +233,26 @@ module.exports = {
             if (s.phase !== 'win') return;
             inst.start(); return;
         }
+      },
+
+      // A TV pede o quadro inteiro quando perdeu um pedaço da transmissão (ex.: frame pulado).
+      tvAction(msg) { return msg.t === 'ia-sync' && s.mode === 'desenho'; },
+
+      // Traços do quadro: chegam pelo canal rápido (sem broadcast) e vão só para a TV.
+      input(p, msg) {
+        if (msg.k !== 'draw' || s.mode !== 'desenho' || !api.timerEnd || !['draw', 'allplay'].includes(s.phase)) return;
+        const t = s.phase === 'allplay' ? teamOf(p.pid) : cur();
+        if (!t || !isDrawer(p.pid, t) || !Array.isArray(msg.ops)) return;
+        const ops = s.boards[t.key] || (s.boards[t.key] = []);
+        const from = ops.length;
+        for (const op of msg.ops.slice(0, MAX_BATCH)) {
+          if (ops.length >= MAX_OPS) break;
+          const clean = cleanOp(op);
+          if (clean) ops.push(clean);
+        }
+        if (ops.length === from) return;
+        streamFrom = { key: t.key, from };
+        try { api.stream(); } finally { streamFrom = null; }
       },
 
       rekey(oldPid, newPid) {
@@ -234,8 +283,20 @@ module.exports = {
           if (['draw', 'judge'].includes(s.phase)) canSee = isDrawer(me.pid, t);
           else if (s.phase === 'allplay') canSee = isDrawer(me.pid, mine);
         }
+        let boards = null;
+        if (s.mode === 'desenho') {
+          if (type === 'tv') {
+            boards = {};
+            for (const k of Object.keys(s.boards)) {
+              const from = streamFrom && streamFrom.key === k ? streamFrom.from : 0;
+              boards[k] = { seq: s.boards[k].length, from, ops: s.boards[k].slice(from) };
+            }
+          } else if (me && mine && s.boards[mine.key] && isDrawer(me.pid, mine) && !streamFrom) {
+            boards = { [mine.key]: { seq: s.boards[mine.key].length, from: 0, ops: s.boards[mine.key] } };   // para o celular refazer o quadro se recarregar
+          }
+        }
         return {
-          phase: s.phase, round: s.round, turn: s.turn, dice: s.dice, target: s.target,
+          phase: s.phase, round: s.round, turn: s.turn, dice: s.dice, target: s.target, mode: s.mode, boards,
           timeUp: s.timeUp, winner: s.winner, drawers: s.drawers, roundMs: ROUND_MS, turnMs: ROUND_MS,
           board: BOARD, categories: CATEGORIES, teamList: TEAMS,
           teams: s.teams.map(x => ({ key: x.key, pos: x.pos, players: x.players, lastDrawer: x.lastDrawer })),

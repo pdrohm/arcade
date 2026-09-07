@@ -60,7 +60,102 @@
     .ia-row { display:flex; align-items:center; } .ia-row > * + * { margin-left:4%; }
     .ia-win { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.8); z-index:20; border-radius:22px; }
     .ia-win > * + * { margin-top:10px; }
+    /* quadro de desenho: cobre o tabuleiro enquanto a equipe desenha (quem adivinha está no sofá; precisa ver grande) */
+    .ia-easel { position:absolute; top:0; left:0; right:0; bottom:0; z-index:8; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(236,229,211,0.82); border-radius:22px; }
+    .ia-easel-top { display:flex; align-items:center; justify-content:center; color:#1a1a1a; font-weight:900; margin-bottom:.5vw; }
+    .ia-easel-top > * + * { margin-left:1.2vw; }
+    .ia-easel .ia-timer { font-size:64px; font-size:clamp(30px,3.6vw,64px); } /* tv-ok */
+    .ia-easel .ia-cat { font-size:22px; font-size:clamp(12px,1.4vw,22px); } /* tv-ok */
+    .ia-easel .tbar { width:14vw; margin:0; }
+    .ia-easel-row { display:flex; align-items:flex-start; justify-content:center; }
+    .ia-easel-row > * + * { margin-left:1.4vw; }
+    .ia-card { display:flex; flex-direction:column; align-items:center; }
+    .ia-card canvas { display:block; background:#fff; border-radius:1vw; box-shadow:0 20px 50px rgba(0,0,0,0.45), 0 0 0 .35vw #fff, 0 0 0 .6vw rgba(0,0,0,0.18); }
+    .ia-card-lb { margin-top:.6vw; font-weight:900; color:#1a1a1a; display:flex; align-items:center; font-size:22px; font-size:clamp(12px,1.3vw,22px); } /* tv-ok */
+    .ia-card-lb .dot { width:1.2vw; height:1.2vw; margin-right:.5vw; }
+    .ia-card-lb small { font-weight:700; opacity:.7; margin-left:.6vw; }
+    .ia-mime { font-size:60px; font-size:clamp(30px,3.6vw,60px); line-height:1; } /* tv-ok */
   `;
+
+  // ---------- quadro de desenho ----------
+  // O celular manda traços em 0..DRAW_SIZE; aqui cada equipe tem um canvas maior, e cada traço
+  // novo é desenhado por cima (desfazer redesenha tudo). Se um pedaço da transmissão se perdeu,
+  // a TV pede o quadro inteiro ao servidor (ia-sync).
+  const DRAW_SIZE = 640, TV_SIZE = 1280, K = TV_SIZE / DRAW_SIZE;
+  const boards = {};       // key -> { round, seq, stack, redo, cv, g }
+  let lastSync = 0, easelSig = '', fitBound = false;
+  function drawOp(g, op, k) {
+    g.strokeStyle = g.fillStyle = op.c; g.lineWidth = op.w * k; g.lineCap = 'round'; g.lineJoin = 'round';
+    if (op.t === 's') {
+      if (op.p.length <= 2) { g.beginPath(); g.arc(op.p[0] * k, op.p[1] * k, op.w * k / 2, 0, Math.PI * 2); g.fill(); return; }
+      g.beginPath(); g.moveTo(op.p[0] * k, op.p[1] * k);
+      for (let i = 2; i < op.p.length; i += 2) g.lineTo(op.p[i] * k, op.p[i + 1] * k);
+      g.stroke(); return;
+    }
+    const a = op.a, b = op.b;
+    g.beginPath();
+    if (op.k === 'l') { g.moveTo(a[0] * k, a[1] * k); g.lineTo(b[0] * k, b[1] * k); }
+    else if (op.k === 'r') g.rect(Math.min(a[0], b[0]) * k, Math.min(a[1], b[1]) * k, Math.abs(b[0] - a[0]) * k, Math.abs(b[1] - a[1]) * k);
+    else g.ellipse((a[0] + b[0]) / 2 * k, (a[1] + b[1]) / 2 * k, Math.max(1, Math.abs(b[0] - a[0]) / 2) * k, Math.max(1, Math.abs(b[1] - a[1]) / 2) * k, 0, 0, Math.PI * 2);
+    g.stroke();
+  }
+  function repaint(b) {
+    b.g.fillStyle = '#fff'; b.g.fillRect(0, 0, TV_SIZE, TV_SIZE);
+    let from = 0;
+    for (let i = b.stack.length - 1; i >= 0; i--) if (b.stack[i].t === 'c') { from = i + 1; break; }
+    for (let i = from; i < b.stack.length; i++) drawOp(b.g, b.stack[i], K);
+  }
+  function apply(b, op) {
+    const top = b.stack[b.stack.length - 1];
+    if (op.t === 's') {
+      if (top && top.t === 's' && top.id === op.id) {   // continuação do traço: desenha só o pedaço novo
+        const n = top.p.length;
+        drawOp(b.g, { t: 's', c: op.c, w: op.w, p: [top.p[n - 2], top.p[n - 1]].concat(op.p) }, K);
+        top.p = top.p.concat(op.p);
+      } else { b.stack.push({ t: 's', id: op.id, c: op.c, w: op.w, p: op.p.slice() }); b.redo = []; drawOp(b.g, op, K); }
+    } else if (op.t === 'f') { b.stack.push(op); b.redo = []; drawOp(b.g, op, K); }
+    else if (op.t === 'c') { b.stack.push(op); b.redo = []; b.g.fillStyle = '#fff'; b.g.fillRect(0, 0, TV_SIZE, TV_SIZE); }
+    else if (op.t === 'u') { if (b.stack.length) { b.redo.push(b.stack.pop()); repaint(b); } }
+    else if (op.t === 'y') { if (b.redo.length) { const r = b.redo.pop(); b.stack.push(r); if (r.t === 'c') { b.g.fillStyle = '#fff'; b.g.fillRect(0, 0, TV_SIZE, TV_SIZE); } else drawOp(b.g, r, K); } }
+  }
+  function newBoard(key, round) {
+    const cv = document.createElement('canvas'); cv.width = TV_SIZE; cv.height = TV_SIZE;
+    const b = { round, seq: 0, stack: [], redo: [], cv, g: cv.getContext('2d') };
+    repaint(b);
+    boards[key] = b;
+    return b;
+  }
+  function syncBoards(c) {
+    const G = c.G;
+    if (!G || G.mode !== 'desenho' || !G.boards) { for (const k of Object.keys(boards)) delete boards[k]; return; }
+    for (const key of Object.keys(G.boards)) {
+      const inc = G.boards[key];
+      let b = boards[key];
+      if (!b || b.round !== G.round) b = newBoard(key, G.round);
+      if (inc.from > b.seq) {   // perdemos um pedaço: pede tudo de novo (no máximo uma vez por segundo)
+        if (Date.now() - lastSync > 1000) { lastSync = Date.now(); c.send({ t: 'ia-sync' }); }
+        continue;
+      }
+      if (inc.from === 0 && inc.ops.length < b.seq) { b.seq = 0; b.stack = []; b.redo = []; repaint(b); }
+      for (let i = b.seq - inc.from; i < inc.ops.length; i++) apply(b, inc.ops[i]);
+      b.seq = inc.from + inc.ops.length;
+    }
+    for (const k of Object.keys(boards)) if (!G.boards[k]) delete boards[k];
+  }
+  // Tamanho dos quadros: o maior quadrado que cabe no tabuleiro (um por equipe, lado a lado).
+  function fitEasel() {
+    const board = document.getElementById('ia-board'), easel = document.getElementById('ia-easel');
+    if (!board || !easel) return;
+    const cards = Array.prototype.slice.call(easel.querySelectorAll('.ia-card'));
+    if (!cards.length) return;
+    const top = easel.querySelector('.ia-easel-top');
+    const lb = easel.querySelector('.ia-card-lb');
+    const gap = board.clientWidth * 0.014;
+    const availH = board.clientHeight * 0.94 - (top ? top.offsetHeight + board.clientWidth * 0.005 : 0) - (lb ? lb.offsetHeight + board.clientWidth * 0.006 : 0);
+    const availW = (board.clientWidth * 0.94 - gap * (cards.length - 1)) / cards.length;
+    const size = Math.max(60, Math.floor(Math.min(availH, availW)));
+    for (const card of cards) { const cv = card.querySelector('canvas'); cv.style.width = size + 'px'; cv.style.height = size + 'px'; }
+  }
 
   const dice = (n, shake) => {
     const map = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
@@ -104,7 +199,8 @@
         const ti = k => G.teamList.find(x => x.key === k);
         const drawerName = tt => { const pid = tt && G.drawers[tt.key]; const p = pid && c.C.players.find(x => x.pid === pid); return p ? p.name : null; };
         let side = `<div class="box"><p class="sub mut">${G.phase === 'setup' ? 'Escolhendo as equipes' : 'Rodada ' + G.round}</p>
-          ${t && G.phase !== 'setup' ? `<div style="display:flex;align-items:center;margin-top:8px"><span class="dot" style="background:${ti(t.key).hex};width:34px;height:34px"></span><b style="font-size:26px;color:${ti(t.key).hex};margin-left:12px">${ti(t.key).name}</b></div>` : ''}</div>`;
+          ${t && G.phase !== 'setup' ? `<div style="display:flex;align-items:center;margin-top:8px"><span class="dot" style="background:${ti(t.key).hex};width:34px;height:34px"></span><b style="font-size:26px;color:${ti(t.key).hex};margin-left:12px">${ti(t.key).name}</b>
+            ${G.mode ? `<span style="margin-left:auto;background:${G.mode === 'mimica' ? '#2563eb' : '#16a34a'};color:#fff;border-radius:10px;padding:4px 12px;font-weight:900;font-size:16px">${G.mode === 'mimica' ? '🎭 Mímica' : '🎨 Desenho'}</span>` : ''}</div>` : ''}</div>`;
 
         side += `<div class="box">${G.teams.length ? `<div class="players">${G.teams.map((tt, i) => `
           <div class="pl" style="border-color:${i === G.turn && G.phase !== 'setup' ? '#fff' : 'transparent'}">
@@ -122,6 +218,9 @@
           <div style="display:flex;align-items:center;font-size:14px;font-weight:700;margin-top:7px"><i style="width:22px;height:22px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;margin-right:10px">⚡</i>Todos jogam</div></div></div>`;
         return { side };
       },
+
+      // traços chegando pelo canal rápido (game-frame): só o quadro muda
+      frame(c) { syncBoards(c); },
 
       after(c) {
         const G = c.G, esc = c.esc;
@@ -141,19 +240,60 @@
             <div style="text-align:left"><div class="ia-hint">Vez da equipe</div><div style="font-size:28px;font-size:clamp(14px,1.8vw,28px) /* tv-ok */;font-weight:900">${k.name}</div></div>
             <div style="margin-left:calc(4% + 1.5vw)">${dice(G.dice, G.phase === 'rolling')}</div></div>`;
           const dn = drawerName(t);
-          if (dn) ch += `<div class="ia-hint">✏️ ${esc(dn)} ${G.phase === 'roll' ? 'joga o dado e desenha' : 'desenha'}</div>`;
+          const verbo = G.mode === 'mimica' ? 'faz mímica' : G.mode === 'desenho' ? 'desenha' : 'faz a carta';
+          if (dn) ch += `<div class="ia-hint">✏️ ${esc(dn)} ${G.phase === 'roll' ? 'joga o dado e faz a carta' : verbo}</div>`;
           if (G.phase === 'roll') ch += `<div class="ia-hint">Jogue o dado no celular 🎲</div>`;
           if (G.card) {
             const cat = G.categories[G.card.cat];
             if (G.phase === 'allplay') ch += `<div style="background:#1a1a1a;color:#fff;border-radius:12px;padding:.3em 1em;font-weight:900;font-size:20px;font-size:clamp(12px,1.3vw,20px) /* tv-ok */">⚡ TODOS JOGAM</div>`;
+            if (G.mode === 'mimica') ch += `<div class="ia-mime">🎭</div>`;
             ch += `<div class="ia-cat" style="background:${cat.color};color:${cat.text}">${cat.name}</div>`;
             if (G.target !== null) ch += `<div class="ia-hint">Casa ${t.pos} → ${G.target} se acertar</div>`;
             const r = c.remaining();
             if (r !== null) ch += `<div class="ia-timer ${r <= 10 ? 'low' : ''}" id="timer">${Math.ceil(r)}</div><div class="tbar" style="width:70%"><i id="tbar" style="width:${r / (G.roundMs / 1000) * 100}%"></i></div>`;
-            else ch += G.timeUp ? `<div class="ia-timer low">⏰</div><div class="ia-hint">Tempo esgotado!</div>` : `<div class="ia-hint">Esperando começar a desenhar…</div>`;
+            else ch += G.timeUp ? `<div class="ia-timer low">⏰</div><div class="ia-hint">Tempo esgotado!</div>` : `<div class="ia-hint">Esperando escolher: desenho ou mímica…</div>`;
           }
         }
-        center.innerHTML = ch;
+
+        // quadro de desenho por cima do tabuleiro (um canvas por equipe que desenha)
+        syncBoards(c);
+        let easel = document.getElementById('ia-easel');
+        const keys = G.mode === 'desenho' && G.boards ? Object.keys(G.boards) : [];
+        if (keys.length && t && G.card) {
+          center.innerHTML = '';
+          const sig = G.round + ':' + keys.join(',');
+          if (!easel) { easel = document.createElement('div'); easel.id = 'ia-easel'; easel.className = 'ia-easel'; board.appendChild(easel); easelSig = ''; }
+          if (easelSig !== sig) {
+            easelSig = sig;
+            easel.innerHTML = '<div class="ia-easel-top" id="ia-easel-top"></div><div class="ia-easel-row" id="ia-easel-row"></div>';
+            const row = document.getElementById('ia-easel-row');
+            for (const key of keys) {
+              const kk = ti(key);
+              const card = document.createElement('div'); card.className = 'ia-card';
+              card.appendChild(boards[key].cv);
+              const lb = document.createElement('div'); lb.className = 'ia-card-lb'; lb.id = 'ia-lb-' + key;
+              lb.innerHTML = `<span class="dot" style="background:${kk.hex}"></span>${kk.name}`;
+              card.appendChild(lb);
+              row.appendChild(card);
+            }
+            if (!fitBound) { fitBound = true; window.addEventListener('resize', fitEasel); }
+          }
+          const cat = G.categories[G.card.cat], r = c.remaining();
+          let th = G.phase === 'allplay' ? `<div style="background:#1a1a1a;color:#fff;border-radius:12px;padding:.3em 1em;font-size:18px;font-size:clamp(11px,1.1vw,18px) /* tv-ok */">⚡ TODOS JOGAM</div>` : '';
+          th += `<div class="ia-cat" style="background:${cat.color};color:${cat.text}">${cat.name}</div>`;
+          if (G.target !== null) th += `<div class="ia-hint">Casa ${t.pos} → ${G.target}</div>`;
+          if (r !== null) th += `<div class="ia-timer ${r <= 10 ? 'low' : ''}" id="timer">⏱ ${c.fmt(r)}</div><div class="tbar"><i id="tbar" style="width:${r / (G.roundMs / 1000) * 100}%"></i></div>`;
+          else th += G.timeUp ? `<div class="ia-timer low">⏰</div><div class="ia-hint">Tempo esgotado!</div>` : '';
+          document.getElementById('ia-easel-top').innerHTML = th;
+          for (const key of keys) {
+            const lb = document.getElementById('ia-lb-' + key), tt = G.teams.find(x => x.key === key), dn2 = drawerName(tt);
+            if (lb) lb.innerHTML = `<span class="dot" style="background:${ti(key).hex}"></span>${ti(key).name}${dn2 ? `<small>✏️ ${esc(dn2)}</small>` : ''}`;
+          }
+          fitEasel();
+        } else {
+          if (easel) { easel.remove(); easelSig = ''; }
+          center.innerHTML = ch;
+        }
 
         // casa alvo + peão fantasma
         Array.prototype.slice.call(board.querySelectorAll('.ia-sq.active')).forEach(e => e.classList.remove('active'));
@@ -208,8 +348,8 @@
           if (mudou && G.phase === 'roll') {
             const k = ti(t.key), dn = drawerName(t);
             c.turnover(`<div class="round">Rodada ${G.round}</div>
-              <div><small>🎨 AGORA DESENHA A EQUIPE</small><div class="who2" style="background:${k.hex};color:#111">${k.name}</div></div>
-              ${dn ? `<div><small>✏️ QUEM DESENHA</small><div class="who2 sm" style="background:#fff;color:#111">${esc(dn)}</div></div>` : ''}`, 3200);
+              <div><small>🎨 AGORA É A VEZ DA EQUIPE</small><div class="who2" style="background:${k.hex};color:#111">${k.name}</div></div>
+              ${dn ? `<div><small>✏️ QUEM FAZ A CARTA</small><div class="who2 sm" style="background:#fff;color:#111">${esc(dn)}</div></div>` : ''}`, 3200);
             c.chord([523, 659, 784]);
           }
         } else { lastTurn = G.turn; lastRound = G.round; }

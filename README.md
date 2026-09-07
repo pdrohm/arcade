@@ -28,6 +28,15 @@ Com `PUBLIC_URL`, a TV mostra **dois** QR codes lado a lado:
 
 Quem está na sala escaneia o primeiro e nem sai da rede de casa. Quem está longe usa o segundo. Sem `PUBLIC_URL`, só aparece o do Wi-Fi.
 
+## Instalar no celular
+
+O controle também funciona como PWA, um site instalado com ícone e tela própria.
+
+- **Android:** abra o Arcade no Chrome e toque em **Instalar** no aviso da tela.
+- **iPhone:** abra no Safari, toque em **Compartilhar** e depois em **Adicionar à Tela de Início**.
+
+Em produção, use um endereço com HTTPS. `localhost` também funciona para testes. Um endereço `http://IP` da rede local pode abrir o controle, mas o navegador não libera a instalação da PWA.
+
 ## Salas
 
 Um servidor serve várias salas ao mesmo tempo. Cada sala tem um código de 4 letras, seus próprios jogadores e seu próprio jogo.
@@ -57,7 +66,7 @@ O que o núcleo já resolve para todos os jogos:
 | Pasta | Jogo |
 |---|---|
 | `games/kart` | KART — corrida 2.5D de 3 voltas e batalha de 2 minutos, 2–4 pilotos, controles no celular e tela dividida na TV (Canvas 2D, roda em TV antiga) |
-| `games/imagemeacao` | Imagem e Ação — equipes, dado, desenho e cronômetro |
+| `games/imagemeacao` | Imagem e Ação — equipes, dado e cronômetro; quem faz a carta escolhe desenhar (quadro no celular, ao vivo na TV) ou mímica |
 | `games/perfil` | Perfil — 20 dicas, mediador, carta bônus e ficha azul. 5 categorias (Pessoa, Lugar, Coisa, Ano, Série ou Filme) e 400+ cartas em lotes `cardsN.js` (qualquer arquivo novo nessa pasta entra sozinho) |
 | `games/telefone` | Telefone Sem Fio — escreva, desenhe, descreva; álbum no fim (quadro de desenho no celular) |
 | `games/stop` | Stop (Adedonha) — menu de regras (rodadas, tempo, categorias, letras), roleta de letras, STOP e conferência com veto |
@@ -132,7 +141,7 @@ kart e **ESTOU PRONTO**. O primeiro piloto toca **LARGAR**.
 - A TV desenha em Canvas 2D, no estilo dos jogos de corrida dos anos 90: não precisa de WebGL e roda no navegador da TV da sala. Os celulares não carregam o desenho.
 - O celular vira um controle na **horizontal** (em pé, ele pede para virar). Polegar esquerdo no
   volante analógico: pouco movimento vira pouco, até o fim vira tudo. Polegar direito: **DRIFT**, **ITEM** e **TURBO**.
-- O kart acelera sozinho. Segure **DRIFT** entrando na curva: a derrapagem trava o lado da curva,
+- Segure **A** para acelerar. Segure **DRIFT** entrando na curva: a derrapagem trava o lado da curva,
   o botão vai enchendo e, ao soltar com carga, sai um turbo. **ITEM** usa o item que só o seu celular mostra;
   **TURBO** tem um tempo de recarga.
 - Vibração (quando o celular tem): pegou item, usou item, bateu, turbo de derrapagem.
