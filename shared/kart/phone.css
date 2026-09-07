@@ -62,52 +62,51 @@
 .ks-place b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;text-transform:uppercase}
 .ks-place small{flex:none;font-size:12px;font-weight:800;color:#5d5488;margin-left:8px}
 .ks-place.me{outline:3px solid var(--grape);outline-offset:2px}
-/* ---------- controle (partida em andamento) ---------- */
+/* ---------- controle retrô (partida em andamento) ---------- */
 body.kart-driving{overflow:hidden;overscroll-behavior:none}
 body.kart-driving #app{max-width:none;padding:0;gap:0}
 body.kart-driving #app>.head,body.kart-driving #app>.btn.ghost{display:none}
-.kart-controller{--player-color:#f5b841;position:fixed;inset:0;z-index:20;height:100vh;height:100dvh;overflow:hidden;background:radial-gradient(ellipse at 8% 108%,#3b2f7a 0,transparent 55%),radial-gradient(ellipse at 96% -10%,#3f338a 0,transparent 50%),#2a2250;color:#fff6e3;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-touch-callout:none;padding:max(10px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));box-sizing:border-box}
+.kart-controller{--player-color:#f5b841;--pad:#aaa7ae;--pad-hi:#d8d6da;--pad-shadow:#5a5661;--pixel:#24212b;position:fixed;inset:0;z-index:20;height:100vh;height:100dvh;overflow:hidden;background-color:#201b36;background-image:linear-gradient(45deg,#292144 25%,transparent 25%,transparent 75%,#292144 75%),linear-gradient(45deg,#292144 25%,transparent 25%,transparent 75%,#292144 75%);background-position:0 0,12px 12px;background-size:24px 24px;color:#fff6e3;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-touch-callout:none;padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));box-sizing:border-box}
 .kart-controller [hidden]{display:none!important}
-.kart-gamepad{height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:38px minmax(0,1fr) 20px;column-gap:clamp(24px,9vw,150px)}
-.kart-controller-header{grid-column:1/-1;display:flex;align-items:center;gap:12px;min-width:0}
-.kart-player{display:flex;align-items:center;max-width:46%;height:34px;padding:0 14px 0 3px;border-radius:99px;background:var(--paper);color:var(--ink);border:3px solid var(--ink);font-weight:900;font-size:13px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kart-player .ks-portrait{flex:none;width:26px;height:26px;margin-right:8px;border-radius:50%;border:2px solid var(--ink);overflow:hidden}
+.kart-gamepad{position:relative;height:100%;max-width:1180px;margin:0 auto;padding:8px 28px 12px;display:grid;grid-template-rows:38px minmax(0,1fr) 18px;background:var(--pad);border:4px solid var(--pixel);border-radius:38px 38px 74px 74px;box-shadow:0 8px 0 var(--pixel),inset 0 4px 0 var(--pad-hi),inset 0 -7px 0 var(--pad-shadow);font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace}
+.kart-gamepad::before{content:"";position:absolute;left:4%;right:4%;top:44px;height:5px;background:repeating-linear-gradient(90deg,var(--pad-shadow) 0 10px,transparent 10px 16px);opacity:.5}
+.kart-controller-header{display:flex;align-items:center;gap:12px;min-width:0;z-index:1}
+.kart-player{display:flex;align-items:center;max-width:40%;height:31px;padding:0 12px 0 3px;border-radius:4px;background:#e6e2d7;color:var(--pixel);border:3px solid var(--pixel);box-shadow:3px 3px 0 var(--pad-shadow);font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kart-player .ks-portrait{flex:none;width:24px;height:24px;margin-right:7px;border-radius:2px;border:2px solid var(--pixel);overflow:hidden}
 .kart-player .ks-portrait .ki{transform:scale(1.15) translateY(4%)}
-.kart-player i{flex:none;width:9px;height:9px;margin-left:8px;border-radius:50%;background:var(--player-color);border:2px solid var(--ink)}
-#kart-status{flex:1;text-align:center;font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--sun)}
-.kart-controller-header button{flex:none;width:46px;height:34px;margin-left:auto;color:var(--ink);border:3px solid var(--ink);border-radius:12px;background:var(--paper);font:20px system-ui;box-shadow:0 3px 0 var(--ink)}
-.kart-stick-area{display:flex;min-width:0;min-height:0;align-items:center;justify-content:center;flex-direction:column;gap:10px}
-.kart-stick{--steer:0;position:relative;flex-shrink:0;width:min(32vw,65vh,290px);height:min(32vw,65vh,290px);width:min(32vw,65dvh,290px);height:min(32vw,65dvh,290px);border:4px solid var(--ink);border-radius:50%;background:radial-gradient(circle,#fff6e3 0 58%,#e9dcc7 59% 62%,#fff6e3 63%);box-shadow:0 8px 0 var(--ink),inset 0 0 0 6px #e9dcc7;touch-action:none;cursor:grab}
+.kart-player i{flex:none;width:9px;height:9px;margin-left:8px;background:var(--player-color);border:2px solid var(--pixel)}
+.kart-status-screen{flex:1;min-width:0;text-align:center;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:#bfffb4;background:#292b26;border:3px solid var(--pixel);padding:5px 8px;box-shadow:inset 2px 2px 0 #131510;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kart-controller-header button{flex:none;width:42px;height:31px;margin-left:auto;color:var(--pixel);border:3px solid var(--pixel);border-radius:4px;background:#e6e2d7;font:19px system-ui;box-shadow:3px 3px 0 var(--pad-shadow)}
+.kart-console{display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,.48fr) minmax(0,1fr);align-items:center;gap:clamp(10px,3vw,44px);min-height:0;padding:12px 0 2px}
+.kart-stick-area{display:flex;min-width:0;min-height:0;align-items:center;justify-content:center;flex-direction:column;gap:7px}
+.kart-stick-well{padding:12px;border:4px solid var(--pixel);border-radius:50%;background:#77737d;box-shadow:inset 0 6px 0 #4d4953,0 4px 0 var(--pad-hi)}
+.kart-stick{--steer:0;position:relative;flex-shrink:0;width:min(27vw,58vh,245px);height:min(27vw,58vh,245px);width:min(27vw,58dvh,245px);height:min(27vw,58dvh,245px);border:4px solid var(--pixel);border-radius:50%;background:repeating-conic-gradient(#4a4650 0 8deg,#36323c 8deg 16deg);box-shadow:inset 0 0 0 8px #5e5964;touch-action:none;cursor:grab}
 .kart-stick:active{cursor:grabbing}
-.kart-stick::after{content:"";position:absolute;inset:-4px;border:4px solid var(--player-color);border-radius:50%;opacity:calc(.15 + var(--steer)*.85);pointer-events:none}
-.kart-stick-knob{position:absolute;left:30%;top:30%;width:40%;height:40%;border:4px solid var(--ink);border-radius:50%;background:var(--player-color);box-shadow:0 6px 0 var(--ink),inset -8px -10px 0 rgba(42,34,80,.18),inset 8px 10px 0 rgba(255,255,255,.35);display:grid;place-items:center;will-change:transform;pointer-events:none}
-.kart-stick-knob span{width:38%;height:38%;border-radius:50%;background:var(--paper);border:3px solid var(--ink)}
-.kart-stick-arrow{position:absolute;top:calc(50% - 23px);font-size:40px;line-height:46px;font-weight:900;color:var(--ink);opacity:.35;pointer-events:none}.kart-stick-arrow.left{left:10%}.kart-stick-arrow.right{right:10%}
-.kart-stick-label{padding:4px 12px;border-radius:99px;background:rgba(255,246,227,.12);font-size:10px;font-weight:900;letter-spacing:.24em;color:var(--lilac)}
-.kart-actions{align-self:center;justify-self:end;display:grid;width:100%;max-width:360px;height:min(70vh,310px);height:min(70dvh,310px);grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:14px}
-.kart-pad{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:64px;padding:8px;border:4px solid var(--ink);border-radius:28px;background:var(--paper);color:var(--ink);font:900 clamp(16px,3vw,23px)/1.1 inherit;font-family:inherit;touch-action:none;cursor:pointer;overflow:hidden;box-shadow:0 7px 0 var(--ink);user-select:none;-webkit-user-select:none;transition:transform .06s,box-shadow .06s}
-.kart-pad small{display:block;font-size:clamp(10px,1.7vw,12px);line-height:1.3;font-weight:900;margin-top:4px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
-.kart-pad .ki{width:clamp(34px,6vw,52px);height:clamp(34px,6vw,52px)}
-.kart-pad.held{transform:translateY(5px);box-shadow:0 2px 0 var(--ink);filter:brightness(1.08)}
+.kart-stick::after{content:"";position:absolute;inset:4px;border:4px solid var(--player-color);border-radius:50%;opacity:calc(.12 + var(--steer)*.75);pointer-events:none}
+.kart-stick-knob{position:absolute;left:27%;top:27%;width:46%;height:46%;border:4px solid var(--pixel);border-radius:50%;background:repeating-linear-gradient(0deg,#8b8791 0 5px,#77737f 5px 10px);box-shadow:0 6px 0 var(--pixel),inset 5px 7px 0 rgba(255,255,255,.2);display:grid;place-items:center;will-change:transform;pointer-events:none}
+.kart-stick-knob span{width:36%;height:36%;border-radius:50%;background:var(--player-color);border:4px solid var(--pixel);box-shadow:inset 2px 2px 0 rgba(255,255,255,.35)}
+.kart-stick-arrow{position:absolute;top:calc(50% - 20px);font-size:36px;line-height:40px;font-weight:900;color:#d9d6dc;opacity:.75;pointer-events:none}.kart-stick-arrow.left{left:9%}.kart-stick-arrow.right{right:9%}
+.kart-control-caption{padding:3px 9px;border:2px solid var(--pixel);background:#77737d;color:#f3f0e7;font-size:9px;font-weight:900;letter-spacing:.16em}
+.kart-console-center{align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;min-width:0}
+.kart-pixel-logo{text-align:center;line-height:.9;transform:skew(-5deg);color:var(--pixel)}
+.kart-pixel-logo small{display:block;font-size:8px;letter-spacing:.28em}.kart-pixel-logo b{font-size:clamp(18px,3vw,32px);color:#ffd51f;text-shadow:2px 0 var(--pixel),-2px 0 var(--pixel),0 2px var(--pixel),0 -2px var(--pixel),3px 3px #7256c9}
+.kart-item-display{width:100%;min-height:72px;display:flex;align-items:center;justify-content:center;gap:7px;padding:6px;background:#292b26;color:#bfffb4;border:4px solid var(--pixel);box-shadow:inset 3px 3px 0 #131510}
+.kart-item-slot{flex:none;width:42px;height:42px;display:block;border:2px dashed #66695f}.kart-item-slot.ready{border:0}.kart-item-slot .ki{width:100%;height:100%}
+.kart-item-display>span:last-child{display:flex;min-width:0;flex-direction:column}.kart-item-display small{font-size:8px;color:#969b8b}.kart-item-display b{font-size:clamp(9px,1.5vw,13px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kart-item-display em{font-style:normal;font-size:8px;color:#ffd51f;margin-top:3px}
+.kart-speaker{display:flex;gap:5px;transform:rotate(-8deg)}.kart-speaker i{display:block;width:6px;height:24px;background:#5f5b64;border:2px solid var(--pixel)}
+.kart-actions{justify-self:center;display:grid;width:min(31vw,66vh,300px);height:min(31vw,66vh,300px);width:min(31vw,66dvh,300px);height:min(31vw,66dvh,300px);grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);align-items:center;justify-items:center;padding:4px;border:4px solid var(--pixel);border-radius:50%;background:#77737d;box-shadow:inset 0 5px 0 #4d4953,0 4px 0 var(--pad-hi)}
+.kart-pad{--face:#eee;position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;width:min(9vw,19vh,86px);height:min(9vw,19vh,86px);width:min(9vw,19dvh,86px);height:min(9vw,19dvh,86px);min-width:50px;min-height:50px;padding:4px;border:4px solid var(--pixel);border-radius:50%;background:var(--face);color:var(--pixel);font:900 clamp(17px,3.2vw,30px)/1 ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;touch-action:none;cursor:pointer;overflow:hidden;box-shadow:0 6px 0 var(--pixel),inset 3px 4px 0 rgba(255,255,255,.45);user-select:none;-webkit-user-select:none;transition:transform .06s,box-shadow .06s}
+.kart-pad b{position:relative;z-index:2}.kart-pad small{position:relative;z-index:2;display:block;font-size:clamp(6px,1.15vw,10px);line-height:1.1;font-weight:900;margin-top:3px;letter-spacing:0}
+.kart-pad.held{transform:translateY(5px);box-shadow:0 1px 0 var(--pixel),inset 2px 3px 0 rgba(255,255,255,.25);filter:brightness(.9)}
 .kart-pad:focus-visible,.kart-stick:focus-visible,.ks-choice:focus-visible,.ks-btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
-.kart-drift{--charge:0;grid-column:2;grid-row:1/3;align-self:center;height:80%;background:var(--sun);border-radius:46%;font-size:clamp(24px,4.2vw,36px);letter-spacing:.02em}
-.kart-drift>*{position:relative;z-index:1}
-.kart-drift small{font-size:10px}
-.kart-drift-fill{position:absolute;z-index:0;left:0;right:0;bottom:0;top:0;background:var(--coral);transform:scaleY(var(--charge));transform-origin:bottom;pointer-events:none}
-.kart-drift.charged{background:var(--sky)}.kart-drift.charged .kart-drift-fill{background:#8fe3ff}
-.kart-drift.charged{box-shadow:0 7px 0 var(--ink),0 0 0 6px rgba(88,200,245,.45)}
-.kart-drift.held.charged{box-shadow:0 2px 0 var(--ink),0 0 0 6px rgba(88,200,245,.45)}
-.kart-item{grid-column:1;grid-row:1;background:var(--sky)}
-.kart-item.empty{background:#4a3f8a;border-color:var(--lilac);color:var(--lilac);box-shadow:0 7px 0 #1b1640}
-.kart-item.empty .kart-item-slot{width:clamp(34px,6vw,52px);height:clamp(34px,6vw,52px);border-radius:12px;border:3px dashed var(--lilac);opacity:.7}
-.kart-item.empty.held{box-shadow:0 2px 0 #1b1640}
-.kart-boost{grid-column:1;grid-row:2;background:var(--coral);color:#fff6e3}
-.kart-boost b{font-size:clamp(15px,2.6vw,20px)}
-.kart-boost small{margin-top:2px;opacity:.9}
-.kart-boost.cooldown{background:#4a3f8a;border-color:var(--lilac);color:var(--lilac);box-shadow:0 7px 0 #1b1640}
-.kart-boost.cooldown .ki path{fill:#6a5fb0}
-.kart-boost.cooldown.held{box-shadow:0 2px 0 #1b1640}
-.kart-help{grid-column:1/-1;margin:0;text-align:center;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--lilac);align-self:end;opacity:.8}
+.kart-key-x{--face:#43a5ff;grid-column:2;grid-row:1}.kart-key-a{--face:#f04b46;grid-column:3;grid-row:2}.kart-key-b{--face:#f5d51f;grid-column:2;grid-row:3}.kart-key-y{--face:#43dc42;grid-column:1;grid-row:2}
+.kart-throttle{width:min(10vw,21vh,94px);height:min(10vw,21vh,94px);width:min(10vw,21dvh,94px);height:min(10vw,21dvh,94px)}
+.kart-drift{--charge:0}.kart-drift>*{position:relative;z-index:1}
+.kart-drift-fill{position:absolute;z-index:0;left:0;right:0;bottom:0;top:0;background:#ff674f;transform:scaleY(var(--charge));transform-origin:bottom;pointer-events:none}
+.kart-drift.charged{outline:4px solid #58c8f5;outline-offset:2px}.kart-drift.charged .kart-drift-fill{background:#58c8f5}
+.kart-item.empty{filter:saturate(.35)}.kart-item.empty.held{filter:saturate(.35) brightness(.85)}
+.kart-boost.cooldown{filter:grayscale(.8);color:#666}.kart-boost.cooldown.held{filter:grayscale(.8) brightness(.85)}
+.kart-help{margin:0;text-align:center;font-size:10px;font-weight:900;letter-spacing:.12em;color:var(--pixel);align-self:end}
 .kart-rotate{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;gap:14px}
 .kart-rotate h2{font-size:24px;letter-spacing:.06em;margin:0;color:var(--sun);text-transform:uppercase}
 .kart-rotate p{font-size:15px;max-width:250px;line-height:1.5;margin:0;color:var(--lilac);font-weight:700}
@@ -116,9 +115,9 @@ body.kart-driving #app>.head,body.kart-driving #app>.btn.ghost{display:none}
 @keyframes kart-rotate{0%,20%{transform:rotate(0)}55%,90%{transform:rotate(90deg)}100%{transform:rotate(0)}}
 @keyframes kart-blink{50%{opacity:.35}}
 @media(prefers-reduced-motion:reduce){.kart-rotate-phone{animation:none;transform:rotate(90deg)}.ks-tag.wait{animation:none}}
-@media(max-height:350px){.kart-gamepad{grid-template-rows:32px minmax(0,1fr) 14px;column-gap:7vw}.kart-stick{width:60dvh;height:60dvh}.kart-stick-label{display:none}.kart-actions{height:69dvh;gap:9px}.kart-pad{border-radius:20px}.kart-drift{border-radius:42%}.kart-help{font-size:9px}}
+@media(max-height:350px){.kart-gamepad{padding:5px 20px 8px;grid-template-rows:32px minmax(0,1fr) 13px}.kart-console{padding-top:7px}.kart-console-center{gap:5px}.kart-item-display{min-height:54px}.kart-item-slot{width:32px;height:32px}.kart-speaker i{height:16px}.kart-stick-well{padding:8px}.kart-stick{width:54dvh;height:54dvh}.kart-actions{width:63dvh;height:63dvh}.kart-pad{width:18dvh;height:18dvh;min-width:44px;min-height:44px}.kart-throttle{width:20dvh;height:20dvh}.kart-help{font-size:8px}}
 /* Mouse/keyboard users retain a usable controller in a tall desktop window. */
-@media(orientation:portrait) and (pointer:fine){.kart-gamepad{grid-template-columns:minmax(0,1fr);grid-template-rows:38px minmax(0,1fr) minmax(0,1fr) 20px;gap:10px}.kart-stick{width:min(65vw,32dvh);height:min(65vw,32dvh)}.kart-actions{justify-self:center;width:90%;height:100%;max-height:300px}.kart-controller-header,.kart-help{grid-column:1}}
+@media(orientation:portrait) and (pointer:fine){.kart-gamepad{overflow:auto}.kart-console{grid-template-columns:1fr;gap:14px}.kart-console-center{order:3}.kart-stick{width:min(58vw,28dvh);height:min(58vw,28dvh)}.kart-actions{width:min(64vw,34dvh);height:min(64vw,34dvh)}}
 /* Queda de conexão: o controle escurece e avisa; o núcleo reconecta sozinho e o aviso some. */
 .kart-conn{position:absolute;top:0;left:0;right:0;bottom:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;background:rgba(42,34,80,.92)}
 .kart-conn h2{margin:0;padding:10px 22px;border-radius:99px;background:var(--coral);border:3px solid var(--ink);font-size:20px;letter-spacing:.06em;color:#fff6e3}

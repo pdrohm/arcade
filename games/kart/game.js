@@ -13,7 +13,8 @@ module.exports = {
     minPlayers: 1, maxPlayers: 4, spectators: true,   // até 4 pilotos; quem sobra assiste e entra na próxima largada
     howTo: [
       'Escolha seu piloto e seu modo: corrida ou batalha.',
-      'Use o celular para acelerar, virar, derrapar e usar itens.',
+      'Segure A para acelerar e use o analógico para virar.',
+      'Aperte B para derrapar, X para usar item e Y para ativar o turbo.',
       'Na corrida, complete as voltas antes dos outros. Na batalha, sobreviva e faça pontos.',
       'A TV mostra a pista, os carros e o resultado em tempo real.',
     ],
@@ -51,7 +52,7 @@ module.exports = {
             for (const p of roster) {
               const input = inputs.get(p.pid);
               const active = !!input && n - input.at < INPUT_TTL && input.active;
-              sampled.set(p.pid, active ? { steer: input.steer, drift: input.drift, item: input.item || input.pendingItem, boost: input.boost || input.pendingBoost, active: true } : { steer: 0, drift: false, item: false, boost: false, active: false });
+              sampled.set(p.pid, active ? { steer: input.steer, throttle: input.throttle, drift: input.drift, item: input.item || input.pendingItem, boost: input.boost || input.pendingBoost, active: true } : { steer: 0, throttle: false, drift: false, item: false, boost: false, active: false });
               if (input) { input.pendingItem = false; input.pendingBoost = false; }
             }
             Sim.step(world, sampled, 1 / 60);
@@ -106,7 +107,7 @@ module.exports = {
         if (typeof msg.steer !== 'number' || !Number.isFinite(msg.steer)) return;
         const old = inputs.get(player.pid);
         inputs.set(player.pid, {
-          at: now(), steer: Math.max(-1, Math.min(1, msg.steer)), drift: msg.drift === true,
+          at: now(), steer: Math.max(-1, Math.min(1, msg.steer)), throttle: msg.throttle === true, drift: msg.drift === true,
           item: msg.item === true, boost: msg.boost === true, active: msg.active === true,
           pendingItem: !!(old && old.pendingItem) || (msg.item === true && !(old && old.item)),
           pendingBoost: !!(old && old.pendingBoost) || (msg.boost === true && !(old && old.boost)),
@@ -116,8 +117,8 @@ module.exports = {
         syncNames();
         const snapshot = world ? Sim.publicState(world) : null;
         const mine = world && me ? world.karts.find(p => p.pid === me.pid) : null;
-        // Inventory is private to its phone; all physical effects remain public.
-        if (snapshot) for (const p of snapshot.karts) delete p.item;
+        // Cada celular recebe só o próprio inventário. A TV recebe os itens para desenhar o HUD da corrida.
+        if (snapshot && type !== 'tv') for (const p of snapshot.karts) delete p.item;
         return { phase, mode, matchId, hostPid: roster[0] ? roster[0].pid : null, roster: roster.map(p => ({ ...p })), canStart: canStart(), tvReady, countdown, error,
           drivers: DRIVERS, karts: KARTS, world: snapshot,
           private: type === 'phone' && mine ? { item: mine.item, boostCooldown: mine.boostCooldown, driftCharge: mine.driftCharge, hp: mine.hp, respawn: mine.respawn, boost: mine.boost, hit: Math.max(mine.lastHit, mine.bump) } : null };

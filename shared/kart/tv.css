@@ -2,11 +2,12 @@
    canvas 2.5D. Compatível com a TV da sala (Chrome 47): sem var(), grid, gap, inset ou clamp();
    1rem = 1% da largura da tela (regra do html em ui.css), então tudo escala de 1080p a 4K. */
 body.kart-tv #game{display:block}body.kart-tv #stage{width:100%;height:calc(100vh - 32px);max-width:none;padding:0}body.kart-tv #side{display:none}
-#kart-stage{position:relative;width:100%;height:100%;min-height:400px;overflow:hidden;background:#1b1035;font-family:"Arial Rounded MT Bold","Nunito","Varela Round","Segoe UI",system-ui,sans-serif;color:#1b1035}
+#kart-stage{position:relative;width:100%;height:100%;min-height:400px;overflow:hidden;background:#1b1035;font-family:"Courier New",Courier,monospace;color:#1b1035}
+#kart-stage:after{content:"";position:absolute;z-index:1;top:0;left:0;right:0;bottom:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(27,16,53,.08) 0,rgba(27,16,53,.08) 1px,transparent 1px,transparent 4px)}
 #kart-canvas{display:block;width:100%;height:100%;image-rendering:-webkit-optimize-contrast;image-rendering:pixelated;image-rendering:crisp-edges}
-#kart-overlay{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
+#kart-overlay{position:absolute;z-index:2;top:0;left:0;right:0;bottom:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
 #kart-stage .ki{display:block;width:100%;height:100%}#kart-stage .kart-hint .ki{width:1.6em;height:1.6em;margin-right:.5em}
-.kart-sticker{background:#fff1c9;color:#1b1035;border:.22rem solid #1b1035;box-shadow:.45rem .45rem 0 #1b1035}
+.kart-sticker{background:#fff1c9;color:#1b1035;border:.26rem solid #1b1035;box-shadow:.45rem .45rem 0 #1b1035,.7rem .7rem 0 #7c5cff}
 /* ---------- cartazes ---------- */
 .kart-card{width:36rem;padding:1.8rem;text-align:center;font-size:1.1rem}
 .kart-card h2{font-size:2rem;margin:.4rem 0;text-transform:uppercase;letter-spacing:.04em}.kart-card p{font-size:1.15rem;margin:.3rem 0}

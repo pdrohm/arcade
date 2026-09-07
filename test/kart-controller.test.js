@@ -16,8 +16,8 @@ function harness({ coarse = true, landscape = true } = {}) {
     getBoundingClientRect() { return { left: 0, top: 0, width: 200, height: 200 }; }
   }
   const root = new Element(), stick = new Element(), knob = new Element();
-  const actions = ['drift', 'item', 'boost'].map(name => { const e = new Element(); e.dataset.control = name; return e; });
-  const els = { '[data-stick]': stick, '.kart-stick-knob': knob, '[data-fullscreen]': new Element(), '.kart-gamepad': new Element(), '.kart-rotate': new Element(), '.kart-item': actions[1], '.kart-boost': actions[2], '.kart-drift': actions[0] };
+  const actions = ['drift', 'item', 'boost', 'throttle'].map(name => { const e = new Element(); e.dataset.control = name; return e; });
+  const els = { '[data-stick]': stick, '.kart-stick-knob': knob, '[data-fullscreen]': new Element(), '.kart-gamepad': new Element(), '.kart-rotate': new Element(), '.kart-item': actions[1], '.kart-boost': actions[2], '.kart-drift': actions[0], '.kart-throttle': actions[3] };
   root.querySelector = key => els[key]; root.querySelectorAll = () => actions;
   const window = new Element(), document = new Element(); document.body = new Element(); document.hidden = false;
   document.getElementById = key => key === 'kart-controller' ? root : null;
@@ -73,6 +73,11 @@ test('button edges go out within one frame; an idle controller only heartbeats a
   h.tick(40); const before = h.sent.length; h.actions[0].emit('pointerdown', { pointerId: 2 }); h.tick(17);
   assert.equal(h.sent.length, before + 1); assert.equal(h.sent.at(-1).drift, true);
   h.actions[0].emit('pointerup', { pointerId: 2 }); h.tick(17); assert.equal(h.sent.at(-1).drift, false); h.hooks.destroy();
+});
+test('A must stay held to accelerate and release reaches the server quickly', () => {
+  const h = harness(); h.tick(100); assert.equal(h.sent.at(-1).throttle, false);
+  h.actions[3].emit('pointerdown', { pointerId: 5 }); h.tick(17); assert.equal(h.sent.at(-1).throttle, true);
+  h.actions[3].emit('pointerup', { pointerId: 5 }); h.tick(17); assert.equal(h.sent.at(-1).throttle, false); h.hooks.destroy();
 });
 test('portrait rotation, blur and disconnect stay neutral until recovery, with no stale held input', () => {
   const h = harness(); h.steer(1, 'pointerdown'); h.actions[0].emit('pointerdown', { pointerId: 2 }); h.tick(120);

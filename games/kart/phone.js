@@ -42,7 +42,7 @@
       root.addEventListener('contextmenu', e => e.preventDefault(), options);
       // O gesto de "voltar" ou zoom do navegador não pode roubar um toque no meio da curva.
       root.addEventListener('touchmove', e => e.preventDefault(), { signal: this.abort.signal, passive: false });
-      const bindings = { ArrowLeft: 'left', ArrowRight: 'right', ' ': 'drift', x: 'item', z: 'boost' };
+      const bindings = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'throttle', a: 'throttle', A: 'throttle', ' ': 'drift', x: 'item', X: 'item', z: 'boost', Z: 'boost' };
       window.addEventListener('keydown', e => {
         if (!bindings[e.key] || e.repeat || !this.available()) return;
         e.preventDefault(); this.keys.add(bindings[e.key]); this.paint(); this.request(true);
@@ -101,9 +101,9 @@
     state() {
       const held = this.held(), active = this.available();
       return { t: 'input', matchId: this.matchId, steer: active ? (this.keys.has('left') || this.keys.has('right') ? Number(this.keys.has('right')) - Number(this.keys.has('left')) : this.steer) : 0,
-        drift: active && held.has('drift'), item: active && held.has('item'), boost: active && held.has('boost'), active };
+        throttle: active && held.has('throttle'), drift: active && held.has('drift'), item: active && held.has('item'), boost: active && held.has('boost'), active };
     }
-    static sameButtons(a, b) { return !!a && !!b && ['drift', 'item', 'boost', 'active'].every(k => a[k] === b[k]); }
+    static sameButtons(a, b) { return !!a && !!b && ['throttle', 'drift', 'item', 'boost', 'active'].every(k => a[k] === b[k]); }
     schedule(ms) {
       const at = performance.now() + Math.max(0, ms);
       if (this.pending && this.pendingAt <= at) return;
@@ -135,13 +135,13 @@
       this.emit(state, now); this.schedule(HEARTBEAT);
     }
     emit(state, now) {
-      if (!this.available()) Object.assign(state, { steer: 0, drift: false, item: false, boost: false, active: false });
+      if (!this.available()) Object.assign(state, { steer: 0, throttle: false, drift: false, item: false, boost: false, active: false });
       A.send(state); this.lastSent = now; this.lastState = state;
     }
     clear() {
       this.pointers.clear(); this.keys.clear(); this.stickId = null; this.steer = 0;
       this.paintStick(0, 0); this.paint(); this.queue.length = 0;
-      if (!this.dead && this.current()) { this.queue.push({ t: 'input', matchId: this.matchId, steer: 0, drift: false, item: false, boost: false, active: false }); this.request(); }
+      if (!this.dead && this.current()) { this.queue.push({ t: 'input', matchId: this.matchId, steer: 0, throttle: false, drift: false, item: false, boost: false, active: false }); this.request(); }
     }
     haptic(duration) { const now = performance.now(); if (this.available() && now - this.lastHaptic > 250 && typeof navigator.vibrate === 'function') { try { navigator.vibrate(duration); this.lastHaptic = now; } catch (_) { /* Optional enhancement. */ } } }
     feedback(priv) {
@@ -172,20 +172,16 @@
       ${roster}
       ${host ? `<button class="ks-btn go" data-a="kart-start" ${g.canStart ? '' : 'disabled'}>${misc('flag')}Largar!</button>` : '<p class="ks-note">Aguarde o primeiro piloto tocar em LARGAR.</p>'}
       ${g.error ? `<p class="ks-error" role="alert">${misc('burst')}${c.esc(g.error)}</p>` : ''}
-      <p class="ks-note">Acelera sozinho. Segure DRIFT na curva e solte para ganhar turbo.</p>
+      <p class="ks-note">Segure A para acelerar. Segure B na curva e solte para ganhar turbo.</p>
       <button class="ks-btn ghost" data-a="kart-seat">Ficar na torcida</button></section>`;
   }
   function controls(c) {
     const p = mine(c);
+    const pad = window.KartGamepad ? window.KartGamepad.html({ player: portrait(p.driver, p.color) + c.esc(p.name) }) : '<p>Carregando controle…</p>';
     return `<section class="kart-controller kart-ui" id="kart-controller" aria-label="Controle do kart" style="--player-color:${c.esc(p.color)}">
       <div class="kart-rotate" hidden role="status"><div class="kart-rotate-phone" aria-hidden="true">▰</div><h2>Vire o celular</h2><p>Use o celular na horizontal para pilotar.</p></div>
       <div class="kart-conn" hidden role="alert"><h2>Conexão perdida</h2><p>Reconectando…</p></div>
-      <div class="kart-gamepad">
-        <header class="kart-controller-header"><span class="kart-player">${portrait(p.driver, p.color)}${c.esc(p.name)}<i></i></span><span id="kart-status" role="status"></span><button type="button" data-fullscreen aria-label="Tela cheia">⛶</button></header>
-        <div class="kart-stick-area"><div class="kart-stick" data-stick role="slider" tabindex="0" aria-label="Direção. Arraste para os lados ou use as setas do teclado." aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"><span class="kart-stick-arrow left" aria-hidden="true">‹</span><span class="kart-stick-arrow right" aria-hidden="true">›</span><span class="kart-stick-knob" aria-hidden="true"><span></span></span></div><small class="kart-stick-label">DIREÇÃO</small></div>
-        <div class="kart-actions"><button class="kart-pad kart-item empty" data-control="item" aria-pressed="false" aria-label="Usar item"><span id="kart-item" class="kart-item-slot"></span><small id="kart-item-name">SEM ITEM</small></button><button class="kart-pad kart-drift" data-control="drift" aria-pressed="false"><span>DRIFT</span><small>segure · solte</small><span class="kart-drift-fill" aria-hidden="true"></span></button><button class="kart-pad kart-boost" data-control="boost" aria-pressed="false">${misc('turbo')}<b>TURBO</b><small id="kart-boost-state">PRONTO</small></button></div>
-        <p class="kart-help">OLHE PARA A TV · ACELERA SOZINHO</p>
-      </div>
+      ${pad}
     </section>`;
   }
   function hud(c) {
@@ -194,9 +190,9 @@
     // Battle only: HP is the one private number worth a glance (the TV shows it too, but not per phone).
     put('kart-status', g.phase === 'loading' ? 'CARREGANDO…' : g.phase === 'countdown' ? `LARGADA EM ${g.countdown}` : p && p.respawn > 0 ? `VOLTANDO ${Math.ceil(p.respawn)}` : p && p.finished ? '🏁 CHEGOU!' : g.mode === 'battle' && priv.hp != null ? `♥ ${Math.max(0, Math.ceil(priv.hp))}` : p && p.lap != null && g.mode === 'race' ? `VOLTA ${Math.min(3, p.lap + 1)}/3 · ${p.position}º` : '');
     const item = priv.item || null;
-    if (item !== lastItem) { lastItem = item; const slot = document.getElementById('kart-item'); if (slot) { slot.innerHTML = item && I() ? I().item(item) : ''; slot.className = item ? '' : 'kart-item-slot'; } }
+    if (item !== lastItem) { lastItem = item; const slot = document.getElementById('kart-item'); if (slot) { slot.innerHTML = item && I() ? I().item(item) : ''; slot.className = 'kart-item-slot' + (item ? ' ready' : ''); } }
     put('kart-item-name', item ? items[item] : 'SEM ITEM');
-    put('kart-boost-state', priv.boostCooldown > 0 ? `${Math.ceil(priv.boostCooldown)}s` : 'PRONTO');
+    put('kart-boost-state', priv.boostCooldown > 0 ? `${Math.ceil(priv.boostCooldown)}s` : 'TURBO');
     if (controller) {
       controller.root.querySelector('.kart-item').classList.toggle('empty', !item);
       controller.root.querySelector('.kart-boost').classList.toggle('cooldown', priv.boostCooldown > 0);

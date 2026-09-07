@@ -17,7 +17,7 @@ function projectiles(s,dt){for(const p of s.projectiles){p.life-=dt;p.age+=dt;p.
  if(W.map(s.mode).barriers.some(b=>Math.abs(p.x-b.x)<b.width/2&&Math.abs(p.z-b.z)<b.depth/2&&p.y<(b.y||0)+b.height))p.life=0;
  }s.projectiles=s.projectiles.filter(p=>p.life>0);}
 function move(s,k,input,dt){
- const active=input.active===true,steer=active&&Number.isFinite(input.steer)?clamp(input.steer,-1,1):0;
+ const active=input.active===true,throttle=active&&input.throttle===true,steer=active&&Number.isFinite(input.steer)?clamp(input.steer,-1,1):0;
  for(const key of ['boost','boostCooldown','shield','slip','stun','padCooldown','ramCooldown'])k[key]=Math.max(0,k[key]-dt);
  if(k.respawn>0){k.respawn-=dt;if(k.respawn<=0)spawn(s,k);k.lastItem=!!input.item;k.lastBoost=!!input.boost;return;}
  if(k.finished){k.speed=Math.max(0,k.speed-18*dt);return;}
@@ -29,7 +29,7 @@ function move(s,k,input,dt){
  const drifting=k.wasDrifting?canDrift:canDrift&&Math.abs(steer)>.15;
  if(drifting&&!k.wasDrifting)k.driftDir=steer<0?-1:1;
  if(drifting)k.driftCharge=Math.min(2.5,k.driftCharge+dt);else if(k.wasDrifting){if(k.driftCharge>=.65&&active&&!input.drift)k.boost=Math.max(k.boost,Math.min(1.9,k.driftCharge));k.driftCharge=0;}k.wasDrifting=drifting;if(!drifting)k.driftDir=0;
- const top=offroad?11:k.boost>0?37:25,target=active&&k.stun<=0?top:0;
+ const top=offroad?11:k.boost>0?37:25,target=active&&k.stun<=0&&(throttle||k.boost>0)?top:0;
  k.speed+=clamp(target-k.speed,-38*dt,18*dt);
  // While drifting the kart always turns into the slide; the stick tightens (same side) or opens (counter-steer) the arc.
  const turn=drifting?k.driftDir*(1.5+.9*steer*k.driftDir):steer*2.1;

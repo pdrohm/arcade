@@ -65,7 +65,7 @@ test('room → Kart → phone inputs → exit → existing game; room and invent
   a.send({t:'kart-start'});
   await until(() => a.game.phase === 'countdown');
   const pump = setInterval(() => {
-    for (const [p,steer] of [[a,-.6],[b,.6]]) p.send({t:'input',matchId:p.game.matchId,steer,active:true,drift:false,item:false,boost:false});
+    for (const [p,steer] of [[a,-.6],[b,.6]]) p.send({t:'input',matchId:p.game.matchId,steer,active:true,throttle:true,drift:false,item:false,boost:false});
   }, 70);
   t.after(() => clearInterval(pump));
   await until(() => a.game.phase === 'playing');
@@ -79,7 +79,8 @@ test('room → Kart → phone inputs → exit → existing game; room and invent
   assert.ok(ka.speed > 0);
   assert.ok(a.game.private);
   assert.equal(tv.game.private,null);
-  assert.ok(tv.game.world.karts.every(x => !Object.hasOwn(x,'item')));
+  assert.ok(tv.game.world.karts.every(x => Object.hasOwn(x,'item')),'a TV recebe os itens para mostrar no HUD');
+  assert.ok(a.game.world.karts.every(x => !Object.hasOwn(x,'item')),'outros celulares não recebem inventários públicos');
   assert.equal(spectator.game.private,null);
   // Forged input cannot assign another public pid or send positions/laps.
   spectator.send({t:'input',matchId:a.game.matchId,pid:'alpha',steer:1,active:true,lap:99,x:99999});
@@ -107,7 +108,7 @@ test('room → Kart → phone inputs → exit → existing game; room and invent
   await until(() => rejoined.game && rejoined.core.gameId === 'kart');
   rejoined.send({t:'kart-mode',mode:'battle'});
   await until(() => rejoined.game.mode === 'battle');
-  for (const url of ['/games/kart/tv.js','/games/kart/phone.js','/shared/kart/world.js','/shared/kart/sprites.js','/shared/kart/render.js','/shared/kart/icons.js','/shared/kart/tv.css','/shared/kart/phone.css']) {
+  for (const url of ['/games/kart/tv.js','/games/kart/phone.js','/shared/kart/world.js','/shared/kart/sprites.js','/shared/kart/render.js','/shared/kart/icons.js','/shared/kart/gamepad.js','/shared/kart/tv.css','/shared/kart/phone.css']) {
     const response = await fetch(`http://127.0.0.1:${port}${url}`); assert.equal(response.status,200,url);
     assert.match(response.headers.get('content-type'),url.endsWith('.css')?/text\/css/:/javascript/);
   }
@@ -138,7 +139,7 @@ test('full 3-lap wire race and timed battle', { skip: process.env.KART_E2E !== '
       if(g.mode==='race') { const near=World.nearest(k.x,k.z); const index=Math.floor(near.progress*World.TRACK.length); target=World.TRACK[(index+4)%World.TRACK.length]; }
       else target=g.world.karts.find(x=>x.pid!==k.pid)||{x:0,z:0};
       const steer=Math.max(-1,Math.min(1,angle(Math.atan2(target.x-k.x,target.z-k.z)-k.heading)*1.4));
-      p.send({t:'input',matchId:g.matchId,steer,active:true,drift:false,item:Math.floor(Date.now()/300)%2===0,boost:false});
+      p.send({t:'input',matchId:g.matchId,steer,active:true,throttle:true,drift:false,item:Math.floor(Date.now()/300)%2===0,boost:false});
     }
   },70);
   await launch();
@@ -177,7 +178,7 @@ test('solo: um jogador abre o Kart e larga sozinho', { timeout: 30000 }, async t
   tv.send({ t: 'kart-tv-ready', matchId: a.game.matchId });
   a.send({ t: 'kart-start' });
   await until(() => a.game.phase === 'countdown');
-  const pump = setInterval(() => a.send({ t: 'input', matchId: a.game.matchId, steer: 0, active: true, drift: false, item: false, boost: false }), 70);
+  const pump = setInterval(() => a.send({ t: 'input', matchId: a.game.matchId, steer: 0, active: true, throttle: true, drift: false, item: false, boost: false }), 70);
   t.after(() => clearInterval(pump));
   await until(() => a.game.phase === 'playing');
   await new Promise(resolve => setTimeout(resolve, 700));

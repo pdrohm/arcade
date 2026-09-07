@@ -9,7 +9,9 @@
 (function () {
   var W = window.KartWorld, SP = window.KartSprites;
   var INK = '#1b1035', CREAM = '#fff1c9', YEL = '#ffd23f', COR = '#ff5e5b', MINT = '#45e0a5', SKY = '#4fc3f7', GRAPE = '#7c5cff', LILAC = '#c9b8ff';
-  var FONT = '"Arial Rounded MT Bold","Nunito","Varela Round","Segoe UI",system-ui,sans-serif';
+  var FONT = '"Courier New",Courier,monospace';
+  var ITEM_NAMES = { rocket: 'FOGUETE', bomb: 'BOMBA', oil: 'ÓLEO', shield: 'ESCUDO', boost: 'TURBO', rapid: 'RAJADA', mine: 'MINA' };
+  var ITEM_MARKS = { rocket: '▲', bomb: '●', oil: '◆', shield: '◇', boost: '⚡', rapid: '»', mine: '✹' };
   var NEAR = 1.5, FAR = 170, TAU = Math.PI * 2, BASE_RES = 960;
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -327,6 +329,13 @@
     ctx.drawImage(spr.frames[8], pad + 3, pad + 3, ah, ah);
     var nw = this.label(pad + ah + 8, pad + Math.round(4 * u), upper(k.name), fs, CREAM, INK), swx = pad + ah + 8 + nw + 6, swy = pad + Math.round(4 * u), swh = fs * 1.5;
     ctx.fillStyle = INK; ctx.fillRect(swx - 2, swy - 2, swh + 4, swh + 4); ctx.fillStyle = k.color; ctx.fillRect(swx, swy, swh, swh);
+    // Caixa de item no estilo dos jogos de corrida dos anos 90. A TV mostra o item e o mesmo botão X do celular.
+    var item = k.item || null, iw = Math.round(154 * u), ih = Math.round(42 * u), iy = pad + ah + Math.round(14 * u), icon = Math.round(34 * u);
+    ctx.fillStyle = INK; ctx.fillRect(pad, iy, iw, ih); ctx.fillStyle = item ? CREAM : '#3a2d63'; ctx.fillRect(pad + 3, iy + 3, iw - 6, ih - 6);
+    ctx.fillStyle = item ? SKY : '#5d5488'; ctx.fillRect(pad + 6, iy + 6, icon, ih - 12);
+    ctx.font = 'bold ' + Math.round(20 * u) + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = item ? INK : LILAC; ctx.fillText(item ? ITEM_MARKS[item] || '?' : '?', pad + 6 + icon / 2, iy + ih / 2);
+    ctx.textAlign = 'left'; ctx.font = 'bold ' + Math.round(11 * u) + 'px ' + FONT; ctx.fillStyle = item ? INK : LILAC; ctx.fillText(item ? ITEM_NAMES[item] || upper(item) : 'SEM ITEM', pad + icon + 13 * u, iy + 15 * u);
+    ctx.font = 'bold ' + Math.round(8 * u) + 'px ' + FONT; ctx.fillStyle = item ? COR : '#8d82b2'; ctx.fillText(item ? 'APERTE X' : 'PEGUE UMA CAIXA', pad + icon + 13 * u, iy + 30 * u);
     // posição (ou KOs na batalha): quadrado amarelo no canto direito
     var bs = Math.round(46 * u), bx = vw - pad - bs, by = pad, posColor = battle ? COR : k.position === 1 ? YEL : k.position === 2 ? LILAC : k.position === 3 ? '#ff9e7a' : CREAM;
     ctx.fillStyle = INK; ctx.fillRect(bx - 3, by - 3, bs + 6, bs + 6); ctx.fillStyle = posColor; ctx.fillRect(bx, by, bs, bs);
