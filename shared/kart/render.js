@@ -10,8 +10,8 @@
   var W = window.KartWorld, SP = window.KartSprites;
   var INK = '#1b1035', CREAM = '#fff1c9', YEL = '#ffd23f', COR = '#ff5e5b', MINT = '#45e0a5', SKY = '#4fc3f7', GRAPE = '#7c5cff', LILAC = '#c9b8ff';
   var FONT = '"Courier New",Courier,monospace';
-  var ITEM_NAMES = { rocket: 'FOGUETE', bomb: 'BOMBA', oil: 'ÓLEO', shield: 'ESCUDO', boost: 'TURBO', rapid: 'RAJADA', mine: 'MINA' };
-  var ITEM_MARKS = { rocket: '▲', bomb: '●', oil: '◆', shield: '◇', boost: '⚡', rapid: '»', mine: '✹' };
+  var ITEM_NAMES = { rocket: 'FOGUETE', bomb: 'BOMBA', oil: 'ÓLEO', banana: 'BANANA', nitro: 'NITRO', clock: 'RELÓGIO', shield: 'ESCUDO', boost: 'TURBO', rapid: 'RAJADA', mine: 'MINA' };
+  var ITEM_MARKS = { rocket: '▲', bomb: '●', oil: '◆', banana: '◒', nitro: 'N', clock: '◷', shield: '◇', boost: '⚡', rapid: '»', mine: '✹' };
   var NEAR = 1.5, FAR = 170, TAU = Math.PI * 2, BASE_RES = 960;
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -65,7 +65,7 @@
     this.time = 0; this.last = performance.now(); this.res = BASE_RES; this.cost = 0; this.frames = 0; this.g = null; this.mode = null; this.matchId = null;
     this.particles = new Particles(160); this.seen = {}; this.seenCount = 0; this.kartSprites = {}; this.prev = {}; this.flash = {}; this.attract = 0;
     this.items = []; this.itemCount = 0; this.order = []; this.groundOrder = []; this.scratch = new Float64Array(64); this.clipA = new Float64Array(64); this.clipB = new Float64Array(64);
-    this.star = SP.star(); this.checker = SP.checker(); this.itembox = SP.itembox(); this.rocket = SP.rocket(); this.bomb = SP.bomb(); this.mine = SP.mine(); this.pole = SP.pole();
+    this.star = SP.star(); this.checker = SP.checker(); this.itembox = SP.itembox(); this.rocket = SP.rocket(); this.bomb = SP.bomb(); this.mine = SP.mine(); this.banana = SP.banana(); this.nitro = SP.nitro(); this.pole = SP.pole();
     this.trees = [SP.tree(0), SP.tree(1), SP.tree(2)]; this.bushes = [SP.bush(0), SP.bush(1), SP.bush(2)]; this.gradients = {};
     var self = this; this.loop = function (now) { self.animate(now); }; this.raf = requestAnimationFrame(this.loop);
     this.compare = function (a, b) { return self.items[b].z - self.items[a].z; };
@@ -267,6 +267,8 @@
     if (world) for (i = 0; i < world.projectiles.length && i < 48; i++) {
       var pj = world.projectiles[i]; dx = pj.x - camX; dz = pj.z - camZ; Z = dx * sinH + dz * cosH; if (Z < NEAR || Z > FAR) continue; it = push(); if (!it) break; it.z = Z; it.x = dx * cosH - dz * sinH; it.tilt = 0; it.scale = 1;
       if (pj.type === 'oil') { it.kind = 4; it.y = pj.y - .55; it.size = 1.3; it.col = '#2f2a4a'; it.f = 1; }
+      else if (pj.type === 'banana') { it.kind = 1; it.spr = this.banana; it.f = 0; it.y = pj.y - .5; }
+      else if (pj.type === 'nitro') { it.kind = 1; it.spr = this.nitro; it.f = 0; it.y = pj.y - .5; }
       else if (pj.type === 'mine') { it.kind = 1; it.spr = this.mine; it.f = 0; it.y = pj.y - .1; }
       else if (pj.type === 'bomb') { it.kind = 1; it.spr = this.bomb; it.f = 0; it.y = pj.y - .5; }
       else { it.kind = 1; it.spr = this.rocket; var ph2 = angle(Math.atan2(pj.vx, pj.vz) - cam.h); it.f = ((Math.round(-ph2 / TAU * SP.DIRS) % SP.DIRS) + SP.DIRS) % SP.DIRS; it.y = pj.y - .5; it.scale = pj.type === 'rapid' ? .7 : 1; }

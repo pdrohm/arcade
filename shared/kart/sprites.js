@@ -104,6 +104,8 @@
   function rocket() { return rotating([{ t: 'ball', x: 0, y: .5, z: 0, r: .34, rz: .95, c: '#fff1c9' }, { t: 'ball', x: 0, y: .5, z: .95, r: .26, rz: .45, c: '#ff5e5b' }, { t: 'box', x: -.45, y: .5, z: -.5, w: .5, h: .08, d: .5, c: '#ff5e5b' }, { t: 'box', x: .45, y: .5, z: -.5, w: .5, h: .08, d: .5, c: '#ff5e5b' }, { t: 'ball', x: 0, y: .78, z: .2, r: .14, c: '#58c8f5' }], 22, 56, 48, DIRS); }
   function bomb() { return rotating([{ t: 'ball', x: 0, y: .7, z: 0, r: .7, c: '#2a2250' }, { t: 'box', x: .2, y: 1.5, z: 0, w: .1, h: .5, d: .1, c: '#fff1c9' }, { t: 'ball', x: .3, y: 1.8, z: 0, r: .16, c: '#ffd23f' }], 22, 48, 56, 1); }
   function mine() { var p = [{ t: 'ball', x: 0, y: .5, z: 0, r: .7, c: '#ff5e5b' }, { t: 'ball', x: 0, y: 1.15, z: 0, r: .2, c: '#ffd23f' }], i; for (i = 0; i < 6; i++) { var a = i / 6 * Math.PI * 2; p.push({ t: 'box', x: Math.cos(a) * .8, y: .5, z: Math.sin(a) * .8, w: .25, h: .25, d: .25, c: INK }); } return rotating(p, 22, 56, 48, 1); }
+  function banana() { return rotating([{ t: 'ball', x: -.45, y: .35, z: 0, r: .28, c: '#ffd23f' }, { t: 'ball', x: 0, y: .2, z: 0, r: .34, c: '#ffd23f' }, { t: 'ball', x: .45, y: .35, z: 0, r: .28, c: '#ffd23f' }, { t: 'box', x: 0, y: .75, z: 0, w: .12, h: .8, d: .12, c: '#6b4a2b' }], 24, 54, 40, 1); }
+  function nitro() { return rotating([{ t: 'box', x: 0, y: .65, z: 0, w: 1.25, h: 1.3, d: 1.25, c: '#ff5e5b' }, { t: 'box', x: 0, y: .68, z: -.65, w: .8, h: .35, d: .08, c: '#ffd23f' }, { t: 'ball', x: 0, y: 1.45, z: 0, r: .16, c: '#ffd23f' }], 22, 52, 48, 1); }
   function pole() { return rotating([{ t: 'box', x: 0, y: 6, z: 0, w: .7, h: 12, d: .7, c: '#ff5e5b' }, { t: 'box', x: 0, y: 2, z: 0, w: .75, h: 1, d: .75, c: '#fff1c9' }, { t: 'box', x: 0, y: 4.6, z: 0, w: .75, h: 1, d: .75, c: '#fff1c9' }, { t: 'box', x: 0, y: 7.2, z: 0, w: .75, h: 1, d: .75, c: '#fff1c9' }, { t: 'box', x: 0, y: 9.8, z: 0, w: .75, h: 1, d: .75, c: '#fff1c9' }, { t: 'ball', x: 0, y: 12.4, z: 0, r: .75, c: '#ffd23f' }], 9, 32, 128, 1); }
   // Árvores e arbustos: pixel art direta (sem rasterizador), 3 variações de cada.
   function tree(v) {
@@ -144,5 +146,5 @@
     return c;
   }
   function checker() { var c = make(16, 16), ctx = c.getContext('2d'); ctx.fillStyle = '#fff1c9'; ctx.fillRect(0, 0, 16, 16); ctx.fillStyle = INK; ctx.fillRect(0, 0, 8, 8); ctx.fillRect(8, 8, 8, 8); return c; }
-  window.KartSprites = { INK: INK, DIRS: DIRS, make: make, shade: shade, mix: mix, ellipse: ellipse, render: render, kart: kart, itembox: itembox, rocket: rocket, bomb: bomb, mine: mine, pole: pole, tree: tree, bush: bush, star: star, panorama: panorama, clouds: clouds, checker: checker };
+  window.KartSprites = { INK: INK, DIRS: DIRS, make: make, shade: shade, mix: mix, ellipse: ellipse, render: render, kart: kart, itembox: itembox, rocket: rocket, bomb: bomb, mine: mine, banana: banana, nitro: nitro, pole: pole, tree: tree, bush: bush, star: star, panorama: panorama, clouds: clouds, checker: checker };
 })();

@@ -3,9 +3,14 @@
 (function (root, factory) { var api = factory(); if (typeof module !== 'undefined' && module.exports) module.exports = api; root.KartWorld = api; })(typeof window !== 'undefined' ? window : global, function () {
   'use strict';
   var ROAD_WIDTH = 16;
-  // Oval de 96 pontos: 70 de raio no eixo X, 45 em Z, com uma colina suave de até 4 unidades.
+  var TAU = Math.PI * 2;
+  // Harmônicos suaves criam retas, curvas em S e raios diferentes sem produzir cruzamentos.
+  function center(p) {
+    var a = p * TAU;
+    return { x: Math.sin(a) * 70 + Math.sin(a * 2) * 10, z: Math.cos(a) * 45 + Math.cos(a * 3) * 5, y: 1.7 * (1 - Math.cos(a)) + .55 * (1 - Math.cos(a * 2 + .6)) };
+  }
   var TRACK = [];
-  for (var i = 0; i < 96; i++) { var a = i / 96 * Math.PI * 2; TRACK.push({ x: Math.sin(a) * 70, z: Math.cos(a) * 45, y: 2 * (1 - Math.cos(a)) }); }
+  for (var i = 0; i < 96; i++) TRACK.push(center(i / 96));
   function nearest(x, z) {
     var best = { distance: Infinity };
     for (var i = 0; i < TRACK.length; i++) {
@@ -18,20 +23,21 @@
   }
   function point(p, offset) {
     offset = offset || 0;
-    var a = p * Math.PI * 2, heading = Math.atan2(70 * Math.cos(a), -45 * Math.sin(a));
-    return { x: Math.sin(a) * 70 + Math.cos(heading) * offset, z: Math.cos(a) * 45 - Math.sin(heading) * offset, y: 2 * (1 - Math.cos(a)), heading: heading };
+    var q = center(p), before = center(p - .001), after = center(p + .001), heading = Math.atan2(after.x - before.x, after.z - before.z);
+    return { x: q.x + Math.cos(heading) * offset, z: q.z - Math.sin(heading) * offset, y: q.y, heading: heading };
   }
   function pickupsAt(list) { var out = []; for (var i = 0; i < list.length; i++) { out.push(point(list[i], -3)); out.push(point(list[i], 3)); } return out; }
   function ramp(p, width, length, height) { var q = point(p); return { x: q.x, z: q.z, y: q.y, heading: q.heading, width: width, length: length, height: height }; }
+  function shortcut(p, offset, width, depth) { var q = point(p, offset); return { x: q.x, z: q.z, y: q.y, width: width, depth: depth }; }
   // Cada mapa traz também um "tema" para o desenho (cores do céu, chão e cenário). Mais pistas: mais entradas aqui.
   var race = {
     name: 'Circuito Aurora', track: TRACK, width: ROAD_WIDTH,
     spawns: [point(.012, -3), point(.012, 3), point(.001, -3), point(.001, 3)],
-    boosts: [point(.19), point(.57), point(.83)],
-    pickups: pickupsAt([.10, .35, .62, .88]),
-    ramps: [ramp(.25, 10, 9, 2.6)],
+    boosts: [point(.15, -3), point(.15, 3), point(.45), point(.73, -3), point(.73, 3)],
+    pickups: pickupsAt([.07, .29, .55, .84]),
+    ramps: [ramp(.18, 8, 8, 2.2), ramp(.51, 11, 10, 2.8), ramp(.77, 8, 8, 2.2)],
     barriers: [], hazards: [], platforms: [],
-    shortcuts: [{ x: 0, z: -36, y: 3.8, width: 32, depth: 7 }],
+    shortcuts: [shortcut(.24, -10, 20, 9), shortcut(.68, 10, 22, 9)],
     theme: { sky: ['#3d8fe0', '#8fd3ff', '#ffe6b3'], horizon: '#ffe6b3', grass: ['#6cc84a', '#5db63f'], far: ['#8ed86e', '#74c055'], road: ['#5a5478', '#6b6492'], rumble: ['#ff5e5b', '#fff1c9'], line: '#fff1c9', mountains: ['#7fb6e8', '#5f95cf', '#4a7bb8'], trees: 1 },
   };
   var battle = {

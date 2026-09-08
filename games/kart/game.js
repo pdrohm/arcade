@@ -8,13 +8,13 @@ const INPUT_TTL = 350;
 module.exports = {
   meta: {
     id: 'kart', name: 'KART', emoji: '🏎️',
-    tagline: 'Acelere, derrape e dispute. Seu celular é o controle.',
+    tagline: 'Acelere, pule, derrape e dispute. Seu celular é o controle.',
     art: 'linear-gradient(180deg,#58c8f5 0,#9fdcfb 48%,#7fd35b 48.5%,#4aa848 100%)',
     minPlayers: 1, maxPlayers: 4, spectators: true,   // até 4 pilotos; quem sobra assiste e entra na próxima largada
     howTo: [
       'Escolha seu piloto e seu modo: corrida ou batalha.',
       'Segure A para acelerar e use o analógico para virar.',
-      'Aperte B para derrapar, X para usar item e Y para ativar o turbo.',
+      'Aperte B para pular. Segure B e vire para derrapar. X usa item e Y ativa o turbo.',
       'Na corrida, complete as voltas antes dos outros. Na batalha, sobreviva e faça pontos.',
       'A TV mostra a pista, os carros e o resultado em tempo real.',
     ],
@@ -52,8 +52,8 @@ module.exports = {
             for (const p of roster) {
               const input = inputs.get(p.pid);
               const active = !!input && n - input.at < INPUT_TTL && input.active;
-              sampled.set(p.pid, active ? { steer: input.steer, throttle: input.throttle, drift: input.drift, item: input.item || input.pendingItem, boost: input.boost || input.pendingBoost, active: true } : { steer: 0, throttle: false, drift: false, item: false, boost: false, active: false });
-              if (input) { input.pendingItem = false; input.pendingBoost = false; }
+              sampled.set(p.pid, active ? { steer: input.steer, throttle: input.throttle, drift: input.drift || input.pendingDrift, item: input.item || input.pendingItem, boost: input.boost || input.pendingBoost, active: true } : { steer: 0, throttle: false, drift: false, item: false, boost: false, active: false });
+              if (input) { input.pendingDrift = false; input.pendingItem = false; input.pendingBoost = false; }
             }
             Sim.step(world, sampled, 1 / 60);
             if (world.finished) { phase = 'results'; stopLoop(); api.setEvent('Partida encerrada! Veja o resultado na TV.'); publish(); return; }
@@ -109,6 +109,7 @@ module.exports = {
         inputs.set(player.pid, {
           at: now(), steer: Math.max(-1, Math.min(1, msg.steer)), throttle: msg.throttle === true, drift: msg.drift === true,
           item: msg.item === true, boost: msg.boost === true, active: msg.active === true,
+          pendingDrift: !!(old && old.pendingDrift) || (msg.drift === true && !(old && old.drift)),
           pendingItem: !!(old && old.pendingItem) || (msg.item === true && !(old && old.item)),
           pendingBoost: !!(old && old.pendingBoost) || (msg.boost === true && !(old && old.boost)),
         });

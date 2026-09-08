@@ -13,6 +13,7 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <title>Arcade da casa</title>
 <link rel="stylesheet" href="/shared/ui.css">
+<link rel="stylesheet" href="/qr-scan.css">
 <script src="/pwa.js" defer></script>
 </head>
 <body>
@@ -20,6 +21,7 @@
 <div class="toast" id="toast"></div>
 <div class="conn" id="conn">conectando…</div>
 <div id="turnover"></div>
+<script src="/qr-scan.js"></script>
 <script src="/shared/kart/gamepad.js"></script>
 <script src="/shared/client.js"></script>
 <script>
@@ -28,6 +30,12 @@
   const A = ARCADE, $ = A.$, esc = A.esc;
   const app = $('#app');
   let form = A.form(), pickTarget = null, ctx = null, selectedGameId = null;
+
+  // O browser só entrega a câmera em endereço seguro (https, localhost). No IP do Wi-Fi de casa
+  // (http://192.168.x.x) ele nem cria navigator.mediaDevices. Lá o botão não teria como funcionar,
+  // então some — e no lugar entra a dica do que resolve: a câmera do próprio celular abre o QR.
+  const temQR = () => !!(window.QRSCAN && QRSCAN.disponivel());
+  const btnQR = texto => temQR() ? `<button class="btn ghost" data-a="qr">📷 ${texto}</button>` : '';
 
   function header(c) {
     const me = c.you && c.C.players.find(p => p.pid === c.you.pid);
@@ -43,6 +51,9 @@
     return `<div class="box"><h1>🕹️ Arcade da casa</h1><p class="sub mut" style="margin-top:6px">${c.noRoom ? `A sala <b>${esc(c.room)}</b> não existe mais.` : 'Digite o código que aparece na TV.'}</p></div>
       <div class="box"><p class="sub mut" style="margin-bottom:8px">Código da sala</p><input id="code" class="code" maxlength="4" placeholder="ABCD" autocapitalize="characters" autocomplete="off" spellcheck="false"></div>
       <button class="btn big ok" data-a="ir">Entrar na sala</button>
+      ${temQR()
+        ? '<button class="btn blue" data-a="qr">📷 Ler o QR code da TV</button>'
+        : '<p class="sub center mut">Ou aponte a câmera normal do celular para o QR code da TV: ela abre a sala sozinha.</p>'}
       <p class="sub center mut">Sem TV por perto? Crie uma sala e passe o código para os outros.</p>
       <button class="btn ghost" data-a="criar">➕ Criar uma sala nova</button>`;
   }
@@ -57,6 +68,7 @@
       <div class="box"><p class="sub mut" style="margin-bottom:8px">Seu nome</p><input id="name" placeholder="Ex.: Pedro" maxlength="20" value="${esc(form.name)}"></div>
       <button class="btn big ok" data-a="entrar" ${form.color ? '' : 'disabled'}>Entrar na sala</button>
       <p class="sub center mut">Já jogou antes? Entre com o mesmo nome para voltar ao seu lugar.</p>
+      ${btnQR('Ler o QR code de outra TV')}
       <div class="box">${c.playersHtml()}</div>`;
   }
 
@@ -77,7 +89,8 @@
       ${c.C.event ? `<p class="sub center">${c.hl(c.C.event.text)}</p>` : ''}
       <button class="btn ghost" data-a="rename">✏️ Mudar meu nome</button>
       <button class="btn ghost" data-a="sair">Trocar de cor / sair da sala</button>
-      <button class="btn ghost" data-a="trocar">🚪 Ir para outra sala</button>`;
+      <button class="btn ghost" data-a="trocar">🚪 Ir para outra sala</button>
+      ${btnQR('Ler o QR code de outra TV')}`;
   }
 
   function detalhes(c, g) {
@@ -151,6 +164,12 @@
     switch (emJogo && ['cor', 'entrar', 'detalhes', 'jogar', 'ir', 'criar'].includes(a) ? '' : a) {
       case 'ir': { const v = ($('#code').value || '').trim().toUpperCase(); if (v.length !== 4) return A.toast('O código tem 4 letras.'); return A.goRoom(v); }
       case 'criar': return A.createRoom();
+      // A câmera lê o QR da TV e o código de 4 letras sai do endereço. Trocamos só o código:
+      // ficamos no mesmo endereço deste celular (mudar de endereço perderia o lugar guardado).
+      case 'qr': {
+        if (!window.QRSCAN) return A.toast('O leitor de QR não carregou. Digite o código.');
+        return QRSCAN.open(code => { if (code === A.room) return A.toast('Você já está nesta sala.'); A.goRoom(code); });
+      }
       case 'trocar': if (confirm('Ir para outra sala? Seu lugar nesta sala fica guardado.')) location.href = '/'; return;
       case 'cor': form.color = el.dataset.c; A.saveForm(form); render(c); return;
       case 'entrar': {

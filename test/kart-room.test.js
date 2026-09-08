@@ -186,4 +186,8 @@ test('solo: um jogador abre o Kart e larga sozinho', { timeout: 30000 }, async t
   assert.equal(a.game.world.karts.length, 1);
   assert.ok(a.game.world.karts[0].speed > 0, 'o kart solo anda');
   assert.ok(a.frames > 5, 'a TV recebe quadros');
+  const matchId = a.game.matchId;
+  a.send({ t:'input', matchId, steer:0, active:true, throttle:false, drift:true, item:false, boost:false });
+  a.send({ t:'input', matchId, steer:0, active:true, throttle:false, drift:false, item:false, boost:false });
+  await until(() => a.game.world.karts[0].vy > 0, 2000);
 });

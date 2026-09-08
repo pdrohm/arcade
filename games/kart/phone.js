@@ -1,7 +1,7 @@
 (() => {
   const A = ARCADE;
   // Nomes dos itens; os desenhos vêm de /shared/kart/icons.js (o mesmo traço da TV).
-  const items = { rocket: 'FOGUETE', bomb: 'BOMBA', oil: 'ÓLEO', shield: 'ESCUDO', boost: 'TURBO', rapid: 'RAJADA', mine: 'MINA' };
+  const items = { rocket: 'FOGUETE', bomb: 'BOMBA', oil: 'ÓLEO', banana: 'BANANA', nitro: 'NITRO', clock: 'RELÓGIO', shield: 'ESCUDO', boost: 'TURBO', rapid: 'RAJADA', mine: 'MINA' };
   const TRACKS = { race: 'Circuito Aurora', battle: 'Forte Prisma' };
   let context = null, controller = null, lastItem = null;
   function css() {

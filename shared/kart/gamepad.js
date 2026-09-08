@@ -30,7 +30,7 @@
         '<div class="kart-actions" aria-label="Botões de ação">' +
           '<button class="kart-pad kart-item kart-key-x empty" data-control="item" aria-pressed="false" aria-label="X, usar item"><b>X</b><small>ITEM</small></button>' +
           '<button class="kart-pad kart-throttle kart-key-a" data-control="throttle" aria-pressed="false" aria-label="A, acelerar"><b>A</b><small>ACELERAR</small></button>' +
-          '<button class="kart-pad kart-drift kart-key-b" data-control="drift" aria-pressed="false" aria-label="B, derrapar"><b>B</b><small>DRIFT</small><span class="kart-drift-fill" aria-hidden="true"></span></button>' +
+          '<button class="kart-pad kart-drift kart-key-b" data-control="drift" aria-pressed="false" aria-label="B, pular e derrapar"><b>B</b><small>PULO</small><span class="kart-drift-fill" aria-hidden="true"></span></button>' +
           '<button class="kart-pad kart-boost kart-key-y" data-control="boost" aria-pressed="false" aria-label="Y, turbo"><b>Y</b><small id="kart-boost-state">TURBO</small></button>' +
         '</div>' +
       '</div>' +
