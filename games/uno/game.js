@@ -2,7 +2,7 @@
 // Baralho de 108 cartas. As mãos são privadas: view() só devolve a mão de quem pediu.
 const CORES = ['r', 'y', 'g', 'b'];
 const NOME_COR = { r: 'Vermelho', y: 'Amarelo', g: 'Verde', b: 'Azul' };
-const DEFAULT_CFG = { stack: false, sevenzero: false, target: 0, turnSec: 0 };   // target 0 = uma rodada só
+const DEFAULT_CFG = { stack: true, sevenzero: false, target: 0, turnSec: 0 };   // target 0 = uma rodada só
 const ALVOS = [0, 200, 300, 500];
 const TEMPOS = [0, 15, 30];
 
@@ -31,6 +31,7 @@ module.exports = {
       'Na sua vez, jogue uma carta da mesma cor, do mesmo número ou do mesmo símbolo.',
       'Não tem nada? Compre uma. Se ela servir, dá para jogar na hora.',
       'Coringa troca a cor. +2 e +4 fazem o próximo comprar e perder a vez.',
+      'Levou um +2? Jogue outro +2 por cima e a conta acumula. +4 só responde a +4.',
       'Ficou com 1 carta? Aperte UNO! Se esquecer, alguém aperta "Pegou!" e você compra 2.',
     ],
   },
@@ -71,7 +72,7 @@ module.exports = {
       const t = topo(); if (!t) return false;
       if (s.pending > 0) {                                    // acumulando: só responde com outro +
         if (!s.cfg.stack) return false;
-        return s.pendingType === '+4' ? card.v === '+4' : (card.v === '+2' || card.v === '+4');
+        return card.v === s.pendingType;                      // +2 só responde +2, +4 só responde +4
       }
       if (coringa(card)) return true;
       return card.c === s.color || card.v === t.v;
