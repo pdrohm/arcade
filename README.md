@@ -204,6 +204,9 @@ só**, no modo mediador (mais abaixo).
   Sobrou um, venceu.
 - Com tempo por resposta ligado (padrão 20 s), quem não responde a tempo também perde uma vida
   e a lista se revela.
+- **Carta repetida?** Qualquer um que não esteja na vez toca **⏭️ Pular a carta**: entra outra
+  na hora, ninguém perde vida e a vez continua com quem estava para responder. Quem está na vez
+  não pula — senão pular viraria fuga da própria vez. No modo mediador, quem conduz sempre pode.
 
 ### Modo mediador (um celular só)
 

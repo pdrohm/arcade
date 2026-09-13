@@ -38,6 +38,7 @@ module.exports = {
       'Valia? Quem duvidou perde uma vida. Não valia? Quem falou perde.',
       'Em dupla os dois votam, com a lista à vista: se discordarem, a resposta vale.',
       'Só tem um celular? Use o modo mediador: você digita os nomes da mesa e toca tudo.',
+      'Carta repetida? Quem não está na vez pode pular: entra outra, sem ninguém perder vida.',
       'São 4 vidas. Sem vidas, você está fora. Sobrou um, venceu.',
     ],
   },
@@ -286,6 +287,19 @@ module.exports = {
             return settleDoubt(!!msg.ok, 0, 0);
           }
 
+          // "já jogamos essa": troca a carta sem ninguém perder vida e sem passar a vez.
+          // Quem está na vez não pula — senão pular viraria fuga da própria vez (e do relógio).
+          // No modo mediador quem conduz sempre pode: ele não está fugindo de nada.
+          case 'skip': {
+            if (s.phase !== 'play' || !s.card) return;
+            if (!s.solo && p.pid === cur()) return;
+            const quem = cur();
+            newCard();                                     // mesma vez, carta nova
+            startTurn();
+            if (s.phase === 'play') api.setEvent(`⏭️ ${p.name} pulou a carta. Agora: ${s.card.t}. Continua com ${nameOf(quem)}.`, p.color);
+            return;
+          }
+
           case 'next': if (s.phase === 'result') nextCard(); return;
           case 'again': if (s.phase === 'end') inst.start(); return;
         }
@@ -369,6 +383,7 @@ module.exports = {
           // no modo mediador quem conduz é qualquer celular da sala: todos os botões ficam aqui
           inGame: false, alive: false, mediator: true,
           myTurn: s.phase === 'play', canDoubt: s.phase === 'play' && !!s.last,
+          canSkip: s.phase === 'play',
           canVote: false, canJudge: s.phase === 'reveal' && !!s.doubt, myVote: null,
         } : {
           inGame: s.order.includes(me.pid),
@@ -376,6 +391,7 @@ module.exports = {
           mediator: false,
           myTurn: s.phase === 'play' && cur() === me.pid,
           canDoubt: s.phase === 'play' && !!s.last && s.last.pid !== me.pid && alive(me.pid),
+          canSkip: s.phase === 'play' && cur() !== me.pid,
           canVote: s.phase === 'reveal' && !!s.doubt && voters().includes(me.pid),
           canJudge: false,
           myVote: s.doubt && s.doubt.votes[me.pid] !== undefined ? s.doubt.votes[me.pid] : null,

@@ -132,7 +132,7 @@
         const curP = ply(G.cur), lastP = ply(G.last);
         stage += `<div class="t10-stage">${cabecalho(false)}
           <div class="t10-count"><b>${G.saidCount}</b><span>${G.saidCount === 1 ? 'resposta<br>já dita' : 'respostas<br>já ditas'}</span></div>
-          <div class="t10-tag">${lastP ? 'na mesa: a resposta de ' + esc(lastP.name) : 'a lista está escondida de todo mundo'}</div>
+          <div class="t10-tag">${lastP ? 'na mesa: a resposta de ' + esc(lastP.name) : 'a lista está escondida de todo mundo'} · carta repetida dá para pular no celular</div>
           <div class="t10-big">🗣️ ${curP ? esc(curP.name) : '—'}</div>
           ${crachas()}</div>`;
         side += (G.turnSec ? c.timerHtml('', G.turnMs) : '') + placar() + `<div class="event">${c.C.event ? c.hl(c.C.event.text) : ''}</div>`;

@@ -413,3 +413,61 @@ test('modo mediador: salvar e restaurar mantém os nomes e as vidas', () => {
   assert.equal(v.lives['#0'], 3);
   assert.equal(v.mine.mediator, true);
 });
+
+// ---------------------------------------------------------------- pular a carta
+
+test('pular troca a carta sem tirar vida e sem passar a vez', () => {
+  const m = mesa(3);
+  const primeira = m.V().card.t;
+  m.g.action(m.players[0], { t: 'said' });            // vez passa para p1
+  assert.equal(m.V().saidCount, 1);
+  m.g.action(m.players[2], { t: 'skip' });            // p2 lembra que já jogaram essa
+  const v = m.V();
+  assert.notEqual(v.card.t, primeira, 'entrou outra carta');
+  assert.equal(v.card.items, null, 'a carta nova continua escondida');
+  assert.equal(v.phase, 'play');
+  assert.equal(v.cur, 'p1', 'a vez continua com quem estava para responder');
+  assert.equal(v.saidCount, 0, 'a contagem recomeça');
+  assert.equal(v.last, null);
+  for (const p of m.players) assert.equal(v.lives[p.pid], 4, 'pular não tira vida de ninguém');
+});
+
+test('quem está na vez não pula (senão era fuga da própria vez)', () => {
+  const m = mesa(3);
+  const primeira = m.V().card.t;
+  m.g.action(m.players[0], { t: 'skip' });            // p0 é quem está na vez
+  assert.equal(m.V().card.t, primeira);
+  assert.equal(m.V(m.players[0]).mine.canSkip, false);
+  assert.equal(m.V(m.players[1]).mine.canSkip, true);
+});
+
+test('pular só vale com a carta em jogo', () => {
+  const m = mesa(3);
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[1], { t: 'doubt' });           // fase de revelação
+  const titulo = m.V().card.t;
+  m.g.action(m.players[2], { t: 'skip' });
+  assert.equal(m.V().phase, 'reveal');
+  assert.equal(m.V().card.t, titulo);
+});
+
+test('modo mediador: o celular que conduz sempre pode pular', () => {
+  const m = mesaMediador(['Ana', 'Bia', 'Caio']);
+  const primeira = m.V().card.t;
+  assert.equal(m.V().mine.canSkip, true);
+  m.g.action(m.players[0], { t: 'skip' });
+  const v = m.V();
+  assert.notEqual(v.card.t, primeira);
+  assert.equal(v.cur, '#0', 'a vez não anda: só a carta trocou');
+  assert.equal(v.roster.every(r => r.lives === 4), true);
+});
+
+test('carta pulada não volta enquanto houver outras', () => {
+  const m = mesa(3, { cats: ['musica'] });            // tema com poucas cartas
+  const vistas = [m.V().card.t];
+  for (let i = 0; i < 2; i++) {
+    m.g.action(m.players[1], { t: 'skip' });
+    vistas.push(m.V().card.t);
+  }
+  assert.equal(new Set(vistas).size, vistas.length, 'não repetiu: ' + vistas.join(' | '));
+});

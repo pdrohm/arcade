@@ -192,6 +192,7 @@
             <button class="btn big ok" data-a="falei" style="font-size:26px;padding:26px">✅ FALEI</button>`;
           if (G.last) h += `<button class="btn big no" data-a="duvidoAbrir" style="font-size:22px;padding:22px">🚨 DUVIDARAM de ${esc(lastR ? lastR.name : '')}</button>`;
           else h += '<p class="sub center mut">Primeira resposta da carta: ainda não dá para duvidar de ninguém.</p>';
+          h += '<button class="btn ghost" data-a="pular">⏭️ Pular a carta (já jogamos essa)</button>';
         } else if (mine.myTurn) {
           h += `<div class="box center" style="border-color:#22c55e"><div style="font-size:24px;font-weight:900">🗣️ É a sua vez!</div>
               <p class="sub mut" style="margin-top:6px">Fale em voz alta um item que você acha que está nesse Top 10 — e aperte FALEI.</p></div>
@@ -211,6 +212,9 @@
           if (mine.canDoubt) h += `<button class="btn big no" data-a="duvido" style="font-size:22px;padding:22px">🚨 DUVIDO de ${esc(lastR ? lastR.name : '')}</button>`;
           else if (G.last && G.last === me) h += '<p class="sub center mut">Sua resposta está na mesa: alguém pode duvidar dela.</p>';
           else if (!G.last) h += '<p class="sub center mut">Primeira resposta da carta: ainda não dá para duvidar de ninguém.</p>';
+          h += mine.canSkip
+            ? '<button class="btn ghost" data-a="pular">⏭️ Pular a carta (já jogamos essa)</button>'
+            : '<p class="sub center mut">Já jogaram essa carta? Quem não está na vez pode pular.</p>';
         }
 
         if (G.said.length) {
@@ -276,6 +280,7 @@
           case 'begin': return send({ t: 'begin' });
           case 'falei': { ARCADE.beep(880, .09, 'square', .18); return send({ t: 'said' }); }
           case 'duvido': return confirm('Duvidar da última resposta? Se ela valia, você perde uma vida.') && send({ t: 'doubt' });
+          case 'pular': return confirm('Trocar esta carta por outra? Ninguém perde vida e a vez continua na mesma pessoa.') && send({ t: 'skip' });
           case 'duvidoAbrir': pickDoubt = true; return ARCADE.redraw();
           case 'duvidoCancela': pickDoubt = false; return ARCADE.redraw();
           case 'duvidoQuem': pickDoubt = false; return send({ t: 'doubt', by: el.dataset.pid });
