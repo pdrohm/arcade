@@ -75,7 +75,7 @@ O que o núcleo já resolve para todos os jogos:
 | `games/uno` | UNO — mão no celular, mesa na TV, coringa, +2/+4, UNO! e "Pegou!", pontuação oficial |
 | `games/impostor` | Impostor — todo mundo recebe a mesma palavra, menos o(s) impostor(es); com ou sem dica; dicas, discussão, votação e chance final |
 | `games/palavrasecreta` | Palavra Secreta — estilo Mega Senha: em times, um vê a palavra e dá dicas em voz alta, o colega adivinha; ACERTOU/PASSAR no celular, cronômetro e placar na TV |
-| `games/top10` | Top 10 — um ranking de dez que ninguém vê. Cada um fala um item na ordem; quem duvidar do anterior revela a lista, a turma vota e alguém perde uma das 4 vidas. Joga com TV ou só nos celulares |
+| `games/top10` | Top 10 — um ranking de dez que ninguém vê. Cada um fala um item na ordem; quem duvidar do anterior revela a lista, a turma vota e alguém perde uma das 4 vidas. Com TV ou só nos celulares, e com um celular só no modo mediador |
 
 ## Adicionar um jogo novo
 
@@ -184,8 +184,9 @@ para manter botões e toques durante atualizações. Nunca salve teclas pression
 
 ## Top 10
 
-Para 2 a 8 pessoas. Funciona com a TV ligada ou só com os celulares — a tela do celular
-tem tudo: título da carta, contador, lista revelada, votação e vidas.
+Para 2 a 8 pessoas, com a TV ligada ou só com os celulares — a tela do celular tem tudo:
+título da carta, contador, lista revelada, votação e vidas. E dá para jogar com **um celular
+só**, no modo mediador (mais abaixo).
 
 - A tela mostra **só o título** de um ranking de dez ("Os 10 rios mais longos do mundo").
   A lista fica escondida: ela nem sai do servidor antes da hora, nem para a TV.
@@ -203,6 +204,22 @@ tem tudo: título da carta, contador, lista revelada, votação e vidas.
   Sobrou um, venceu.
 - Com tempo por resposta ligado (padrão 20 s), quem não responde a tempo também perde uma vida
   e a lista se revela.
+
+### Modo mediador (um celular só)
+
+No menu de regras dá para trocar "📱 Um celular por pessoa" por "🎙️ Modo mediador". Aí um
+celular conduz a mesa inteira e ninguém mais precisa entrar na sala:
+
+- O mediador digita os nomes de quem está jogando (2 a 8), na ordem da roda. Cada nome ganha
+  uma cor e quatro vidas, igual a um jogador de celular.
+- A tela mostra de quem é a vez. Quando a pessoa responde, o mediador toca **FALEI**.
+- Gritaram "duvido"? O mediador toca **DUVIDARAM**, escolhe na lista **quem** duvidou, e a
+  lista se revela. Sem votação: ele decide **✅ Valia / ❌ Não valia** com a lista à vista.
+- O mediador pode se incluir na mesa e jogar também: em Top 10 ninguém vê a lista antes da
+  revelação, então ele não leva vantagem nenhuma.
+- Se houver outro celular na sala, ele mostra a mesma tela e também consegue tocar os botões —
+  a bateria do mediador acabar não trava o jogo. Sair da sala também não derruba a mesa: os
+  nomes são do jogo, não das vagas.
 
 As cartas ficam em `games/top10/cards.js`, dez itens cada, na ordem do 1º ao 10º. Para
 acrescentar é só continuar as listas: `{ t: 'título', s: 'fonte', items: [ …dez… ] }`.

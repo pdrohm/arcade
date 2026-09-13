@@ -11,6 +11,7 @@ function mesa(n, cfg) {
   let timerEnd = null;
   const api = {
     players,
+    colors: [{ key: 'roxo' }, { key: 'rosa' }, { key: 'ciano' }, { key: 'amarelo' }],
     byPid: pid => players.find(p => p.pid === pid) || null,
     setEvent() {}, addEvent() {},
     armTimer(ms) { timerEnd = Date.now() + ms; },
@@ -25,6 +26,13 @@ function mesa(n, cfg) {
   const V = me => g.view(me === undefined ? players[0] : me);
   const de = pid => players.find(p => p.pid === pid);
   return { g, players, api, V, de, vez: () => de(V().cur) };
+}
+
+// Modo mediador: um celular só (o do mediador) e os nomes da mesa digitados nele.
+function mesaMediador(nomes, cfg) {
+  const m = mesa(1, Object.assign({ solo: true, names: nomes }, cfg || {}));
+  m.g.action(m.players[0], { t: 'begin' });   // o begin do mesa() rodou antes dos nomes entrarem
+  return m;
 }
 
 test('começa com 4 vidas por pessoa e a lista escondida', () => {
@@ -277,4 +285,131 @@ test('as cartas têm sempre dez itens diferentes', () => {
     }
   }
   assert.ok(n >= 40, 'poucas cartas: ' + n);
+});
+
+
+// ---------------------------------------------------------------- modo mediador
+
+test('modo mediador: um celular só conduz a mesa de nomes digitados', () => {
+  const m = mesaMediador(['Ana', 'Bia', 'Caio']);
+  const v = m.V();
+  assert.equal(v.phase, 'play');
+  assert.equal(v.solo, true);
+  assert.deepEqual(v.order, ['#0', '#1', '#2'], 'a roda são os nomes, não as vagas da sala');
+  assert.deepEqual(v.roster.map(r => r.name), ['Ana', 'Bia', 'Caio']);
+  assert.ok(v.roster.every(r => r.lives === 4 && r.local === true));
+  assert.ok(v.roster.every(r => !!r.color), 'cada nome ganha uma cor da paleta');
+  assert.equal(v.cur, '#0');
+  assert.equal(v.card.items, null, 'a lista continua escondida do mediador');
+  assert.equal(v.mine.mediator, true);
+});
+
+test('modo mediador: FALEI passa a vez mesmo sem o jogador ter celular', () => {
+  const m = mesaMediador(['Ana', 'Bia', 'Caio']);
+  m.g.action(m.players[0], { t: 'said' });
+  assert.equal(m.V().cur, '#1');
+  assert.equal(m.V().last, '#0');
+  m.g.action(m.players[0], { t: 'said' });
+  assert.equal(m.V().saidCount, 2);
+  assert.equal(m.V().cur, '#2');
+});
+
+test('modo mediador: o celular diz quem duvidou e julga a resposta', () => {
+  const m = mesaMediador(['Ana', 'Bia', 'Caio']);
+  m.g.action(m.players[0], { t: 'said' });                      // Ana respondeu
+  m.g.action(m.players[0], { t: 'doubt', by: '#2' });            // Caio gritou duvido
+  let v = m.V();
+  assert.equal(v.phase, 'reveal');
+  assert.equal(v.card.items.length, 10);
+  assert.deepEqual(v.doubt, { by: '#2', target: '#0', votes: {}, voters: [] }, 'sem votação: quem decide é o mediador');
+  assert.equal(v.mine.canJudge, true);
+  assert.equal(v.mine.canVote, false);
+  m.g.action(m.players[0], { t: 'vote', ok: true });             // votar não vale aqui
+  assert.equal(m.V().phase, 'reveal');
+  m.g.action(m.players[0], { t: 'judge', ok: false });           // não valia
+  v = m.V();
+  assert.equal(v.phase, 'result');
+  assert.equal(v.result.valid, false);
+  assert.equal(v.result.loser, '#0');
+  assert.equal(v.lives['#0'], 3);
+});
+
+test('modo mediador: duvidada à toa tira a vida de quem duvidou', () => {
+  const m = mesaMediador(['Ana', 'Bia', 'Caio']);
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[0], { t: 'doubt', by: '#1' });
+  m.g.action(m.players[0], { t: 'judge', ok: true });
+  const v = m.V();
+  assert.equal(v.result.loser, '#1');
+  assert.equal(v.lives['#1'], 3);
+  assert.equal(v.lives['#0'], 4);
+});
+
+test('modo mediador: não dá para duvidar de quem acabou de falar em nome dele mesmo', () => {
+  const m = mesaMediador(['Ana', 'Bia']);
+  m.g.action(m.players[0], { t: 'said' });                       // Ana respondeu
+  m.g.action(m.players[0], { t: 'doubt', by: '#0' });            // "a própria Ana duvidou"
+  assert.equal(m.V().phase, 'play');
+  m.g.action(m.players[0], { t: 'doubt', by: '#9' });            // nome que não existe
+  assert.equal(m.V().phase, 'play');
+  m.g.action(m.players[0], { t: 'doubt', by: '#1' });
+  assert.equal(m.V().phase, 'reveal');
+});
+
+test('modo mediador: precisa de 2 nomes para começar', () => {
+  const m = mesa(1, { solo: true, names: ['Ana'] });
+  m.g.action(m.players[0], { t: 'begin' });
+  assert.equal(m.V().phase, 'setup');
+  m.g.action(m.players[0], { t: 'config', cfg: { names: ['Ana', 'Bia'] } });
+  m.g.action(m.players[0], { t: 'begin' });
+  assert.equal(m.V().phase, 'play');
+});
+
+test('modo mediador: nome repetido e sobra de nomes são podados', () => {
+  const m = mesa(1, { solo: true, names: ['Ana', 'ana', '  Bia  ', '', 'Caio'] });
+  assert.deepEqual(m.V().cfg.names, ['Ana', 'Bia', 'Caio']);
+});
+
+test('modo mediador: a partida termina no último de pé', () => {
+  const m = mesaMediador(['Ana', 'Bia'], { lives: 2 });
+  for (let i = 0; i < 2; i++) {
+    for (let g = 0; m.V().cur !== '#0' && g < 10; g++) m.g.action(m.players[0], { t: 'said' });
+    m.g.action(m.players[0], { t: 'said' });
+    m.g.action(m.players[0], { t: 'doubt', by: '#1' });
+    m.g.action(m.players[0], { t: 'judge', ok: false });
+    if (m.V().phase === 'result') m.g.action(m.players[0], { t: 'next' });
+  }
+  const v = m.V();
+  assert.equal(v.phase, 'end');
+  assert.equal(v.winner, '#1');
+  assert.equal(v.roster.find(r => r.pid === '#0').lives, 0);
+});
+
+test('modo mediador: o celular do mediador cair não derruba a mesa', () => {
+  const m = mesaMediador(['Ana', 'Bia', 'Caio']);
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.onPlayerLeave('p0');                                      // o mediador saiu da sala
+  const v = m.V(null);
+  assert.equal(v.phase, 'play', 'a mesa é de nomes digitados: a partida continua');
+  assert.deepEqual(v.order, ['#0', '#1', '#2']);
+  assert.equal(v.cur, '#1');
+});
+
+test('modo mediador: salvar e restaurar mantém os nomes e as vidas', () => {
+  const m = mesaMediador(['Ana', 'Bia', 'Caio']);
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[0], { t: 'doubt', by: '#1' });
+  m.g.action(m.players[0], { t: 'judge', ok: false });
+  const salvo = JSON.parse(JSON.stringify(m.g.serialize()));
+  const outro = top10.create({
+    players: m.players, colors: m.api.colors, byPid: pid => m.players.find(p => p.pid === pid) || null,
+    setEvent() {}, addEvent() {}, armTimer() {}, clearTimer() {}, get timerEnd() { return null; },
+    broadcast() {}, stream() {}, exit() {},
+  });
+  outro.restore(salvo);
+  const v = outro.view(m.players[0]);
+  assert.equal(v.solo, true);
+  assert.deepEqual(v.roster.map(r => r.name), ['Ana', 'Bia', 'Caio']);
+  assert.equal(v.lives['#0'], 3);
+  assert.equal(v.mine.mediator, true);
 });

@@ -54,34 +54,36 @@
       html(c) {
         const G = c.G, esc = c.esc, nm = c.nm;
         if (!G) return {};
-        const ply = pid => c.C.players.find(p => p.pid === pid) || null;
+        // a mesa vem pronta do servidor: nome digitado pelo mediador e celular conectado, no mesmo formato
+        const ply = pid => (G.roster || []).find(r => r.pid === pid) || null;
         const hearts = pid => {
-          const n = G.lives[pid] === undefined ? 0 : G.lives[pid];
+          const r = ply(pid);
+          const n = r ? r.lives : 0;
           if (n <= 0) return '💀';
           return '❤️'.repeat(n);
         };
         const cracha = pid => {
-          const p = ply(pid);
-          if (!p) return '';
-          const morto = (G.lives[pid] || 0) <= 0;
-          return `<div class="t10-pl ${G.cur === pid ? 'now' : ''} ${morto ? 'dead' : ''}" style="${c.nmStyle(p)}">${esc(p.name)}<small>${hearts(pid)}</small></div>`;
+          const r = ply(pid);
+          if (!r) return '';
+          return `<div class="t10-pl ${G.cur === pid ? 'now' : ''} ${r.lives <= 0 ? 'dead' : ''}" style="${c.nmStyle({ color: r.color })}">${esc(r.name)}<small>${hearts(pid)}</small></div>`;
         };
-        const crachas = () => `<div class="t10-turn">${G.order.map(cracha).join('')}</div>`;
+        const crachas = () => `<div class="t10-turn">${(G.roster || []).map(x => cracha(x.pid)).join('')}</div>`;
         const itens = () => !G.card || !G.card.items ? '' :
           `<div class="t10-items">${G.card.items.map((it, i) => `<div><div class="t10-it ${i < 3 ? 'top' : ''}"><i>${i + 1}º</i><span>${esc(it)}</span></div></div>`).join('')}</div>`;
         const cabecalho = small => `<div class="t10-cat">${G.card ? G.card.catEmoji + ' ' + esc(G.card.catName) : ''}</div>
           <div class="t10-title ${small ? 'sm' : ''}">${G.card ? esc(G.card.t) : ''}</div>
           ${G.card && G.card.src && !small ? `<div class="t10-src">fonte: ${esc(G.card.src)}</div>` : ''}`;
-        const placar = () => `<div class="box"><p class="sub mut" style="margin-bottom:8px">Vidas</p>${c.playersHtml({
-          info: p => (G.order.indexOf(p.pid) >= 0 ? hearts(p.pid) : '👀'),
-          border: p => (p.pid === G.cur ? '#f59e0b' : 'transparent'),
-        })}</div>`;
+        const placar = () => `<div class="box"><p class="sub mut" style="margin-bottom:8px">Vidas</p>
+          <div class="players">${(G.roster || []).map(r => `<div class="pl" style="border-color:${r.pid === G.cur ? '#f59e0b' : 'transparent'}">
+            <span class="dot" style="background:${c.ci(r.color).hex}"></span><b>${esc(r.name)}${r.on === false ? ' 📵' : ''}</b><span>${hearts(r.pid)}</span></div>`).join('')}</div></div>`;
 
         let stage = `<style>${style}</style>`;
         let side = `<div class="box center"><div style="font-size:30px;font-weight:900">🔟 Top 10</div><p class="sub mut">${G.phase === 'setup' ? 'preparando' : 'Carta ' + G.round}</p></div>`;
 
         if (G.phase === 'setup') {
           stage += `<div class="t10-stage"><div class="t10-big">⚙️ Ajustem as regras no celular</div>
+            ${G.cfg.solo ? `<div class="t10-tag">🎙️ modo mediador · um celular conduz a mesa</div>
+              <div class="t10-turn">${(G.cfg.names || []).map(n => `<div class="t10-chip">${esc(n)}</div>`).join('') || '<div class="t10-chip">ninguém na mesa ainda</div>'}</div>` : ''}
             <div class="t10-turn"><div class="t10-chip">${'❤️'.repeat(G.cfg.lives)} por pessoa</div>
               <div class="t10-chip">${G.cfg.turnSec ? G.cfg.turnSec + 's por resposta' : 'sem tempo'}</div>
               <div class="t10-chip">${G.cfg.cats.length} temas</div></div>
@@ -106,7 +108,7 @@
           const faltam = G.doubt.voters.length - Object.keys(G.doubt.votes).length;
           stage += `<div class="t10-stage"><div class="t10-big t10-pop">🚨 ${by ? esc(by.name) : ''} duvidou de ${alvo ? esc(alvo.name) : ''}!</div>
             ${cabecalho(true)}${itens()}
-            <div class="t10-tag">a resposta estava na lista? ${faltam > 0 ? faltam + ' ainda não votaram' : 'contando os votos…'}</div></div>`;
+            <div class="t10-tag">${G.solo ? 'a resposta estava na lista? o mediador decide no celular' : 'a resposta estava na lista? ' + (faltam > 0 ? faltam + ' ainda não votaram' : 'contando os votos…')}</div></div>`;
           side += c.timerHtml('votação', G.turnMs) + placar();
           return { stage, side };
         }
