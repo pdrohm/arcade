@@ -38,7 +38,7 @@ module.exports = {
       'Valia? Quem duvidou perde uma vida. Não valia? Quem falou perde.',
       'Em dupla os dois votam, com a lista à vista: se discordarem, a resposta vale.',
       'Só tem um celular? Use o modo mediador: você digita os nomes da mesa e toca tudo.',
-      'Carta repetida? Quem não está na vez pode pular: entra outra, sem ninguém perder vida.',
+      'Carta repetida? Qualquer um pula a qualquer hora: entra outra, sem ninguém perder vida.',
       'São 4 vidas. Sem vidas, você está fora. Sobrou um, venceu.',
     ],
   },
@@ -288,11 +288,10 @@ module.exports = {
           }
 
           // "já jogamos essa": troca a carta sem ninguém perder vida e sem passar a vez.
-          // Quem está na vez não pula — senão pular viraria fuga da própria vez (e do relógio).
-          // No modo mediador quem conduz sempre pode: ele não está fugindo de nada.
+          // Qualquer um pula, a qualquer momento da carta — inclusive quem está na vez e mesmo
+          // com respostas já ditas. Fica tudo à vista no aviso da sala, que é o freio aqui.
           case 'skip': {
             if (s.phase !== 'play' || !s.card) return;
-            if (!s.solo && p.pid === cur()) return;
             const quem = cur();
             newCard();                                     // mesma vez, carta nova
             startTurn();
@@ -391,7 +390,7 @@ module.exports = {
           mediator: false,
           myTurn: s.phase === 'play' && cur() === me.pid,
           canDoubt: s.phase === 'play' && !!s.last && s.last.pid !== me.pid && alive(me.pid),
-          canSkip: s.phase === 'play' && cur() !== me.pid,
+          canSkip: s.phase === 'play',
           canVote: s.phase === 'reveal' && !!s.doubt && voters().includes(me.pid),
           canJudge: false,
           myVote: s.doubt && s.doubt.votes[me.pid] !== undefined ? s.doubt.votes[me.pid] : null,

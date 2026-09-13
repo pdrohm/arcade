@@ -432,13 +432,29 @@ test('pular troca a carta sem tirar vida e sem passar a vez', () => {
   for (const p of m.players) assert.equal(v.lives[p.pid], 4, 'pular não tira vida de ninguém');
 });
 
-test('quem está na vez não pula (senão era fuga da própria vez)', () => {
+test('quem está na vez também pula, e a vez continua sendo dele', () => {
   const m = mesa(3);
   const primeira = m.V().card.t;
-  m.g.action(m.players[0], { t: 'skip' });            // p0 é quem está na vez
-  assert.equal(m.V().card.t, primeira);
-  assert.equal(m.V(m.players[0]).mine.canSkip, false);
+  assert.equal(m.V(m.players[0]).mine.canSkip, true);
   assert.equal(m.V(m.players[1]).mine.canSkip, true);
+  m.g.action(m.players[0], { t: 'skip' });            // p0 é quem está na vez
+  const v = m.V();
+  assert.notEqual(v.card.t, primeira);
+  assert.equal(v.cur, 'p0', 'pular não livra ninguém da própria vez');
+  assert.equal(v.lives.p0, 4);
+});
+
+test('pular vale mesmo com respostas já ditas', () => {
+  const m = mesa(3);
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[1], { t: 'said' });
+  const primeira = m.V().card.t;
+  assert.equal(m.V().saidCount, 2);
+  m.g.action(m.players[2], { t: 'skip' });
+  const v = m.V();
+  assert.notEqual(v.card.t, primeira);
+  assert.equal(v.saidCount, 0);
+  assert.equal(v.cur, 'p2', 'a vez continua com quem ia responder');
 });
 
 test('pular só vale com a carta em jogo', () => {

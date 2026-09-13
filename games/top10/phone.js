@@ -212,9 +212,7 @@
           if (mine.canDoubt) h += `<button class="btn big no" data-a="duvido" style="font-size:22px;padding:22px">🚨 DUVIDO de ${esc(lastR ? lastR.name : '')}</button>`;
           else if (G.last && G.last === me) h += '<p class="sub center mut">Sua resposta está na mesa: alguém pode duvidar dela.</p>';
           else if (!G.last) h += '<p class="sub center mut">Primeira resposta da carta: ainda não dá para duvidar de ninguém.</p>';
-          h += mine.canSkip
-            ? '<button class="btn ghost" data-a="pular">⏭️ Pular a carta (já jogamos essa)</button>'
-            : '<p class="sub center mut">Já jogaram essa carta? Quem não está na vez pode pular.</p>';
+          h += '<button class="btn ghost" data-a="pular">⏭️ Pular a carta (já jogamos essa)</button>';
         }
 
         if (G.said.length) {
