@@ -18,13 +18,14 @@ module.exports = {
     id: 'top10', name: 'Top 10', emoji: '🔟',
     tagline: 'Um ranking de dez que ninguém vê. Fale um item — ou duvide de quem falou.',
     art: 'linear-gradient(135deg,#facc15 0%,#f97316 45%,#7c2d12 100%)',
-    minPlayers: 3, maxPlayers: 8,
+    minPlayers: 2, maxPlayers: 8,
     howTo: [
       'A tela mostra só o título de um Top 10. A lista fica escondida.',
       'Na sua vez, fale em voz alta um item que você acha que está na lista e aperte FALEI.',
       'Não precisa parar nos dez: enquanto ninguém duvidar, o jogo continua.',
       'Achou a resposta anterior furada? Aperte DUVIDO: a lista se revela e a turma vota.',
       'Valia? Quem duvidou perde uma vida. Não valia? Quem falou perde.',
+      'Em dupla os dois votam, com a lista à vista: se discordarem, a resposta vale.',
       'São 4 vidas. Sem vidas, você está fora. Sobrou um, venceu.',
     ],
   },
@@ -102,10 +103,14 @@ module.exports = {
         api.addEvent(`💔 ${s.lives[pid]} vida${s.lives[pid] > 1 ? 's' : ''}.`);
       }
     }
-    // quem julga: todo mundo da sala menos os dois envolvidos (eliminado também vota)
+    // Quem julga: todo mundo da sala menos os dois envolvidos (eliminado também vota).
+    // Na dupla não sobra júri: aí os próprios dois votam. Se discordarem, dá empate — e
+    // empate vale para quem falou, ou seja, a dúvida é que tem que se provar.
     function voters() {
       if (!s.doubt) return [];
-      return api.players.filter(p => p.pid !== s.doubt.by && p.pid !== s.doubt.target).map(p => p.pid);
+      const juri = api.players.filter(p => p.pid !== s.doubt.by && p.pid !== s.doubt.target).map(p => p.pid);
+      if (juri.length) return juri;
+      return api.players.filter(p => p.pid === s.doubt.by || p.pid === s.doubt.target).map(p => p.pid);
     }
     function checkVote() {
       if (!s.doubt) return;
@@ -180,7 +185,7 @@ module.exports = {
             if (s.phase !== 'setup') return;
             if (!s.cfg.cats.length) return;
             s.order = api.players.map(x => x.pid);
-            if (s.order.length < 3) return;
+            if (s.order.length < 2) return;
             s.lives = {}; for (const pid of s.order) s.lives[pid] = s.cfg.lives;
             s.out = []; s.usedCards = []; s.round = 0; s.ti = 0; s.winner = null;
             newCard();
@@ -213,9 +218,9 @@ module.exports = {
             return;
           }
 
-          case 'vote': {                                   // os dois envolvidos não votam
+          case 'vote': {                                   // os dois envolvidos não votam (a não ser na dupla)
             if (s.phase !== 'reveal' || !s.doubt) return;
-            if (p.pid === s.doubt.by || p.pid === s.doubt.target) return;
+            if (!voters().includes(p.pid)) return;
             s.doubt.votes[p.pid] = !!msg.ok;
             checkVote();
             return;
@@ -291,7 +296,7 @@ module.exports = {
           alive: alive(me.pid),
           myTurn: s.phase === 'play' && cur() === me.pid,
           canDoubt: s.phase === 'play' && !!s.last && s.last.pid !== me.pid && alive(me.pid),
-          canVote: s.phase === 'reveal' && !!s.doubt && s.doubt.by !== me.pid && s.doubt.target !== me.pid,
+          canVote: s.phase === 'reveal' && !!s.doubt && voters().includes(me.pid),
           myVote: s.doubt && s.doubt.votes[me.pid] !== undefined ? s.doubt.votes[me.pid] : null,
         };
         return out;

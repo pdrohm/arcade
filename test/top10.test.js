@@ -96,6 +96,48 @@ test('duvidou à toa: quem duvidou perde a vida', () => {
   assert.equal(v.lives.p0, 4);
 });
 
+test('em dupla os dois votam: concordando, quem falou perde', () => {
+  const m = mesa(2);
+  assert.equal(m.V().phase, 'play', 'dá para jogar com dois');
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[1], { t: 'doubt' });
+  const v = m.V();
+  assert.equal(v.phase, 'reveal');
+  assert.deepEqual(v.doubt.voters.slice().sort(), ['p0', 'p1'], 'sem júri, os dois envolvidos julgam');
+  assert.equal(m.V(m.players[0]).mine.canVote, true);
+  assert.equal(m.V(m.players[1]).mine.canVote, true);
+  m.g.action(m.players[0], { t: 'vote', ok: false });    // quem falou admite que não valia
+  assert.equal(m.V().phase, 'reveal', 'falta o outro votar');
+  m.g.action(m.players[1], { t: 'vote', ok: false });
+  const r = m.V().result;
+  assert.equal(r.valid, false);
+  assert.equal(r.loser, 'p0');
+  assert.equal(m.V().lives.p0, 3);
+});
+
+test('em dupla, discordando, a resposta vale e quem duvidou perde', () => {
+  const m = mesa(2);
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[1], { t: 'doubt' });
+  m.g.action(m.players[0], { t: 'vote', ok: true });     // "estava lá"
+  m.g.action(m.players[1], { t: 'vote', ok: false });    // "não estava"
+  const r = m.V().result;
+  assert.equal(r.valid, true, 'empate vale: quem duvida é que tem de provar');
+  assert.equal(r.loser, 'p1');
+  assert.equal(m.V().lives.p1, 3);
+});
+
+test('em dupla a partida termina quando um zera as vidas', () => {
+  const m = mesa(2, { lives: 2 });
+  tiraVida(m, 'p0');
+  assert.equal(m.V().lives.p0, 1);
+  assert.equal(m.V().phase, 'play');
+  tiraVida(m, 'p0');
+  const v = m.V();
+  assert.equal(v.phase, 'end');
+  assert.equal(v.winner, 'p1');
+});
+
 test('empate na votação vale para quem falou', () => {
   const m = mesa(4);
   m.g.action(m.players[0], { t: 'said' });
@@ -150,9 +192,8 @@ function tiraVida(m, alvo) {
   m.g.action(m.de(alvo), { t: 'said' });
   const duvidador = m.players.find(p => p.pid !== alvo && (m.V().lives[p.pid] || 0) > 0);
   m.g.action(duvidador, { t: 'doubt' });
-  for (const p of m.players) {
-    if (p.pid === alvo || p.pid === duvidador.pid) continue;
-    if (m.V().phase === 'reveal') m.g.action(p, { t: 'vote', ok: false });
+  for (const pid of (m.V().doubt ? m.V().doubt.voters.slice() : [])) {
+    if (m.V().phase === 'reveal') m.g.action(m.de(pid), { t: 'vote', ok: false });
   }
   if (m.V().phase === 'result') m.g.action(m.players[0], { t: 'next' });
 }

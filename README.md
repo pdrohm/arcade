@@ -184,7 +184,7 @@ para manter botões e toques durante atualizações. Nunca salve teclas pression
 
 ## Top 10
 
-Para 3 a 8 pessoas. Funciona com a TV ligada ou só com os celulares — a tela do celular
+Para 2 a 8 pessoas. Funciona com a TV ligada ou só com os celulares — a tela do celular
 tem tudo: título da carta, contador, lista revelada, votação e vidas.
 
 - A tela mostra **só o título** de um ranking de dez ("Os 10 rios mais longos do mundo").
@@ -196,6 +196,8 @@ tem tudo: título da carta, contador, lista revelada, votação e vidas.
 - Qualquer jogador vivo pode apertar **DUVIDO** na última resposta, a qualquer momento, até o
   próximo responder. Aí a lista se revela e todo mundo (menos os dois envolvidos) vota se valia.
   Empate conta como "valia"; quem não votar é ignorado.
+- **Em dupla** não sobra júri: os dois votam, com a lista à vista. Se discordarem, dá empate
+  e a resposta vale — quem duvida é que tem de provar.
 - **Valia?** Quem duvidou perde uma vida. **Não valia?** Quem falou perde. São 4 vidas
   (2 a 5 no menu de regras). Sem vidas você fica assistindo — mas continua votando nas duvidadas.
   Sobrou um, venceu.

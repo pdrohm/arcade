@@ -64,8 +64,9 @@
             <div class="box"><p class="sub" style="margin-bottom:8px">Temas das cartas <span class="mut">(${cfg.cats.length})</span></p>
               <div class="t10-opt">${G.cats.map(k => `<div class="t10-o ${cfg.cats.includes(k.id) ? 'sel' : 'off'}" data-a="cfgCat" data-id="${k.id}">${k.emoji} ${esc(k.name)}</div>`).join('')}</div>
               <button class="btn ghost" data-a="cfgReset" style="margin-top:12px">↺ Regras padrão</button></div>
-            <button class="btn big ok" data-a="begin" ${c.C.players.length >= 3 ? '' : 'disabled'}>▶ Começar</button>
-            ${c.C.players.length >= 3 ? '' : '<p class="sub center mut">Precisa de pelo menos 3 jogadores.</p>'}
+            <button class="btn big ok" data-a="begin" ${c.C.players.length >= 2 ? '' : 'disabled'}>▶ Começar</button>
+            ${c.C.players.length >= 2 ? '' : '<p class="sub center mut">Precisa de pelo menos 2 jogadores.</p>'}
+            ${c.C.players.length === 2 ? '<p class="sub center mut">Em dupla não sobra júri: no DUVIDO os dois votam, e se discordarem a resposta vale.</p>' : ''}
             <p class="sub center">${c.C.event ? c.hl(c.C.event.text) : ''}</p>`;
         }
 
@@ -95,12 +96,15 @@
             <div class="t10-t" id="t10-t">–</div>
             ${lista(c, G)}`;
           if (mine.canVote) {
-            const v = mine.myVote;
+            const v = mine.myVote, duelo = G.doubt.voters.length === 2 && G.doubt.voters.includes(G.doubt.target);
+            const pergunta = duelo && me === G.doubt.target ? 'A sua resposta está nessa lista?' : `A resposta de ${alvo ? nm(alvo) : 'quem falou'} está nessa lista?`;
             h += v === null
-              ? `<div class="box center"><p class="sub" style="font-size:19px">A resposta de ${alvo ? nm(alvo) : 'quem falou'} está nessa lista?</p></div>
+              ? `<div class="box center"><p class="sub" style="font-size:19px">${pergunta}</p></div>
                  <div class="row"><button class="btn big ok" data-a="sim">✅ Valia</button><button class="btn big no" data-a="nao">❌ Não valia</button></div>`
-              : `<div class="box center"><p class="sub">Você votou <b>${v ? '✅ Valia' : '❌ Não valia'}</b>. Esperando os outros… (${Object.keys(G.doubt.votes).length}/${G.doubt.voters.length})</p></div>`;
-            h += '<p class="sub center mut">Empate conta como "valia". Quem não votar é ignorado.</p>';
+              : `<div class="box center"><p class="sub">Você votou <b>${v ? '✅ Valia' : '❌ Não valia'}</b>. Esperando ${duelo ? 'o outro' : 'os outros'}… (${Object.keys(G.doubt.votes).length}/${G.doubt.voters.length})</p></div>`;
+            h += duelo
+              ? '<p class="sub center mut">Em dupla os dois votam, com a lista à vista. Se discordarem, vale — quem duvida é que tem de provar.</p>'
+              : '<p class="sub center mut">Empate conta como "valia". Quem não votar é ignorado.</p>';
           } else {
             h += `<div class="box center"><p class="sub">${me === G.doubt.target ? 'Duvidaram de você!' : 'Você duvidou!'} A turma está julgando…</p>
               <p class="sub mut" style="margin-top:6px">${Object.keys(G.doubt.votes).length} de ${G.doubt.voters.length} já votaram</p></div>`;
