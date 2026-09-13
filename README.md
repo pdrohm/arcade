@@ -75,6 +75,7 @@ O que o núcleo já resolve para todos os jogos:
 | `games/uno` | UNO — mão no celular, mesa na TV, coringa, +2/+4, UNO! e "Pegou!", pontuação oficial |
 | `games/impostor` | Impostor — todo mundo recebe a mesma palavra, menos o(s) impostor(es); com ou sem dica; dicas, discussão, votação e chance final |
 | `games/palavrasecreta` | Palavra Secreta — estilo Mega Senha: em times, um vê a palavra e dá dicas em voz alta, o colega adivinha; ACERTOU/PASSAR no celular, cronômetro e placar na TV |
+| `games/top10` | Top 10 — um ranking de dez que ninguém vê. Cada um fala um item na ordem; quem duvidar do anterior revela a lista, a turma vota e alguém perde uma das 4 vidas. Joga com TV ou só nos celulares |
 
 ## Adicionar um jogo novo
 
@@ -180,3 +181,26 @@ Jogos antigos mantêm seu contrato. Um jogo novo pode usar:
 
 As transições de fase continuam usando `api.broadcast()`. A tela do celular pode usar `key(c)`
 para manter botões e toques durante atualizações. Nunca salve teclas pressionadas em `serialize()`.
+
+## Top 10
+
+Para 3 a 8 pessoas. Funciona com a TV ligada ou só com os celulares — a tela do celular
+tem tudo: título da carta, contador, lista revelada, votação e vidas.
+
+- A tela mostra **só o título** de um ranking de dez ("Os 10 rios mais longos do mundo").
+  A lista fica escondida: ela nem sai do servidor antes da hora, nem para a TV.
+- Na sua vez, você **fala em voz alta** um item que acha que está na lista e aperta **FALEI**.
+  O jogo não confere nada: quem confere é a mesa.
+- A carta **não para nos dez**. Enquanto ninguém duvidar, o rodízio continua — e a partir da
+  décima resposta alguém ali está blefando.
+- Qualquer jogador vivo pode apertar **DUVIDO** na última resposta, a qualquer momento, até o
+  próximo responder. Aí a lista se revela e todo mundo (menos os dois envolvidos) vota se valia.
+  Empate conta como "valia"; quem não votar é ignorado.
+- **Valia?** Quem duvidou perde uma vida. **Não valia?** Quem falou perde. São 4 vidas
+  (2 a 5 no menu de regras). Sem vidas você fica assistindo — mas continua votando nas duvidadas.
+  Sobrou um, venceu.
+- Com tempo por resposta ligado (padrão 20 s), quem não responde a tempo também perde uma vida
+  e a lista se revela.
+
+As cartas ficam em `games/top10/cards.js`, dez itens cada, na ordem do 1º ao 10º. Para
+acrescentar é só continuar as listas: `{ t: 'título', s: 'fonte', items: [ …dez… ] }`.

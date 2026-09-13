@@ -1,0 +1,239 @@
+// Regras do Top 10: quem fala, quem duvida, quem perde vida e o que cada tela pode ver.
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const top10 = require('../games/top10/game.js');
+
+// Sala de mentira: só o que o jogo usa da api do arcade.
+function mesa(n, cfg) {
+  const players = [];
+  for (let i = 0; i < n; i++) players.push({ pid: 'p' + i, name: 'J' + i, color: 'cor' + i, on: true });
+  let timerEnd = null;
+  const api = {
+    players,
+    byPid: pid => players.find(p => p.pid === pid) || null,
+    setEvent() {}, addEvent() {},
+    armTimer(ms) { timerEnd = Date.now() + ms; },
+    clearTimer() { timerEnd = null; },
+    get timerEnd() { return timerEnd; },
+    broadcast() {}, stream() {}, exit() {},
+  };
+  const g = top10.create(api);
+  g.start();
+  if (cfg) g.action(players[0], { t: 'config', cfg });
+  g.action(players[0], { t: 'begin' });
+  const V = me => g.view(me === undefined ? players[0] : me);
+  const de = pid => players.find(p => p.pid === pid);
+  return { g, players, api, V, de, vez: () => de(V().cur) };
+}
+
+test('começa com 4 vidas por pessoa e a lista escondida', () => {
+  const m = mesa(4);
+  const v = m.V();
+  assert.equal(v.phase, 'play');
+  assert.equal(v.maxLives, 4);
+  for (const p of m.players) assert.equal(v.lives[p.pid], 4);
+  assert.equal(v.cur, 'p0');
+  assert.ok(v.card.t.length > 0);
+  assert.equal(v.card.n, 10);
+  assert.equal(v.card.items, null, 'a lista não pode sair do servidor antes do DUVIDO');
+});
+
+test('nem a TV recebe a lista enquanto o jogo corre', () => {
+  const m = mesa(3);
+  assert.equal(m.g.view(null, 'tv').card.items, null);
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[1], { t: 'doubt' });
+  assert.equal(m.g.view(null, 'tv').card.items.length, 10, 'depois do DUVIDO a TV vê a lista');
+});
+
+test('falar passa a vez e vai contando as respostas', () => {
+  const m = mesa(3);
+  m.g.action(m.players[0], { t: 'said' });
+  assert.equal(m.V().cur, 'p1');
+  assert.equal(m.V().saidCount, 1);
+  assert.equal(m.V().last, 'p0');
+  m.g.action(m.players[1], { t: 'said' });
+  m.g.action(m.players[2], { t: 'said' });
+  m.g.action(m.players[0], { t: 'said' });
+  assert.equal(m.V().saidCount, 4, 'a carta não trava nos dez: continua enquanto ninguém duvidar');
+  assert.equal(m.V().cur, 'p1');
+});
+
+test('só quem está na vez pode falar', () => {
+  const m = mesa(3);
+  m.g.action(m.players[1], { t: 'said' });
+  assert.equal(m.V().saidCount, 0);
+  assert.equal(m.V().cur, 'p0');
+});
+
+test('duvidou e não valia: quem falou perde a vida', () => {
+  const m = mesa(3);
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[1], { t: 'doubt' });
+  let v = m.V();
+  assert.equal(v.phase, 'reveal');
+  assert.equal(v.card.items.length, 10, 'a lista se revela no DUVIDO');
+  assert.deepEqual(v.doubt.voters, ['p2'], 'os dois envolvidos não votam');
+  m.g.action(m.players[2], { t: 'vote', ok: false });
+  v = m.V();
+  assert.equal(v.phase, 'result');
+  assert.equal(v.result.valid, false);
+  assert.equal(v.result.loser, 'p0');
+  assert.equal(v.lives.p0, 3);
+  assert.equal(v.lives.p1, 4);
+});
+
+test('duvidou à toa: quem duvidou perde a vida', () => {
+  const m = mesa(3);
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[1], { t: 'doubt' });
+  m.g.action(m.players[2], { t: 'vote', ok: true });
+  const v = m.V();
+  assert.equal(v.result.valid, true);
+  assert.equal(v.result.loser, 'p1');
+  assert.equal(v.lives.p1, 3);
+  assert.equal(v.lives.p0, 4);
+});
+
+test('empate na votação vale para quem falou', () => {
+  const m = mesa(4);
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[1], { t: 'doubt' });
+  m.g.action(m.players[2], { t: 'vote', ok: true });
+  m.g.action(m.players[3], { t: 'vote', ok: false });
+  const v = m.V();
+  assert.equal(v.result.valid, true);
+  assert.equal(v.result.loser, 'p1');
+});
+
+test('ninguém duvida da própria resposta, e quem está fora não duvida', () => {
+  const m = mesa(3, { lives: 2 });
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[0], { t: 'doubt' });
+  assert.equal(m.V().phase, 'play', 'duvidar de si mesmo não faz nada');
+  m.g.action(m.players[2], { t: 'doubt' });          // p2 pode duvidar mesmo sem ser a vez dele
+  assert.equal(m.V().phase, 'reveal');
+  assert.deepEqual(m.V().doubt.voters, ['p1']);
+});
+
+test('tempo esgotado tira uma vida e revela a lista', () => {
+  const m = mesa(3);
+  m.g.onTimeUp();
+  const v = m.V();
+  assert.equal(v.phase, 'result');
+  assert.equal(v.result.timeout, true);
+  assert.equal(v.result.loser, 'p0');
+  assert.equal(v.lives.p0, 3);
+  assert.equal(v.card.items.length, 10);
+});
+
+test('a próxima carta é outra e começa pelo próximo da roda', () => {
+  const m = mesa(3);
+  const primeira = m.V().card.t;
+  m.g.action(m.players[0], { t: 'said' });            // vez passa para p1
+  m.g.action(m.players[2], { t: 'doubt' });
+  m.g.action(m.players[1], { t: 'vote', ok: true });
+  m.g.action(m.players[0], { t: 'next' });            // qualquer um vira a carta
+  const v = m.V();
+  assert.equal(v.phase, 'play');
+  assert.equal(v.round, 2);
+  assert.equal(v.saidCount, 0);
+  assert.equal(v.cur, 'p2', 'a vez era de p1: a carta nova começa no seguinte');
+  assert.notEqual(v.card.t, primeira);
+  assert.equal(v.card.items, null);
+});
+
+// Faz o alvo perder uma vida: ele fala, alguém duvida e a turma diz que não valia.
+function tiraVida(m, alvo) {
+  for (let guarda = 0; m.V().cur !== alvo && guarda < 20; guarda++) m.g.action(m.de(m.V().cur), { t: 'said' });
+  m.g.action(m.de(alvo), { t: 'said' });
+  const duvidador = m.players.find(p => p.pid !== alvo && (m.V().lives[p.pid] || 0) > 0);
+  m.g.action(duvidador, { t: 'doubt' });
+  for (const p of m.players) {
+    if (p.pid === alvo || p.pid === duvidador.pid) continue;
+    if (m.V().phase === 'reveal') m.g.action(p, { t: 'vote', ok: false });
+  }
+  if (m.V().phase === 'result') m.g.action(m.players[0], { t: 'next' });
+}
+
+test('sem vidas o jogador sai e o último de pé vence', () => {
+  const m = mesa(3, { lives: 2 });
+  tiraVida(m, 'p0');
+  assert.equal(m.V().lives.p0, 1);
+  assert.deepEqual(m.V().out, []);
+  tiraVida(m, 'p0');
+  let v = m.V();
+  assert.equal(v.lives.p0, 0);
+  assert.deepEqual(v.out, ['p0']);
+  assert.notEqual(v.cur, 'p0', 'eliminado não recebe mais a vez');
+  // agora p1 cai duas vezes (quem já está fora continua votando) e sobra p2
+  tiraVida(m, 'p1');
+  tiraVida(m, 'p1');
+  v = m.V();
+  assert.equal(v.phase, 'end');
+  assert.equal(v.winner, 'p2');
+});
+
+test('a parte privada diz a cada celular o que ele pode fazer', () => {
+  const m = mesa(4);
+  m.g.action(m.players[0], { t: 'said' });
+  const eu = m.V(m.players[1]).mine, outro = m.V(m.players[2]).mine, falou = m.V(m.players[0]).mine;
+  assert.equal(eu.myTurn, true);
+  assert.equal(eu.canDoubt, true);
+  assert.equal(outro.canDoubt, true, 'qualquer um vivo pode duvidar, não só o da vez');
+  assert.equal(falou.canDoubt, false);
+  m.g.action(m.players[1], { t: 'doubt' });
+  assert.equal(m.V(m.players[2]).mine.canVote, true);
+  assert.equal(m.V(m.players[0]).mine.canVote, false, 'quem falou não julga a própria resposta');
+  assert.equal(m.V(m.players[1]).mine.canVote, false, 'quem duvidou também não vota');
+  m.g.action(m.players[2], { t: 'vote', ok: false });
+  assert.equal(m.V(m.players[2]).mine.myVote, false);
+  assert.equal(m.V().phase, 'reveal', 'ainda falta p3 votar');
+});
+
+test('quem sai da sala no meio não trava a partida', () => {
+  const m = mesa(4);
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[1], { t: 'doubt' });
+  m.players.splice(1, 1);                              // quem duvidou sumiu
+  m.g.onPlayerLeave('p1');
+  const v = m.V();
+  assert.equal(v.phase, 'play', 'a duvidada cai junto e entra carta nova');
+  assert.equal(v.doubt, null);
+  assert.equal(v.card.items, null);
+});
+
+test('salvar e restaurar mantém a partida de pé', () => {
+  const m = mesa(3);
+  m.g.action(m.players[0], { t: 'said' });
+  m.g.action(m.players[1], { t: 'doubt' });
+  m.g.action(m.players[2], { t: 'vote', ok: false });
+  const salvo = JSON.parse(JSON.stringify(m.g.serialize()));
+  const outro = top10.create({
+    players: m.players, byPid: pid => m.players.find(p => p.pid === pid) || null,
+    setEvent() {}, addEvent() {}, armTimer() {}, clearTimer() {}, get timerEnd() { return null; },
+    broadcast() {}, stream() {}, exit() {},
+  });
+  outro.restore(salvo);
+  const v = outro.view(m.players[0]);
+  assert.equal(v.phase, 'result');
+  assert.equal(v.lives.p0, 3);
+  assert.equal(v.card.items.length, 10);
+});
+
+test('as cartas têm sempre dez itens diferentes', () => {
+  const cards = require('../games/top10/cards.js');
+  let n = 0;
+  for (const cat of cards.CATEGORIES) {
+    const lista = cards.CARDS[cat.id] || [];
+    assert.ok(lista.length > 0, 'tema sem carta: ' + cat.id);
+    for (const c of lista) {
+      n++;
+      assert.equal(c.items.length, 10, c.t);
+      assert.equal(new Set(c.items).size, 10, 'item repetido em: ' + c.t);
+      assert.ok(c.t && c.t.length > 5, 'carta sem título');
+    }
+  }
+  assert.ok(n >= 40, 'poucas cartas: ' + n);
+});
