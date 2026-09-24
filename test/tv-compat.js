@@ -19,7 +19,12 @@ const IGNORAR = ['shared/kart/simulation.js'];   // só o servidor roda a simula
 function alvos() {
   const out = [];
   for (const f of fs.readdirSync(path.join(RAIZ, 'shared'))) if (f.endsWith('.js')) out.push('shared/' + f);
-  for (const f of fs.readdirSync(path.join(RAIZ, 'shared', 'kart'))) if (f.endsWith('.js')) out.push('shared/kart/' + f);
+  // cada jogo com desenho próprio na TV tem uma pasta em shared/ (shared/kart, shared/ultimodepe…)
+  for (const dir of fs.readdirSync(path.join(RAIZ, 'shared'))) {
+    const abs = path.join(RAIZ, 'shared', dir);
+    if (!fs.statSync(abs).isDirectory()) continue;
+    for (const f of fs.readdirSync(abs)) if (f.endsWith('.js')) out.push('shared/' + dir + '/' + f);
+  }
   const jogos = path.join(RAIZ, 'games');
   for (const dir of fs.readdirSync(jogos)) {
     const rel = 'games/' + dir + '/tv.js';

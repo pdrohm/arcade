@@ -75,6 +75,7 @@ O que o núcleo já resolve para todos os jogos:
 | `games/uno` | UNO — mão no celular, mesa na TV, coringa, +2/+4, UNO! e "Pegou!", pontuação oficial |
 | `games/impostor` | Impostor — todo mundo recebe a mesma palavra, menos o(s) impostor(es); com ou sem dica; dicas, discussão, votação e chance final |
 | `games/palavrasecreta` | Palavra Secreta — estilo Mega Senha: em times, um vê a palavra e dá dicas em voz alta, o colega adivinha; ACERTOU/PASSAR no celular, cronômetro e placar na TV |
+| `games/ultimodepe` | Último de Pé — memória espacial e ação simultânea, 2–8. 🐧 Pinguins (dash com força no gelo, quem cai na água sai) ou 🤠 Tiroteio (todo mundo atira junto). O servidor resolve a rodada; celular em tela cheia |
 | `games/top10` | Top 10 — um ranking de dez que ninguém vê. Cada um fala um item na ordem; quem duvidar do anterior revela a lista, a turma vota e alguém perde uma das 4 vidas. Com TV ou só nos celulares, e com um celular só no modo mediador |
 
 ## Adicionar um jogo novo
@@ -226,3 +227,30 @@ celular conduz a mesa inteira e ninguém mais precisa entrar na sala:
 
 As cartas ficam em `games/top10/cards.js`, dez itens cada, na ordem do 1º ao 10º. Para
 acrescentar é só continuar as listas: `{ t: 'título', s: 'fonte', items: [ …dez… ] }`.
+
+## Último de Pé
+
+Para 2 a 8 pessoas (quem sobra assiste). Party game de memória espacial: a decisão vem antes,
+a ação acontece para todos no mesmo instante. Latência e clique rápido não dão vantagem.
+
+- **Rodada:** MEMORIZE (todo mundo à vista) → os outros somem, só você se vê → escolha a
+  direção → 3, 2, 1 → **JÁ!** (pinguins) ou **FOGO!** (tiroteio) → resultado → próxima rodada.
+- **🐧 Pinguins:** arraste o dedo na arena. A direção é para onde você aponta; a **força** é a
+  distância até o dedo (a seta mostra até onde você escorrega). Bateu, empurrou; caiu na água, saiu.
+  O gelo derrete um pouco a cada rodada.
+- **🤠 Tiroteio:** arraste para mirar. Todo mundo atira junto; o primeiro corpo no caminho leva a
+  bala. Dois que se acertam caem juntos. Cada rodada todo mundo nasce num lugar novo.
+- **Empate:** se todos os que restam saem na mesma rodada, eles jogam um desempate. Três desempates
+  seguidos = vitória dividida.
+- **Opção "mostrar todo mundo antes de cada rodada"** (na preparação): desligada, ninguém aparece
+  antes da rodada. Só vale a memória.
+- No celular a partida é em tela cheia (✕ sai do jogo, ⛶ pede tela cheia ao navegador).
+  No computador: o mouse aponta, A/D e as setas giram, W/S mudam a força.
+
+Como funciona por dentro: `games/ultimodepe/game.js` é o motor de rodadas (fases com
+`api.armTimer`, miras via `t:'input'`, eliminação, desempate, vencedor). `games/ultimodepe/rules.js`
+tem as duas variantes, puras e determinísticas (`spawn`, `prepare`, `resolve`). O servidor resolve
+cada rodada uma vez e manda um replay; TV e celulares só desenham (`shared/ultimodepe/render.js`,
+Canvas 2D, roda na TV antiga). Nas fases escondidas a view não leva a posição de ninguém, nem para
+a TV. Uma mira que chega até 260 ms depois do fim do 3‑2‑1 ainda vale (folga para o ping).
+Testes: `node --test test/ultimodepe.test.js`.

@@ -1,0 +1,75 @@
+/* Último de Pé — telas de TV e celular. A arena é canvas (shared/ultimodepe/render.js);
+   aqui ficam só os cartazes por cima dela. Compatível com a TV da sala (Chrome 47): sem variáveis de CSS,
+   grid, gap nem inset nas regras da TV. 1rem = 1% da largura (regra do html em ui.css). */
+
+/* ---------- TV ---------- */
+body.udp-tv #tv { padding:0; }
+body.udp-tv #side { display:none; }
+body.udp-tv #stage { width:100%; height:100vh; }
+#udp-stage { position:relative; width:100%; height:100%; overflow:hidden; background:#0a2d57; }
+#udp-canvas { display:block; width:100%; height:100%; }
+#udp-overlay { position:absolute; z-index:2; top:0; left:0; right:0; bottom:0; pointer-events:none; display:-webkit-box; display:-webkit-flex; display:flex; -webkit-box-align:center; -webkit-align-items:center; align-items:center; -webkit-box-pack:center; -webkit-justify-content:center; justify-content:center; }
+.udp-card { width:62rem; padding:2.2rem 2.6rem 2rem; border-radius:2rem; background:rgba(8,20,40,.86); border:.25rem solid #ffffff; color:#f8fafc; text-align:center; box-shadow:0 1.2rem 3rem rgba(0,0,0,.45); }
+.udp-card.shootout { background:rgba(67,28,8,.88); }
+.udp-logo { font-weight:900; font-size:5.4rem; line-height:.95; letter-spacing:-.03em; text-transform:uppercase; color:#e0f2fe; text-shadow:0 .35rem 0 #0c4a6e, 0 .6rem 1.2rem rgba(0,0,0,.4); }
+.udp-card.shootout .udp-logo { color:#fed7aa; text-shadow:0 .35rem 0 #7c2d12, 0 .6rem 1.2rem rgba(0,0,0,.4); }
+.udp-variant { display:inline-block; margin-top:1rem; padding:.45rem 1.6rem; border-radius:99rem; font-weight:900; font-size:1.8rem; background:#38bdf8; color:#0b1220; }
+.udp-card.shootout .udp-variant { background:#fb923c; }
+.udp-rule { margin-top:1.1rem; font-size:1.45rem; color:#cbd5e1; font-weight:700; }
+.udp-chips { display:-webkit-box; display:-webkit-flex; display:flex; -webkit-flex-wrap:wrap; flex-wrap:wrap; -webkit-box-pack:center; -webkit-justify-content:center; justify-content:center; margin-top:1.3rem; }
+.udp-chip { margin:.35rem; padding:.35rem 1.1rem; border-radius:99rem; font-weight:900; font-size:1.4rem; }
+.udp-chip.out { opacity:.4; text-decoration:line-through; }
+.udp-hint { margin-top:1.3rem; font-size:1.35rem; font-weight:800; color:#fde68a; }
+#udp-overlay .udp-rank { position:absolute; left:0; right:0; bottom:3.5rem; text-align:center; }
+#udp-overlay .udp-rank .udp-chip { display:inline-block; }
+
+/* ---------- celular ---------- */
+body.phone .udp-ui { display:flex; flex-direction:column; gap:12px; }
+body.phone .udp-variants { display:flex; gap:10px; }
+body.phone .udp-vbtn { flex:1; border:3px solid transparent; border-radius:18px; padding:16px 10px; color:#fff; font-family:inherit; font-size:20px; font-weight:900; line-height:1.15; text-align:center; cursor:pointer; opacity:.62; }
+body.phone .udp-vbtn small { display:block; margin-top:6px; font-size:13px; font-weight:700; opacity:.9; }
+body.phone .udp-vbtn .e { display:block; font-size:44px; line-height:1; margin-bottom:6px; }
+body.phone .udp-vbtn.penguins { background:linear-gradient(160deg,#7dd3fc,#1d4f86); }
+body.phone .udp-vbtn.shootout { background:linear-gradient(160deg,#fdba74,#9a3412); }
+body.phone .udp-vbtn.sel { border-color:#fff; opacity:1; box-shadow:0 8px 22px rgba(0,0,0,.35); }
+body.phone .udp-vbtn:disabled { cursor:default; }
+body.phone .udp-toggle { display:flex; align-items:center; gap:14px; width:100%; text-align:left; border:1px solid #2a3350; border-radius:18px; padding:14px 16px; background:#182036; color:#f3f4f6; font-family:inherit; cursor:pointer; }
+body.phone .udp-toggle b { display:block; font-size:17px; }
+body.phone .udp-toggle small { display:block; margin-top:4px; font-size:13px; color:#9aa6c0; font-weight:700; line-height:1.3; }
+body.phone .udp-toggle .sw { flex:none; width:52px; height:30px; border-radius:99px; background:#334155; position:relative; transition:background .15s; }
+body.phone .udp-toggle .sw i { position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:transform .15s; }
+body.phone .udp-toggle.on { border-color:#16a34a; }
+body.phone .udp-toggle.on .sw { background:#16a34a; }
+body.phone .udp-toggle.on .sw i { transform:translateX(22px); }
+body.phone .udp-toggle:disabled { cursor:default; opacity:.8; }
+
+/* partida: tela cheia. O cabeçalho da sala e o "Sair do jogo" somem; fica o botão flutuante ✕. */
+body.phone.udp-playing { overflow:hidden; overscroll-behavior:none; }
+body.phone.udp-playing .head, body.phone.udp-playing #app > .btn.ghost[data-a="voltar"], body.phone.udp-playing .pwa-install { display:none; }
+body.phone.udp-playing #app { padding:0; max-width:none; min-height:0; }
+body.phone .udp-full { position:fixed; top:0; left:0; right:0; bottom:0; z-index:20; background:#0a2d57; touch-action:none; -webkit-user-select:none; user-select:none; overflow:hidden; }
+body.phone #udp-canvas { position:absolute; top:0; left:0; width:100%; height:100%; display:block; touch-action:none; }
+body.phone .udp-fab { position:absolute; top:max(10px, env(safe-area-inset-top)); left:10px; display:flex; gap:8px; z-index:2; }
+body.phone .udp-fab button { width:48px; height:48px; border-radius:50%; border:2px solid rgba(255,255,255,.55); background:rgba(11,14,23,.55); color:#fff; font-family:inherit; font-size:22px; font-weight:900; line-height:1; cursor:pointer; }
+body.phone .udp-bottom { position:absolute; left:0; right:0; bottom:0; z-index:2; padding:10px 10px max(12px, env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:10px; background:linear-gradient(180deg, rgba(11,14,23,0), rgba(11,14,23,.72) 40%); }
+body.phone .udp-mode { display:flex; gap:8px; }
+body.phone .udp-mode[hidden] { display:none; }
+body.phone .udp-mode button { flex:1; min-height:52px; border-radius:16px; border:2px solid rgba(255,255,255,.25); background:rgba(24,32,54,.9); color:#fff; font-family:inherit; font-size:18px; font-weight:900; }
+body.phone .udp-mode button.sel { background:#f59e0b; border-color:#fff; color:#111; }
+body.phone .udp-bar { display:flex; align-items:stretch; gap:10px; }
+body.phone .udp-bar[hidden] { display:none; }
+body.phone .udp-rot { flex:none; width:84px; min-height:84px; border:0; border-radius:20px; background:rgba(51,65,85,.9); color:#fff; font-family:inherit; font-size:40px; font-weight:900; line-height:1; touch-action:none; -webkit-user-select:none; user-select:none; }
+body.phone .udp-rot.held { background:#f59e0b; color:#111; }
+body.phone .udp-rot:disabled { opacity:.3; }
+body.phone .udp-panel { max-height:52vh; overflow-y:auto; touch-action:pan-y; display:flex; flex-direction:column; gap:10px; }
+body.phone .udp-panel .udp-rank { background:rgba(24,32,54,.92); border:1px solid #2a3350; border-radius:18px; padding:10px; }
+body.phone .udp-dial { flex:1; min-height:84px; border-radius:20px; background:repeating-linear-gradient(90deg,rgba(24,32,54,.92) 0,rgba(24,32,54,.92) 14px,rgba(34,48,85,.92) 14px,rgba(34,48,85,.92) 16px); border:1px solid #2a3350; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 10px; touch-action:none; -webkit-user-select:none; user-select:none; }
+body.phone .udp-dial b { font-size:19px; font-weight:900; }
+body.phone .udp-dial small { font-size:14px; color:#cbd5e1; font-weight:700; margin-top:2px; }
+body.phone .udp-dial.on { border-color:#facc15; }
+body.phone .udp-panel:empty { display:none; }
+body.phone .udp-rank { display:flex; flex-direction:column; gap:6px; }
+body.phone .udp-rank p { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background:#0b0e17; font-weight:800; }
+body.phone .udp-rank p.me { background:#1a2340; }
+body.phone .udp-rank i { font-style:normal; width:34px; color:#fbbf24; font-weight:900; }
+body.phone .udp-rank small { margin-left:auto; color:#9aa6c0; font-size:14px; }

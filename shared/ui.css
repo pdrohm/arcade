@@ -84,7 +84,7 @@ body.phone .game-rules li + li { margin-top:9px; }
 .toast.show { opacity:1; }
 .conn { position:fixed; top:4px; right:8px; font-size:13px; color:#9aa6c0; z-index:5; }
 .conn.off { color:#ef4444; font-weight:700; }
-.pwa-install { position:fixed; left:14px; right:14px; bottom:max(14px,env(safe-area-inset-bottom)); z-index:75; max-width:532px; margin:0 auto; padding:14px; border:1px solid #3b4664; border-radius:18px; background:#182036; color:#f3f4f6; box-shadow:0 16px 44px rgba(0,0,0,.48); display:flex; align-items:center; gap:12px; }
+.pwa-install { position:fixed; left:14px; right:14px; bottom:max(14px,env(safe-area-inset-bottom)); z-index:75; max-width:532px; margin:0 auto; padding:14px; border:1px solid #3b4664; border-radius:18px; background:#182036; color:#f3f4f6; box-shadow:0 16px 44px rgba(0,0,0,.48); display:flex; align-items:center; gap:12px; }   /* tv-ok: o aviso de instalar só existe no celular (pwa.js não carrega na TV) */
 .pwa-install-icon { width:46px; height:46px; flex:none; border-radius:11px; }
 .pwa-install-copy { min-width:0; flex:1; font-size:14px; line-height:1.35; }
 .pwa-install-copy b { display:block; margin-bottom:2px; font-size:16px; }
@@ -297,3 +297,18 @@ body.tv[data-screen="library"] .conn.off::before { background:#ef4444; box-shado
 @keyframes tvl-over-out { to { opacity:0; } }
 @keyframes tvl-blink { 0%,100% { opacity:.25; } 50% { opacity:1; } }
 @media (prefers-reduced-motion: reduce) { .tvl-track.drift, .tvl-callout .tvl-phone { animation:none; } }
+
+/* Busca + filtros da biblioteca de jogos (só no celular) */
+body.phone .lib-tools { margin-bottom:16px; }
+body.phone .lib-search { width:100%; box-sizing:border-box; -webkit-appearance:none; appearance:none; border:1px solid #2a3350; background:#0f1526; color:#e5e7eb; border-radius:14px; padding:14px 16px; font-size:17px; font-family:inherit; margin-bottom:12px; }
+body.phone .lib-search::placeholder { color:#8b93a8; }
+body.phone .lib-search:focus { outline:none; border-color:#f59e0b; }
+body.phone .lib-chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+body.phone .lib-sort { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+body.phone .lib-sort .sub { margin-right:2px; }
+body.phone .lib-chip { border:1px solid #2a3350; background:#0f1526; color:#c9d3ea; border-radius:99px; padding:9px 14px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:transform .08s, background .1s, color .1s; }
+body.phone .lib-chip:active { transform:scale(.96); }
+body.phone .lib-chip.sel { background:#f59e0b; color:#111; border-color:#f59e0b; }
+body.phone .lib-count { margin:10px 0 0; }
+body.phone .lib-empty { text-align:center; }
+body.phone .lib-empty .btn { margin-top:12px; }
