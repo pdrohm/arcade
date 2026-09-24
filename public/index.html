@@ -30,6 +30,19 @@
   const A = ARCADE, $ = A.$, esc = A.esc;
   const app = $('#app');
   let form = A.form(), pickTarget = null, ctx = null, selectedGameId = null;
+  // Busca/filtro/ordenação da biblioteca (prateleira de jogos). Guardado em memória; filtro e
+  // ordenação também vão pro localStorage (não a busca — cada visita começa sem texto digitado).
+  let libSearch = '', libFilter = 'todos', libSort = 'padrao';
+  try {
+    const libPrefs = JSON.parse(localStorage.getItem('arcade_lib') || '{}');
+    if (libPrefs.filter) libFilter = libPrefs.filter;
+    if (libPrefs.sort) libSort = libPrefs.sort;
+  } catch (e) { /* localStorage indisponível: segue com o padrão */ }
+  function saveLibPrefs() {
+    try { localStorage.setItem('arcade_lib', JSON.stringify({ filter: libFilter, sort: libSort })); } catch (e) {}
+  }
+  // Compara sem acento e sem diferenciar maiúsculas: "Voce" acha "Você".
+  const normTxt = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
   // O browser só entrega a câmera em endereço seguro (https, localhost). No IP do Wi-Fi de casa
   // (http://192.168.x.x) ele nem cria navigator.mediaDevices. Lá o botão não teria como funcionar,
@@ -76,21 +89,54 @@
     const n = c.C.players.length;
     const selected = c.meta.games.find(g => g.id === selectedGameId);
     if (selected) return detalhes(c, selected);
-    return `<div class="shelf">${c.meta.games.map(g => {
-      const off = n < (g.minPlayers || 2);
-      return `<div class="card ${off ? 'off' : ''}" data-a="detalhes" data-id="${g.id}">
-        <div class="art" style="background:${g.art || 'linear-gradient(135deg,#334155,#0f172a)'}"></div>
-        <div class="emoji">${g.emoji || '🎲'}</div>
-        <div class="t">${esc(g.name)}</div><div class="d">${esc(g.tagline || '')}</div>
-        <div class="n">${off ? `Precisa de ${g.minPlayers} jogadores (tem ${n})` : `${g.minPlayers}–${g.maxPlayers} jogadores · toque para começar`}</div>
-      </div>`;
-    }).join('')}</div>
+
+    const chips = [['todos', 'Todos'], ['cabem', 'Cabem agora'], ['dupla', 'Dá para 2'], ['grupo', 'Só em grupo (3+)']];
+    const sorts = [['padrao', 'Padrão'], ['az', 'A–Z'], ['jogadores', 'Nº de jogadores']];
+    return `<div class="box lib-tools">
+        <input id="lib-search" class="lib-search" type="search" inputmode="search" placeholder="🔎 Buscar jogo…" value="${esc(libSearch)}" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div class="lib-chips">${chips.map(([k, label]) => `<button class="lib-chip ${libFilter === k ? 'sel' : ''}" data-a="lib-filtro" data-k="${k}">${esc(label)}</button>`).join('')}</div>
+        <div class="lib-sort"><span class="sub mut">Ordenar:</span>${sorts.map(([k, label]) => `<button class="lib-chip ${libSort === k ? 'sel' : ''}" data-a="lib-sort" data-k="${k}">${esc(label)}</button>`).join('')}</div>
+      </div>
+      <div id="lib-results">${libResults(c)}</div>
       <div class="box">${c.playersHtml()}</div>
       ${c.C.event ? `<p class="sub center">${c.hl(c.C.event.text)}</p>` : ''}
       <button class="btn ghost" data-a="rename">✏️ Mudar meu nome</button>
       <button class="btn ghost" data-a="sair">Trocar de cor / sair da sala</button>
       <button class="btn ghost" data-a="trocar">🚪 Ir para outra sala</button>
       ${btnQR('Ler o QR code de outra TV')}`;
+  }
+
+  // Contagem + prateleira filtrada. Separado da caixa de busca: digitar só troca isto aqui,
+  // o campo de texto nunca é recriado (o teclado e a sugestão do Android não se perdem).
+  function libResults(c) {
+    const n = c.C.players.length;
+    const q = normTxt(libSearch.trim());
+    let list = c.meta.games.filter(g => {
+      if (q) {
+        const howTo = Array.isArray(g.howTo) ? g.howTo.join(' ') : '';
+        const hay = normTxt([g.name, g.tagline || '', howTo].join(' '));
+        if (!hay.includes(q)) return false;
+      }
+      const min = g.minPlayers || 2, max = g.maxPlayers || 8;
+      const maxEfetivo = g.spectators ? Infinity : max;   // com torcida: quem sobra assiste
+      if (libFilter === 'cabem' && !(n >= min && n <= maxEfetivo)) return false;
+      if (libFilter === 'dupla' && !(min <= 2 && max >= 2)) return false;
+      if (libFilter === 'grupo' && !(min >= 3)) return false;
+      return true;
+    });
+    if (libSort === 'az') list = [...list].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    else if (libSort === 'jogadores') list = [...list].sort((a, b) => (a.minPlayers || 2) - (b.minPlayers || 2) || (a.maxPlayers || 8) - (b.maxPlayers || 8));
+
+    return `<p class="sub mut lib-count">${list.length} ${list.length === 1 ? 'jogo' : 'jogos'}</p>
+      ${list.length ? `<div class="shelf">${list.map(g => {
+        const off = n < (g.minPlayers || 2);
+        return `<div class="card ${off ? 'off' : ''}" data-a="detalhes" data-id="${g.id}">
+          <div class="art" style="background:${g.art || 'linear-gradient(135deg,#334155,#0f172a)'}"></div>
+          <div class="emoji">${g.emoji || '🎲'}</div>
+          <div class="t">${esc(g.name)}</div><div class="d">${esc(g.tagline || '')}</div>
+          <div class="n">${off ? `Precisa de ${g.minPlayers} jogadores (tem ${n})` : `${g.minPlayers}–${g.maxPlayers} jogadores · toque para começar`}</div>
+        </div>`;
+      }).join('')}</div>` : `<div class="box lib-empty"><p class="sub center mut">Nenhum jogo encontrado com esses filtros.</p><button class="btn ghost" data-a="lib-limpar">Limpar busca e filtros</button></div>`}`;
   }
 
   function detalhes(c, g) {
@@ -150,9 +196,27 @@
       h = header(c) + (impl && impl.phone ? impl.phone.html(c) : '<div class="box center"><p class="sub">Carregando o jogo…</p></div>')
         + `<button class="btn ghost" data-a="voltar">⬅️ Sair do jogo (volta para a biblioteca)</button>`;
     }
+    // O innerHTML inteiro é trocado a cada estado do servidor. Se o campo de busca da biblioteca
+    // estiver focado, guardamos o cursor antes de trocar o HTML e devolvemos o foco depois —
+    // senão a pessoa digitaria uma letra e o teclado fecharia sozinho a cada atualização.
+    const buscaFocada = document.activeElement && document.activeElement.id === 'lib-search';
+    const buscaSel = buscaFocada ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
     app.innerHTML = h;
     app.querySelectorAll('[data-a]').forEach(el => el.onclick = ev => { ev.stopPropagation(); act(el.dataset.a, el); });
     const n = $('#name'); if (n) n.oninput = () => { form.name = n.value; };
+    const buscaEl = $('#lib-search');
+    if (buscaEl) {
+      buscaEl.oninput = () => {
+        libSearch = buscaEl.value;
+        const res = $('#lib-results'); if (!res) return;
+        res.innerHTML = libResults(ctx);
+        res.querySelectorAll('[data-a]').forEach(el => el.onclick = ev => { ev.stopPropagation(); act(el.dataset.a, el); });
+      };
+      if (buscaFocada) {
+        buscaEl.focus();
+        if (buscaSel) buscaEl.setSelectionRange(buscaSel[0], buscaSel[1]);
+      }
+    }
     const impl = c.C.screen === 'game' ? A.games[c.C.gameId] : null;
     if (impl && impl.phone && impl.phone.after) impl.phone.after(c);
   }
@@ -185,6 +249,9 @@
       }
       case 'sair': if (confirm('Sair da sala? Você perde seu lugar na ordem.')) { A.send({ t: 'leave' }); form.color = null; A.saveForm(form); } return;
       case 'kick': if (confirm(`Tirar "${el.dataset.name}" da sala? Só faça isso se esse celular não vai voltar.`)) A.send({ t: 'kick', pid: el.dataset.pid }); return;
+      case 'lib-filtro': libFilter = el.dataset.k; saveLibPrefs(); return render(c);
+      case 'lib-sort': libSort = el.dataset.k; saveLibPrefs(); return render(c);
+      case 'lib-limpar': libSearch = ''; libFilter = 'todos'; libSort = 'padrao'; saveLibPrefs(); return render(c);
       case 'detalhes': selectedGameId = el.dataset.id; return render(c);
       case 'voltar-jogos': selectedGameId = null; return render(c);
       case 'jogar': return A.send({ t: 'play', id: el.dataset.id });
