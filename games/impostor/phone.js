@@ -128,7 +128,7 @@
           if (R.aborted) h += `<div class="big-emoji">🚪</div><h2 style="font-size:24px;margin-top:8px">Rodada encerrada</h2>`;
           else if (R.tie) h += `<div class="big-emoji">🤝</div><h2 style="font-size:24px;margin-top:8px">Empate!</h2><p class="sub" style="margin-top:6px">${R.over ? 'Empatou de novo: o impostor escapou.' : 'Ninguém eliminado. Mais 30 segundos de discussão.'}</p>`;
           else h += `<div class="big-emoji">${R.wasImp ? '🕵️' : '😬'}</div><h2 style="font-size:24px;margin-top:8px">${alvo ? esc(alvo.name) : '—'} ${R.wasImp ? 'ERA o impostor!' : 'não era o impostor.'}</h2>`;
-          h += `${G.word ? `<p class="sub" style="margin-top:10px">A palavra era <b style="font-size:22px">${esc(G.word)}</b></p>` : '<p class="sub mut" style="margin-top:10px">A palavra continua secreta.</p>'}
+          h += `${G.word ? `<p class="sub" style="margin-top:10px">A palavra era <b style="font-size:22px">${esc(G.word)}</b></p>` : `<p class="sub mut" style="margin-top:10px">${G.needGuess ? 'A palavra continua secreta: o impostor ainda pode adivinhar.' : 'A palavra continua secreta.'}</p>`}
             ${G.whiteWord ? `<p class="sub mut">o impostor tinha "${esc(G.whiteWord)}"</p>` : ''}
             ${(G.impostors || []).length ? `<p class="sub mut" style="margin-top:6px">Impostor: ${(G.impostors || []).map(p => c.nm(ply(c, p))).join(' ')}</p>` : ''}</div>
             <button class="btn big warn" data-a="next">${R.over ? 'Continuar ➡️' : 'Continuar a caçada ➡️'}</button>${listaDicas(c)}`;

@@ -24,6 +24,7 @@ window.addEventListener('error', function (e) {
   <div class="side" id="side"></div>
 </div>
 <div id="tvl-over"></div>
+<div id="tvqr"></div>
 <div class="conn" id="conn">conectando…</div>
 <div id="turnover"></div>
 <script src="/shared/client.js"></script>
@@ -32,8 +33,27 @@ window.addEventListener('error', function (e) {
 'use strict';
 (() => {
   const A = ARCADE, $ = A.$, esc = A.esc;
-  let mounted = null, activeView = null, lastScreen = null;
+  let mounted = null, activeView = null, lastScreen = null, qrKey = '';
   A.tvLobby.mount($('#lobby'));
+
+  // Menu de um jogo (fase "setup"): ainda dá para chamar mais gente, então o QR aparece num canto.
+  // Na partida ele some para não cobrir o jogo. O SVG só é refeito quando o endereço muda.
+  function joinCard(c) {
+    const el = $('#tvqr');
+    const G = c.G;
+    const on = c.C.screen === 'game' && !!G && G.phase === 'setup';
+    document.body.classList.toggle('tvqr-on', on);   // o painel da direita abre espaço para o cartão
+    if (!on) { el.className = ''; return; }
+    const nets = (c.meta.nets || []).filter(x => x.qr);
+    const key = c.room + '|' + nets.map(x => x.url).join('|');
+    if (key !== qrKey) {
+      qrKey = key;
+      el.innerHTML = `<div class="tvqr-k">Mais gente? Escaneie</div>
+        <div class="tvqr-qrs">${nets.map(x => `<div class="tvqr-qr">${x.qr}${nets.length > 1 ? `<div class="tvqr-label">${esc(x.label)}</div>` : ''}</div>`).join('')}</div>
+        <div class="tvqr-hint">ou digite o código <b>${esc(c.room || '')}</b></div>`;
+    }
+    el.className = 'on';
+  }
 
   // O palco (esquerda) pode ser fixo: o jogo monta uma vez com mount() e depois
   // só atualiza por dentro em after(). Sem mount(), o palco vem de html().stage.
@@ -47,6 +67,7 @@ window.addEventListener('error', function (e) {
     }
     // lobby (biblioteca) e jogo são raízes separadas: o lobby fica montado e só atualiza por dentro.
     document.body.dataset.screen = c.C.screen;
+    joinCard(c);
     if (c.C.screen === 'library') {
       mounted = null;
       if (lastScreen === 'game') A.tvLobby.backToLobby();

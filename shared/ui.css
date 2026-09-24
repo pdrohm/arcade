@@ -312,3 +312,23 @@ body.phone .lib-chip.sel { background:#f59e0b; color:#111; border-color:#f59e0b;
 body.phone .lib-count { margin:10px 0 0; }
 body.phone .lib-empty { text-align:center; }
 body.phone .lib-empty .btn { margin-top:12px; }
+
+/* QR da sala no celular (biblioteca): outro celular lê direto desta tela */
+body.phone .phone-qr-list { display:flex; flex-wrap:wrap; justify-content:center; gap:12px; }
+body.phone .phone-qr-item svg { display:block; width:220px; height:220px; margin:0 auto; border-radius:10px; background:#fff; }
+body.phone .phone-qr-item .sub { margin:6px 0 0; }
+body.phone .phone-qr > .sub { margin:12px 0; }
+body.phone .phone-qr-code { letter-spacing:.15em; font-size:18px; }
+
+/* QR na TV durante o menu de um jogo (fase "setup"): canto de baixo, à direita.
+   Some quando a partida começa. Chrome 47: sem var(), gap nem inset. */
+#tvqr { display:none; }
+body.tv[data-screen="game"] #tvqr.on { display:flex; flex-direction:column; align-items:center; position:fixed; right:20px; bottom:20px; z-index:40; padding:12px 14px 10px; border-radius:16px; background:#f6f1e7; color:#141a2b; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.45); }
+#tvqr .tvqr-k { font-size:17px; font-weight:800; }
+#tvqr .tvqr-qrs { display:flex; margin-top:8px; }
+#tvqr .tvqr-qr + .tvqr-qr { margin-left:10px; }
+#tvqr svg { display:block; width:150px; height:150px; border-radius:6px; }
+#tvqr .tvqr-label { font-size:12px; font-weight:800; color:#2b3550; margin-top:4px; }
+#tvqr .tvqr-hint { font-size:15px; font-weight:700; color:#4e5a78; margin-top:8px; }
+#tvqr .tvqr-hint b { color:#141a2b; letter-spacing:.12em; font-weight:900; }
+body.tv.tvqr-on[data-screen="game"] .side { padding-bottom:250px; }

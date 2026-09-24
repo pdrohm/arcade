@@ -300,8 +300,11 @@ function makeRoom(code) {
     join(ws, msg) {
       const c = clients.get(ws);
       const info = colorInfo(msg.color);
-      if (!info) return send(ws, { t: 'error', text: 'Cor inválida.' });
       c.type = 'phone';
+      // Entrada recusada: além do aviso, manda o estado da sala. Sem ele o celular fica sem tela
+      // (nunca recebeu a sala) e a pessoa não consegue escolher outra cor nem trocar o nome.
+      const recusa = text => { send(ws, { t: 'error', text }); send(ws, viewFor(c)); };
+      if (!info) return recusa('Cor inválida.');
       const claimPid = String(msg.pid || '').slice(0, 40);
       const claimSid = String(msg.sid || '').slice(0, 64);
       const name = String(msg.name || '').trim().slice(0, 20) || `Jogador ${core.players.length + 1}`;
@@ -321,8 +324,8 @@ function makeRoom(code) {
         if (i >= 0) { if (game && game.rekey) game.rekey(core.players[i].pid, c.pid); core.players[i].pid = c.pid; core.players[i].name = name; core.players[i].k = mkSecret(); }
       }
       if (i < 0) {
-        if (core.players.length >= MAX_PLAYERS_PER_ROOM) return send(ws, { t: 'error', text: 'A sala está cheia.' });
-        if (core.players.some(p => p.color === msg.color)) return send(ws, { t: 'error', text: 'Essa cor já tem dono. Escolha outra.' });
+        if (core.players.length >= MAX_PLAYERS_PER_ROOM) return recusa('A sala está cheia.');
+        if (core.players.some(p => p.color === msg.color)) return recusa('Essa cor já tem dono. Escolha outra.');
         core.players.push({ pid: c.pid, name, color: msg.color, on: true, k: mkSecret() });
         core.event = { text: `${name} entrou na sala.`, color: msg.color, at: Date.now() };
         if (game && game.onPlayerJoin) game.onPlayerJoin(core.players[core.players.length - 1]);

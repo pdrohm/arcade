@@ -37,6 +37,7 @@ module.exports = {
       'Escolha a variante: 🐧 Pinguins (dash no gelo) ou 🤠 Tiroteio (um tiro cada).',
       'Todo mundo aparece por alguns segundos. Decore onde cada um está.',
       'Depois os outros somem. Só você se vê. Arraste o dedo para escolher a direção (e, nos pinguins, a força do dash).',
+      'No tiroteio, um toque na arena anda até ali. No 3, 2, 1 o lugar fica fixo: só dá para mirar.',
       'Quer mais difícil? Desligue "mostrar todo mundo antes de cada rodada": só vale a memória.',
       'No 3, 2, 1… a ação acontece sozinha, para todos ao mesmo tempo.',
       'Pinguim que cai na água sai. Pistoleiro que leva tiro sai.',
@@ -225,7 +226,8 @@ module.exports = {
         const a = Number(msg.aim);
         if (!Number.isFinite(a) || Math.abs(a) > 1e4) return;
         s.aims[player.pid] = norm(a);
-        if (V().move && msg.mx !== undefined && msg.my !== undefined) {
+        // trocar de lugar só na fase de mira; no 3, 2, 1 o lugar fica fixo e só a mira muda
+        if (V().move && s.phase === 'aim' && msg.mx !== undefined && msg.my !== undefined) {
           const b = s.bodies.find(x => x.pid === player.pid);
           const m = b ? V().clampMove(b, { x: msg.mx, y: msg.my }, s.radius) : null;
           if (m) s.moves[player.pid] = m;

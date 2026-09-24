@@ -52,10 +52,6 @@ body.phone #udp-canvas { position:absolute; top:0; left:0; width:100%; height:10
 body.phone .udp-fab { position:absolute; top:max(10px, env(safe-area-inset-top)); left:10px; display:flex; gap:8px; z-index:2; }
 body.phone .udp-fab button { width:48px; height:48px; border-radius:50%; border:2px solid rgba(255,255,255,.55); background:rgba(11,14,23,.55); color:#fff; font-family:inherit; font-size:22px; font-weight:900; line-height:1; cursor:pointer; }
 body.phone .udp-bottom { position:absolute; left:0; right:0; bottom:0; z-index:2; padding:10px 10px max(12px, env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:10px; background:linear-gradient(180deg, rgba(11,14,23,0), rgba(11,14,23,.72) 40%); }
-body.phone .udp-mode { display:flex; gap:8px; }
-body.phone .udp-mode[hidden] { display:none; }
-body.phone .udp-mode button { flex:1; min-height:52px; border-radius:16px; border:2px solid rgba(255,255,255,.25); background:rgba(24,32,54,.9); color:#fff; font-family:inherit; font-size:18px; font-weight:900; }
-body.phone .udp-mode button.sel { background:#f59e0b; border-color:#fff; color:#111; }
 body.phone .udp-bar { display:flex; align-items:stretch; gap:10px; }
 body.phone .udp-bar[hidden] { display:none; }
 body.phone .udp-rot { flex:none; width:84px; min-height:84px; border:0; border-radius:20px; background:rgba(51,65,85,.9); color:#fff; font-family:inherit; font-size:40px; font-weight:900; line-height:1; touch-action:none; -webkit-user-select:none; user-select:none; }

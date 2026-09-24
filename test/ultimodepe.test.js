@@ -365,6 +365,21 @@ test('tiroteio sem espiar: ninguém muda de lugar entre rodadas (a memória vale
   assert.ok(pos);
 });
 
+test('tiroteio: no 3, 2, 1 o lugar fica fixo; só a mira ainda muda', () => {
+  const m = sala(2);
+  montar(m, 'shootout', [{ pid: 'p0', x: -4, y: 0, face: 0 }, { pid: 'p1', x: 4, y: 0, face: Math.PI }]);
+  m.tick();   // aim
+  const v = m.V('p1');
+  m.g.input(m.players[1], { t: 'input', matchId: v.matchId, round: v.round, aim: Math.PI, mx: 4, my: 2 });
+  const antes = m.V('p1').you.move;
+  assert.ok(antes && Math.hypot(antes.x - 4, antes.y - 2) < 1e-6, 'na fase de mira dá para andar');
+  m.until('ready');
+  m.g.input(m.players[1], { t: 'input', matchId: v.matchId, round: v.round, aim: Math.PI / 2, mx: 4, my: -2 });
+  const depois = m.V('p1').you;
+  assert.deepEqual(depois.move, antes, 'no 3, 2, 1 o lugar não muda');
+  assert.ok(Math.abs(depois.aim - Math.PI / 2) < 1e-6, 'no 3, 2, 1 a mira muda');
+});
+
 test('tiroteio: trocar de lugar escondido; o tiro sai do lugar novo; o destino é limitado', () => {
   const m = sala(2);
   montar(m, 'shootout', [{ pid: 'p0', x: -4, y: 0, face: 0 }, { pid: 'p1', x: 4, y: 0, face: Math.PI }]);

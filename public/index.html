@@ -29,7 +29,7 @@
 (() => {
   const A = ARCADE, $ = A.$, esc = A.esc;
   const app = $('#app');
-  let form = A.form(), pickTarget = null, ctx = null, selectedGameId = null;
+  let form = A.form(), pickTarget = null, ctx = null, selectedGameId = null, verQR = false;
   // Busca/filtro/ordenação da biblioteca (prateleira de jogos). Guardado em memória; filtro e
   // ordenação também vão pro localStorage (não a busca — cada visita começa sem texto digitado).
   let libSearch = '', libFilter = 'todos', libSort = 'padrao';
@@ -73,6 +73,9 @@
 
   function entrar(c) {
     const taken = k => c.C.players.find(p => p.color === k);
+    // A cor guardada neste celular pode ter ganho outro dono. Aí ela não vale mais:
+    // nada fica marcado e "Entrar" só libera depois de escolher uma cor livre.
+    if (form.color && taken(form.color)) { form.color = null; A.saveForm(form); }
     return `<div class="box"><h1>🕹️ Arcade da casa</h1><p class="sub mut" style="margin-top:6px">Sala <b>${esc(c.room)}</b> · Escolha sua cor. Ela é sua em todos os jogos.</p></div>
       <div class="box"><div class="colors">${c.meta.colors.map(col => {
         const t = taken(col.key);
@@ -92,7 +95,8 @@
 
     const chips = [['todos', 'Todos'], ['cabem', 'Cabem agora'], ['dupla', 'Dá para 2'], ['grupo', 'Só em grupo (3+)']];
     const sorts = [['padrao', 'Padrão'], ['az', 'A–Z'], ['jogadores', 'Nº de jogadores']];
-    return `<div class="box lib-tools">
+    return `${qrSala(c)}
+      <div class="box lib-tools">
         <input id="lib-search" class="lib-search" type="search" inputmode="search" placeholder="🔎 Buscar jogo…" value="${esc(libSearch)}" autocomplete="off" autocapitalize="off" spellcheck="false">
         <div class="lib-chips">${chips.map(([k, label]) => `<button class="lib-chip ${libFilter === k ? 'sel' : ''}" data-a="lib-filtro" data-k="${k}">${esc(label)}</button>`).join('')}</div>
         <div class="lib-sort"><span class="sub mut">Ordenar:</span>${sorts.map(([k, label]) => `<button class="lib-chip ${libSort === k ? 'sel' : ''}" data-a="lib-sort" data-k="${k}">${esc(label)}</button>`).join('')}</div>
@@ -104,6 +108,18 @@
       <button class="btn ghost" data-a="sair">Trocar de cor / sair da sala</button>
       <button class="btn ghost" data-a="trocar">🚪 Ir para outra sala</button>
       ${btnQR('Ler o QR code de outra TV')}`;
+  }
+
+  // QR da sala no próprio celular: quem chega aponta a câmera para a tela de quem já está dentro.
+  // O servidor já manda o SVG pronto (o mesmo da TV) em meta.nets.
+  function qrSala(c) {
+    if (!verQR) return `<button class="btn blue" data-a="ver-qr">📲 Chamar mais gente (QR da sala)</button>`;
+    const nets = (c.meta.nets || []).filter(x => x.qr);
+    return `<div class="box center phone-qr">
+        <div class="phone-qr-list">${nets.map(x => `<div class="phone-qr-item">${x.qr}${nets.length > 1 ? `<p class="sub">${esc(x.label)}</p>` : ''}</div>`).join('')}</div>
+        <p class="sub">${nets.length ? 'Aponte a câmera de outro celular para cá.' : ''} Ou digite o código <b class="phone-qr-code">${esc(c.room)}</b></p>
+        <button class="btn ghost" data-a="ver-qr">Esconder o QR</button>
+      </div>`;
   }
 
   // Contagem + prateleira filtrada. Separado da caixa de busca: digitar só troca isto aqui,
@@ -252,6 +268,7 @@
       case 'lib-filtro': libFilter = el.dataset.k; saveLibPrefs(); return render(c);
       case 'lib-sort': libSort = el.dataset.k; saveLibPrefs(); return render(c);
       case 'lib-limpar': libSearch = ''; libFilter = 'todos'; libSort = 'padrao'; saveLibPrefs(); return render(c);
+      case 'ver-qr': verQR = !verQR; return render(c);
       case 'detalhes': selectedGameId = el.dataset.id; return render(c);
       case 'voltar-jogos': selectedGameId = null; return render(c);
       case 'jogar': return A.send({ t: 'play', id: el.dataset.id });

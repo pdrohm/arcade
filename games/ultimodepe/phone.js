@@ -3,11 +3,14 @@
 // até o dedo é a FORÇA do dash (a seta mostra até onde você escorrega). Também dá para deslizar
 // na faixa de baixo ou segurar ⟲ ⟳. No computador: o mouse aponta; A/D e as setas giram;
 // W/S (↑/↓) mudam a força.
+// Tiroteio: TOCAR na arena anda até ali; ARRASTAR mira. No 3, 2, 1 o lugar fica fixo e
+// qualquer toque só mira.
 // O celular manda só ângulo e força (t:'input'). Nada de botão de ação: no fim do 3, 2, 1 o
 // servidor fecha as miras e resolve a rodada para todos ao mesmo tempo.
 (() => {
   const A = ARCADE;
   const AIMING = ['aim', 'ready'];
+  const TAP_PX = 12;   // até quanto o dedo pode escorregar e ainda contar como toque (andar)
   let context = null, renderer = null, pad = null, panelKey = '', loading = false;
 
   function css() {
@@ -41,25 +44,40 @@
   class AimPad {
     constructor(root) {
       this.root = root; this.canvas = root.querySelector('#udp-canvas'); this.dial = root.querySelector('#udp-dial');
-      this.aim = null; this.power = null; this.move = null; this.mode = 'aim'; this.roundKey = ''; this.gen = 0; this.pointer = null; this.hoverOk = false;
+      this.aim = null; this.power = null; this.move = null; this.roundKey = ''; this.gen = 0; this.pointer = null; this.hoverOk = false;
       this.rot = new Map(); this.pow = new Map(); this.lastSent = 0; this.pendingT = null; this.dead = false; this.lastPhase = '';
       this.abort = new AbortController(); const o = { signal: this.abort.signal };
       const unlock = () => { if (window.UDPSound) window.UDPSound.unlock(); };
       const cap = (el, id) => { try { el.setPointerCapture(id); } catch (err) { /* sem captura */ } };
       // arena: o personagem aponta para o dedo. Um dedo que já estava na tela ANTES de todos sumirem
       // não vale (senão dava para "marcar" alguém com o dedo parado durante o MEMORIZE).
+      // Tiroteio com o andar aberto: no toque ainda não dá para saber se é toque (andar) ou
+      // arrasto (mirar). Só decide quando o dedo mexe mais que TAP_PX ou quando solta.
       this.canvas.addEventListener('pointerdown', e => {
         unlock(); e.preventDefault();
-        this.pointer = { id: e.pointerId, gen: this.gen, kind: 'arena' }; cap(this.canvas, e.pointerId);
-        if (this.can()) this.pointAt(e);
+        this.pointer = { id: e.pointerId, gen: this.gen, kind: 'arena', x: e.clientX, y: e.clientY, drag: false }; cap(this.canvas, e.pointerId);
+        if (this.can() && !this.walkOpen()) this.pointAt(e);
       }, o);
       this.canvas.addEventListener('pointermove', e => {
-        if (this.pointer && this.pointer.id === e.pointerId) { if (this.pointer.gen === this.gen && this.can()) this.pointAt(e); return; }
+        const p = this.pointer;
+        if (p && p.id === e.pointerId) {
+          if (p.gen !== this.gen || !this.can()) return;
+          if (this.walkOpen() && !p.drag) { if (Math.hypot(e.clientX - p.x, e.clientY - p.y) < TAP_PX) return; p.drag = true; }
+          this.pointAt(e);
+          return;
+        }
         // mouse sem clicar: aponta também, mas só depois de mexer já na fase de mira
         if (e.pointerType === 'mouse' && !e.buttons && this.can()) { if (this.hoverOk) this.pointAt(e); else this.hoverOk = true; }
       }, o);
       const release = e => { if (this.pointer && this.pointer.id === e.pointerId) this.pointer = null; };
-      for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) this.canvas.addEventListener(t, release, o);
+      // soltou sem arrastar: foi um toque. Com o andar aberto, anda até ali.
+      this.canvas.addEventListener('pointerup', e => {
+        const p = this.pointer; if (!p || p.id !== e.pointerId) return;
+        this.pointer = null;
+        if (p.gen !== this.gen || p.drag || !this.can()) return;
+        if (this.walkOpen()) this.walkTo(e); else this.pointAt(e);
+      }, o);
+      for (const t of ['pointercancel', 'lostpointercapture']) this.canvas.addEventListener(t, release, o);
       // faixa de baixo: deslizar para o lado gira; para cima/baixo muda a força
       this.dial.addEventListener('pointerdown', e => { unlock(); e.preventDefault(); this.pointer = { id: e.pointerId, gen: this.gen, kind: 'dial', x: e.clientX, y: e.clientY }; cap(this.dial, e.pointerId); }, o);
       this.dial.addEventListener('pointermove', e => {
@@ -70,8 +88,6 @@
         this.set(this.aim + dx * .012);
       }, o);
       for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) this.dial.addEventListener(t, release, o);
-      // Tiroteio: 🎯 mirar ou 🏃 andar (tocar na arena escolhe o lugar novo)
-      for (const b of root.querySelectorAll('[data-mode]')) b.addEventListener('click', e => { e.stopPropagation(); unlock(); this.mode = b.dataset.mode; this.paint(); if (context) status(context); }, o);
       // ⟲ ⟳ seguram e giram
       for (const b of root.querySelectorAll('[data-rot]')) {
         b.addEventListener('pointerdown', e => { unlock(); e.preventDefault(); cap(b, e.pointerId); this.rot.set('p' + e.pointerId, Number(b.dataset.rot)); b.classList.add('held'); }, o);
@@ -110,6 +126,8 @@
       if (G.phase === 'ready') { const l = left(context); if (l !== null && l < 40) return false; }   // o JÁ! local fecha a mira
       return true;
     }
+    // Tiroteio: dá para trocar de lugar só na fase de mira. No 3, 2, 1 o lugar fica fixo.
+    walkOpen() { const G = context && context.G; return !!(G && G.canMove && G.phase === 'aim' && this.can()); }
     sync(c) {
       const G = c.G;
       if (['aim', 'ready', 'lock'].includes(G.phase) && G.you && G.you.alive) {
@@ -120,7 +138,6 @@
           this.aim = Number.isFinite(G.you.aim) ? G.you.aim : b ? b.face : 0;
           this.power = G.power ? (Number.isFinite(G.you.power) ? G.you.power : .8) : null;
           this.move = G.canMove && G.you.move ? { x: G.you.move.x, y: G.you.move.y } : null;
-          this.mode = 'aim';
         }
       }
       if (G.phase !== this.lastPhase) {
@@ -131,19 +148,23 @@
     }
     // onde você está nesta rodada: o lugar novo escolhido (tiroteio) ou o de sempre
     at() { const b = ownBody(context.G); return b && this.move ? { x: this.move.x, y: this.move.y } : b; }
+    world(e) { const r = this.canvas.getBoundingClientRect(); return renderer.toWorld(e.clientX - r.left, e.clientY - r.top); }
+    // Tiroteio: anda até o ponto tocado. Mesma regra do servidor: até moveMax de onde você
+    // estava, e dentro da cerca. Tocar em você mesmo volta para o lugar de sempre.
+    walkTo(e) {
+      const G = context.G, b0 = ownBody(G); if (!b0 || !renderer) return;
+      const w = this.world(e);
+      let x = w.x, y = w.y; const mx = x - b0.x, my = y - b0.y, md = Math.hypot(mx, my), max = G.moveMax || 4.5;
+      if (md > max) { x = b0.x + mx / md * max; y = b0.y + my / md * max; }
+      const lim = G.radius - G.body * 1.5, e2 = Math.hypot(x, y);
+      if (e2 > lim) { x = x / e2 * lim; y = y / e2 * lim; }
+      this.move = Math.hypot(x - b0.x, y - b0.y) < .3 ? null : { x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 };
+      vibrate(10);
+      this.set(this.aim);
+    }
     pointAt(e) {
       const G = context.G, b0 = ownBody(G); if (!b0 || !renderer) return;
-      const r = this.canvas.getBoundingClientRect(), w = renderer.toWorld(e.clientX - r.left, e.clientY - r.top);
-      if (this.mode === 'move' && G.canMove) {
-        // mesma regra do servidor: até moveMax de onde você estava, e dentro da cerca
-        let x = w.x, y = w.y; const mx = x - b0.x, my = y - b0.y, md = Math.hypot(mx, my), max = G.moveMax || 4.5;
-        if (md > max) { x = b0.x + mx / md * max; y = b0.y + my / md * max; }
-        const lim = G.radius - G.body * 1.5, e2 = Math.hypot(x, y);
-        if (e2 > lim) { x = x / e2 * lim; y = y / e2 * lim; }
-        this.move = Math.hypot(x - b0.x, y - b0.y) < .3 ? null : { x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 };
-        this.set(this.aim);
-        return;
-      }
+      const w = this.world(e);
       const b = this.at();
       const dx = w.x - b.x, dy = w.y - b.y, d = Math.hypot(dx, dy);
       if (d < .5) return;
@@ -170,11 +191,6 @@
       const ok = this.can();
       for (const b of this.root.querySelectorAll('[data-rot]')) b.disabled = !ok;
       this.dial.classList.toggle('on', ok);
-      const G = context && context.G, box = this.root.querySelector('#udp-mode');
-      if (box) {
-        box.hidden = !(G && G.canMove && ok);
-        for (const b of box.querySelectorAll('[data-mode]')) b.classList.toggle('sel', b.dataset.mode === this.mode);
-      }
     }
     destroy() { this.dead = true; this.abort.abort(); cancelAnimationFrame(this.raf); clearInterval(this.beat); clearTimeout(this.pendingT); }
   }
@@ -188,7 +204,7 @@
       <div class="udp-variants">${v('penguins', '🐧', 'PINGUINS', 'dash no gelo')}${v('shootout', '🤠', 'TIROTEIO', 'um tiro cada')}</div>
       <div class="box"><p class="sub">${peng
         ? 'Todo mundo aparece por alguns segundos. Depois os outros somem: você arrasta o dedo para escolher a <b>direção</b> e a <b>força</b> e, no <b>JÁ!</b>, todos os pinguins dão um dash juntos. Bateu, empurrou. Caiu na água, saiu.'
-        : 'Todo mundo aparece por alguns segundos. Depois os outros somem: você mira de memória e, no <b>FOGO!</b>, todos atiram juntos. Levou tiro, saiu. Dois se acertando caem juntos.'}</p>
+        : 'Todo mundo aparece por alguns segundos. Depois os outros somem: <b>toque</b> para andar até um lugar novo e <b>arraste</b> para mirar de memória. No 3, 2, 1 o lugar fica fixo e só dá para mirar. No <b>FOGO!</b>, todos atiram juntos. Levou tiro, saiu. Dois se acertando caem juntos.'}</p>
         <p class="sub mut" style="margin-top:8px">O último de pé vence. Se todos os que restam saem juntos, eles jogam um desempate.</p></div>
       <button class="udp-toggle ${G.showOthers ? 'on' : ''}" data-a="udp-show" ${host ? '' : 'disabled'} aria-pressed="${G.showOthers}">
         <span class="sw"><i></i></span><span><b>👀 Mostrar todo mundo antes de cada rodada</b><small>${G.showOthers ? 'Ligado: MEMORIZE de alguns segundos no começo de cada rodada.' : 'Desligado: ninguém aparece antes. Só a memória da rodada anterior.'}</small></span>
@@ -209,7 +225,6 @@
         ${fs ? '<button data-a="udp-fs" aria-label="Tela cheia">⛶</button>' : ''}
       </div>
       <div class="udp-bottom" id="udp-bottom">
-        <div class="udp-mode" id="udp-mode" hidden><button data-mode="aim">🎯 Mirar</button><button data-mode="move">🏃 Andar</button></div>
         <div class="udp-bar" id="udp-bar">
           <button class="udp-rot" data-rot="-1" aria-label="Girar para a esquerda">↺</button>
           <div class="udp-dial" id="udp-dial"><b id="udp-status">…</b><small id="udp-sub"></small></div>
@@ -228,8 +243,8 @@
     else switch (G.phase) {
       case 'intro': a = 'Prepare-se!'; b = 'Leia as regras na tela'; break;
       case 'reveal': a = G.blind ? 'Sem espiar!' : G.tiebreak ? 'DESEMPATE! Memorize' : 'MEMORIZE!'; b = G.blind ? 'Lembre da rodada anterior' : 'Decore onde cada um está'; break;
-      case 'aim': a = peng ? 'Arraste: direção e força' : pad && pad.mode === 'move' ? 'Toque onde quer ficar' : 'Arraste na arena para mirar'; b = peng ? 'longe = forte · perto = fraco' : '🏃 Andar troca de lugar · 🎯 Mirar aponta'; break;
-      case 'ready': a = 'Prepare-se… 3, 2, 1'; b = 'Ainda dá para ajustar'; break;
+      case 'aim': a = peng ? 'Arraste: direção e força' : '🏃 Toque: andar · 🎯 Arraste: mirar'; b = peng ? 'longe = forte · perto = fraco' : 'No 3, 2, 1 só dá para mirar'; break;
+      case 'ready': a = 'Prepare-se… 3, 2, 1'; b = peng ? 'Ainda dá para ajustar' : 'Lugar fixo: agora só mirar'; break;
       case 'lock': case 'action': a = peng ? 'JÁ!' : 'FOGO!'; b = ''; break;
       case 'result': {
         const r = G.result || { out: [] };
@@ -275,7 +290,7 @@
         left: () => left(context),
         aim: () => (pad ? pad.aim : null),
         move: () => (pad ? pad.move : null),
-        mode: () => (pad ? pad.mode : 'aim'),
+        mode: () => (pad && pad.walkOpen() ? 'move' : 'aim'),
         power: () => (pad ? pad.power : null),
         // a arena desenha acima dos controles de baixo
         insetBottom: () => { const b = document.getElementById('udp-bottom'); return b ? b.offsetHeight + 10 : 150; },

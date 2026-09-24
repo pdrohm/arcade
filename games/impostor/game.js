@@ -48,7 +48,10 @@ module.exports = {
     const nameOf = pid => { const p = api.byPid(pid); return p ? p.name : 'Alguém'; };
     const maxImp = () => MAX_IMP(api.players.length);
     const nImp = () => Math.min(Math.max(1, Number(s.cfg.impostors) || 1), maxImp());
-    const revealed = () => ['guess', 'scores', 'end'].includes(s.phase) || (s.phase === 'result' && !!s.result && !!s.result.over);   // a palavra só sai quando a rodada acaba
+    const revealed = () => ['guess', 'scores', 'end'].includes(s.phase) || (s.phase === 'result' && !!s.result && !!s.result.over);   // quem era o impostor sai quando a rodada acaba
+    // A palavra (e a categoria) só saem quando o impostor não tem mais chance de chutar. Se ele foi
+    // pego, a TV fica sem a palavra no resultado e na chance final: ela só aparece depois do chute.
+    const wordOpen = () => ['scores', 'end'].includes(s.phase) || (s.phase === 'result' && !!s.result && !!s.result.over && !s.needGuess);
     const maioria = n => Math.floor(n / 2) + 1;
 
     // ---------- rodada ----------
@@ -284,20 +287,20 @@ module.exports = {
         if (s.turn >= totalTurns() && s.phase === 'clues') startDiscuss(s.cfg.discussSec * 1000);
       },
       view(me) {
-        const rev = revealed();
+        const rev = revealed(), open = wordOpen();
         const out = {
           phase: s.phase, round: s.round, rounds: s.cfg.rounds,
           cfg: { ...s.cfg, impostorsReal: nImp(), maxImp: maxImp() },
           cats: CATEGORIES,
-          cat: (s.cfg.hint || rev) && s.phase !== 'setup' ? { id: s.cat, name: catName(s.cat), emoji: (CATEGORIES.find(c => c.id === s.cat) || {}).emoji } : null,
+          cat: (s.cfg.hint || open) && s.phase !== 'setup' ? { id: s.cat, name: catName(s.cat), emoji: (CATEGORIES.find(c => c.id === s.cat) || {}).emoji } : null,
           seen: s.seen, order: s.order, clues: s.clues, turn: s.turn, laps: s.cfg.laps,
           speaker: speaker(), totalTurns: totalTurns(),
           endVotes: s.endVotes, voted: Object.keys(s.votes).filter(x => alive().includes(x)),
           out: s.out, revote: s.revote, result: s.result, guess: s.guess,
           needGuess: !!s.needGuess, gain: s.gain || {}, scores: s.scores,
           turnMs: s.discussMs, alive: alive(),
-          word: rev ? s.word : null,                       // a TV só vê a palavra no resultado
-          whiteWord: rev && s.cfg.white ? s.white : null,
+          word: open ? s.word : null,                      // a TV só vê a palavra quando o impostor não pode mais chutar
+          whiteWord: open && s.cfg.white ? s.white : null,
           impostors: rev ? s.impostors : null,
           nAlive: alive().length, need: maioria(alive().length),
         };
