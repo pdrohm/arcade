@@ -68,6 +68,7 @@ const clampPower = p => (Number.isFinite(p) ? Math.max(P.POWER_MIN, Math.min(1, 
 const penguins = {
   id: 'penguins',
   R0: P.R0, BODY: P.BODY,
+  reshuffles: false,               // as posições continuam de onde pararam: o resultado já mostrou este tabuleiro
   power: true, POWER_MIN: P.POWER_MIN, POWER_DEF: P.POWER_DEF, clampPower,
   // alcance do dash por força (a seta do chão mostra até onde você vai): [[força, distância], …]
   reach: reachFor(1),
@@ -193,6 +194,7 @@ function toEdge(ox, oy, dx, dy, radius) {
 const shootout = {
   id: 'shootout',
   R0: S.R0, BODY: S.BODY, HIT: S.HIT, BULLET: S.BULLET,
+  reshuffles: true,                // cada rodada espalha todo mundo de novo: o MEMORIZE é informação nova
   move: true, MOVE: S.MOVE,
   // destino pedido pelo celular → destino válido: no máximo MOVE de onde você estava e dentro da cerca
   clampMove(from, to, radius) {

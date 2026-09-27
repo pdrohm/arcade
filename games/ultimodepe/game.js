@@ -20,8 +20,23 @@ const { VARIANTS, rng, seedOf, norm } = require('./rules');
 
 // Tempos das fases (ms). ULTIMO_TIME_SCALE acelera tudo nos testes.
 const SCALE = Number(process.env.ULTIMO_TIME_SCALE) || 1;
-const T = { intro: 5600, reveal: 3200, revealFirst: 4200, revealBlind: 1600, aim: 5200, ready: 3000, lock: 260, result: 2300, resultEnd: 2600 };
+const T = { intro: 5600, revealBlind: 1600, aim: 5200, ready: 3000, lock: 260, result: 1800, resultEnd: 2600 };
 const ms = k => Math.max(15, Math.round(T[k] * SCALE));
+// Quanto dura o MEMORIZE. Duas coisas encurtam esta fase:
+//   1. a mesa diminui — decorar 8 posições não é decorar 2, e o tempo acompanha;
+//   2. o resultado da rodada anterior já deixou o tabuleiro à vista por T.result antes daqui.
+// Daí os três tamanhos:
+//   first — 1ª rodada da partida ou desempate: ninguém viu nada ainda, ganha um respiro;
+//   full  — tabuleiro novo (o tiroteio reembaralha as posições a cada rodada);
+//   again — o mesmo tabuleiro que o resultado acabou de mostrar (pinguins): só uma conferida.
+const REVEAL = { base: 700, per: 330, cap: 3200, firstExtra: 700, againPct: .45, againMin: 900 };
+function revealMs(n, kind) {
+  const full = Math.min(REVEAL.cap, REVEAL.base + REVEAL.per * Math.max(2, n));
+  const raw = kind === 'first' ? full + REVEAL.firstExtra
+    : kind === 'again' ? Math.max(REVEAL.againMin, Math.round(full * REVEAL.againPct))
+    : full;
+  return Math.max(15, Math.round(raw * SCALE));
+}
 const MAX_PLAYERS = 8, MAX_ROUNDS = 24, MAX_TIES = 3;
 const HIDDEN = ['aim', 'ready', 'lock'];          // fases em que ninguém vê ninguém
 const AIMING = ['aim', 'ready', 'lock'];          // fases em que a mira ainda pode mudar (lock = folga do ping)
@@ -108,7 +123,9 @@ module.exports = {
       resetAims();
       s.action = null; s.result = null;
       // Sem MEMORIZE (opção desligada): a fase existe só como abertura curta da rodada, sem ninguém à vista.
-      go('reveal', !s.showOthers ? 'revealBlind' : s.round === 1 ? 'revealFirst' : 'reveal');
+      if (!s.showOthers) return go('reveal', 'revealBlind');
+      const estreia = s.round === 1 || tiebreak;                 // tabuleiro que ninguém viu ainda
+      go('reveal', revealMs(s.alive.length, estreia ? 'first' : V().reshuffles ? 'full' : 'again'));
     }
     function resetAims() {
       s.aims = {}; s.powers = {}; s.moves = {};

@@ -235,6 +235,10 @@ a ação acontece para todos no mesmo instante. Latência e clique rápido não 
 
 - **Rodada:** MEMORIZE (todo mundo à vista) → os outros somem, só você se vê → escolha a
   direção → 3, 2, 1 → **JÁ!** (pinguins) ou **FOGO!** (tiroteio) → resultado → próxima rodada.
+- **O MEMORIZE acompanha o ritmo da mesa:** decorar oito posições não é decorar duas, então a
+  fase encurta conforme o povo cai. E, quando o resultado acabou de mostrar o mesmo tabuleiro
+  (pinguins, que não embaralham), ela vira só uma conferida — o tiroteio, que espalha todo mundo
+  de novo a cada rodada, mantém a janela inteira.
 - **🐧 Pinguins:** arraste o dedo na arena. A direção é para onde você aponta; a **força** é a
   distância até o dedo (a seta mostra até onde você escorrega). Bateu, empurrou; caiu na água, saiu.
   O gelo derrete um pouco a cada rodada.

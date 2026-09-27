@@ -517,3 +517,34 @@ test('partida inteira por WebSocket: TV + 3 celulares, sem vazar posição escon
   a.send({ t: 'quit' });
   await until(() => a.core.screen === 'library');
 });
+
+// ---------- tempo do MEMORIZE ----------
+
+test('MEMORIZE encolhe junto com a mesa: 8 na arena dá mais tempo que 2', () => {
+  const tempo = n => {
+    const m = sala(n);
+    m.g.action(m.players[0], { t: 'udp-start' });
+    m.until('reveal');
+    return m.V('p0').phaseMs;
+  };
+  const oito = tempo(8), dois = tempo(2);
+  assert.ok(oito > dois, `8 jogadores (${oito}ms) devia dar mais tempo que 2 (${dois}ms)`);
+  assert.ok(oito <= 4200, 'nunca mais longo que o tempo fixo de antes: ' + oito + 'ms');
+});
+
+test('MEMORIZE: pinguins repetem o tabuleiro do resultado (conferida curta); tiroteio reembaralha (janela cheia)', () => {
+  const tempo = variant => {
+    const m = sala(4);
+    const pids = m.players.map(p => p.pid);
+    const bodies = VARIANTS[variant].spawn(pids, VARIANTS[variant].R0, rng(7));
+    montar(m, variant, bodies, { round: 2, phase: 'result', result: { out: [], tie: false, none: true } });
+    assert.equal(m.V('p0').phase, 'result');
+    m.tick();                                   // fim do resultado -> MEMORIZE da rodada seguinte
+    assert.equal(m.V('p0').phase, 'reveal');
+    return m.V('p0').phaseMs;
+  };
+  const peng = tempo('penguins'), tiro = tempo('shootout');
+  assert.ok(peng < tiro, `pinguins (${peng}ms) devia ser mais curto que tiroteio (${tiro}ms)`);
+  assert.ok(peng <= 1200, 'tabuleiro repetido pede só uma conferida: ' + peng + 'ms');
+  assert.ok(tiro >= 1500, 'tabuleiro novo precisa de janela de verdade: ' + tiro + 'ms');
+});
