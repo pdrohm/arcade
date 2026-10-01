@@ -69,7 +69,7 @@ module.exports = {
       return {
         phase: 'setup', variant, matchId: crypto.randomUUID(),
         showOthers: showOthers !== false,   // opção da preparação: mostrar todo mundo antes de cada rodada (MEMORIZE)
-        roster: [],            // [{ pid, name, color }] quem está na disputa (fixo durante a partida)
+        roster: [],            // [{ pid, name, color, av }] quem está na disputa (fixo durante a partida); av = boneco da pessoa
         alive: [],             // pids vivos
         outList: [],           // [{ pid, round }] na ordem em que saíram
         bodies: [],            // [{ pid, x, y, face }] posições atuais dos vivos
@@ -92,13 +92,14 @@ module.exports = {
     const hexOf = key => { const c = api.colorInfo(key); return c ? c.hex : '#94a3b8'; };
     const roundRnd = tag => rng(seedOf(s.matchId + ':' + s.round + ':' + tag));
     function go(phase, key) { s.phase = phase; s.phaseMs = typeof key === 'number' ? key : ms(key); api.armTimer(s.phaseMs); }
-    function syncNames() { for (const p of s.roster) { const live = api.byPid(p.pid); if (live) { p.name = live.name; p.color = hexOf(live.color); } } }
+    const avOf = p => (p && Array.isArray(p.av) ? p.av.slice() : null);
+    function syncNames() { for (const p of s.roster) { const live = api.byPid(p.pid); if (live) { p.name = live.name; p.color = hexOf(live.color); p.av = avOf(live); } } }
 
     // ---------- partida ----------
     function begin() {
       const variant = s.variant;
       s = fresh(variant, s.showOthers);
-      s.roster = api.players.slice(0, MAX_PLAYERS).map(p => ({ pid: p.pid, name: p.name, color: hexOf(p.color) }));
+      s.roster = api.players.slice(0, MAX_PLAYERS).map(p => ({ pid: p.pid, name: p.name, color: hexOf(p.color), av: avOf(p) }));
       s.alive = s.roster.map(p => p.pid);
       s.round = 0;
       s.base = V().base(s.alive.length);
@@ -199,7 +200,7 @@ module.exports = {
       return {
         variant: s.variant, phase: s.phase, matchId: s.matchId, round: s.round,
         hostPid: hostPid(), phaseMs: s.phaseMs, showOthers: s.showOthers, blind: hidden, tiebreak: s.tiebreak, tie: s.tie, shrunk: s.shrunk, ending: !!s.ending,
-        roster: s.roster.map(p => ({ pid: p.pid, name: p.name, color: p.color, alive: s.alive.includes(p.pid), gone: !api.byPid(p.pid) })),
+        roster: s.roster.map(p => ({ pid: p.pid, name: p.name, color: p.color, av: p.av || null, alive: s.alive.includes(p.pid), gone: !api.byPid(p.pid) })),
         alive: s.alive.slice(),
         radius: s.radius, R0: s.base || V0.R0, zoom: (s.base || V0.R0) / V0.R0, body: V0.BODY, reach: V0.reach || null,
         canMove: !!V0.move, moveMax: V0.MOVE || null,

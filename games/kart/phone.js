@@ -10,6 +10,7 @@
   }
   const I = () => window.KartIcons;
   const portrait = (i, color, cls = 'ks-portrait') => `<span class="${cls}" style="background:${I() ? I().driverBg(i) : '#cfe2ee'}">${I() ? I().driver(i, color) : ''}</span>`;
+  const face = (c, p, px) => { const q = (c.C.players || []).find(x => x.pid === p.pid); return c.avatar && q ? c.avatar(q, px) : ''; };
   const misc = name => I() ? I().misc(name) : '';
   const mine = c => c.G.roster.find(p => c.you && p.pid === c.you.pid);
   const driving = c => ['loading', 'countdown', 'playing'].includes(c.G.phase) && !!mine(c);
@@ -70,15 +71,25 @@
       }, options);
       this.orientation(); this.interval = setInterval(() => this.request(), HEARTBEAT);
     }
-    available() { return !this.dead && this.connected && this.focused && !document.hidden && !this.portrait && this.root.isConnected; }
+    available() { return !this.dead && this.connected && this.focused && !document.hidden && this.root.isConnected; }
     current() { return context && driving(context) && context.G.matchId === this.matchId; }
+    // Em pé também dá para pilotar (o controle se arruma na vertical). Só um aviso curto de que deitado é
+    // mais confortável; some sozinho ou com um toque. Girar o celular solta o que estava apertado.
     orientation() {
       const portrait = this.coarse.matches && !this.landscape.matches;
-      if (portrait !== this.portrait) { this.portrait = portrait; this.clear(); }
-      this.root.classList.toggle('needs-rotation', portrait);
-      this.root.querySelector('.kart-gamepad').hidden = portrait;
-      this.root.querySelector('.kart-rotate').hidden = !portrait;
+      if (portrait !== this.portrait) { this.portrait = portrait; this.clear(); this.tip(portrait); }
+      this.root.classList.toggle('portrait', portrait);
       this.request();
+    }
+    tip(show) {
+      const el = this.root.querySelector('.kart-tip');
+      if (!el) return;
+      clearTimeout(this.tipT);
+      el.hidden = !show || this.tipSeen;
+      if (el.hidden) return;
+      this.tipSeen = true;   // uma vez por partida basta
+      el.onclick = () => { el.hidden = true; };
+      this.tipT = setTimeout(() => { el.hidden = true; }, 4500);
     }
     setConnected(on) {
       if (this.connected === on) return;
@@ -163,7 +174,7 @@
     const g = c.G, p = mine(c), host = c.you.pid === g.hostPid;
     const mode = `<div class="ks-block"><h3 class="ks-title">Disputa <small>${host ? 'você escolhe' : 'o primeiro piloto escolhe'}</small></h3><div class="ks-modes">${[['race', 'flag', 'CORRIDA', '3 voltas · ' + TRACKS.race], ['battle', 'burst', 'BATALHA', '2 minutos · ' + TRACKS.battle]].map(([id, icon, label, sub]) => `<button class="ks-mode ${id} ${g.mode === id ? 'sel' : ''}" data-a="kart-mode" data-mode="${id}" aria-pressed="${g.mode === id}" ${host ? '' : 'disabled'}>${misc(icon)}<b>${label}</b><small>${sub}</small></button>`).join('')}</div></div>`;
     const logo = `<div class="ks-logo"><small>Arcade</small><b>Kart</b></div>`;
-    const roster = `<div class="ks-block ks-roster"><h3 class="ks-title">Pilotos <small>${g.roster.length}/4</small></h3>${g.roster.map(x => `<p>${portrait(x.driver, x.color)}<span class="nm">${c.esc(x.name)}</span><i style="background:${c.esc(x.color)}"></i><span class="ks-tag ${x.ready ? 'ready' : 'wait'}">${x.ready ? 'pronto' : 'escolhendo…'}</span></p>`).join('')}</div>`;
+    const roster = `<div class="ks-block ks-roster"><h3 class="ks-title">Pilotos <small>${g.roster.length}/4</small></h3>${g.roster.map(x => `<p>${portrait(x.driver, x.color)}${face(c, x, 28)}<span class="nm">${c.esc(x.name)}</span><span class="ks-tag ${x.ready ? 'ready' : 'wait'}">${x.ready ? 'pronto' : 'escolhendo…'}</span></p>`).join('')}</div>`;
     if (!p) return `<section class="kart-ui kart-setup">${logo}<p class="ks-sub">Na torcida · você continua nesta sala</p>${mode}${roster}<button class="ks-btn go" data-a="kart-seat" ${g.roster.length >= 4 ? 'disabled' : ''}>${misc('flag')}Entrar na largada</button><p class="ks-note">Até 4 pilotos por partida.</p></section>`;
     return `<section class="kart-ui kart-setup">${logo}<p class="ks-sub">Seu celular é o volante</p>${mode}
       <div class="ks-block"><h3 class="ks-title">Seu piloto</h3><div class="ks-grid">${g.drivers.map((name, i) => `<button class="ks-choice ${p.driver === i ? 'sel' : ''}" data-a="kart-driver" data-value="${i}" aria-pressed="${p.driver === i}">${portrait(i, p.color)}<b>${c.esc(name)}</b></button>`).join('')}</div></div>
@@ -177,9 +188,9 @@
   }
   function controls(c) {
     const p = mine(c);
-    const pad = window.KartGamepad ? window.KartGamepad.html({ player: portrait(p.driver, p.color) + c.esc(p.name) }) : '<p>Carregando controle…</p>';
+    const pad = window.KartGamepad ? window.KartGamepad.html({ player: portrait(p.driver, p.color) + face(c, p, 22) + c.esc(p.name) }) : '<p>Carregando controle…</p>';
     return `<section class="kart-controller kart-ui" id="kart-controller" aria-label="Controle do kart" style="--player-color:${c.esc(p.color)}">
-      <div class="kart-rotate" hidden role="status"><div class="kart-rotate-phone" aria-hidden="true">▰</div><h2>Vire o celular</h2><p>Use o celular na horizontal para pilotar.</p></div>
+      <div class="kart-tip" hidden role="status"><span class="kart-tip-phone" aria-hidden="true"></span><b>Dica: deitado fica mais confortável</b><small>Mas dá para jogar assim mesmo. Toque para fechar.</small></div>
       <div class="kart-conn" hidden role="alert"><h2>Conexão perdida</h2><p>Reconectando…</p></div>
       ${pad}
     </section>`;
@@ -207,7 +218,7 @@
     const info = p => battle ? `${p.kills || 0} KO${p.kills === 1 ? '' : 's'}` : p.finished ? `${Math.floor(p.finishTime / 60)}:${String(Math.floor(p.finishTime % 60)).padStart(2, '0')}.${Math.floor(p.finishTime % 1 * 10)}` : `${p.lap} volta${p.lap === 1 ? '' : 's'}`;
     const driverOf = p => (g.roster.find(x => x.pid === p.pid) || {}).driver || 0;
     return `<section class="kart-ui kart-setup"><div class="ks-logo"><small>Resultado</small><b>Kart</b></div><p class="ks-sub">${battle ? 'Fim da batalha' : 'Fim da corrida'} · ${TRACKS[g.mode]}</p>
-      <div class="ks-block ks-podium">${results.map((p, i) => `<div class="ks-place p${i + 1} ${p.pid === c.you.pid ? 'me' : ''}"><span class="ks-n">${i + 1}º</span>${portrait(driverOf(p), p.color)}<b>${c.esc(p.name || (g.roster.find(x => x.pid === p.pid) || {}).name || 'Piloto')}</b><small>${info(p)}</small></div>`).join('')}</div>
+      <div class="ks-block ks-podium">${results.map((p, i) => `<div class="ks-place p${i + 1} ${p.pid === c.you.pid ? 'me' : ''}"><span class="ks-n">${i + 1}º</span>${portrait(driverOf(p), p.color)}${face(c, p, 28)}<b>${c.esc(p.name || (g.roster.find(x => x.pid === p.pid) || {}).name || 'Piloto')}</b><small>${info(p)}</small></div>`).join('')}</div>
       ${c.you.pid === g.hostPid ? `<button class="ks-btn go" data-a="kart-again">${misc('flag')}Jogar de novo</button>` : '<p class="ks-note">O primeiro piloto pode iniciar outra partida.</p>'}</section>`;
   }
   A.register('kart', { phone: {

@@ -59,7 +59,7 @@
               <div class="ps-opt"><div class="ps-o ${cfg.auto ? 'sel' : ''}" data-a="cfgAuto" data-v="1">🎲 Sorteio</div><div class="ps-o ${cfg.auto ? '' : 'sel'}" data-a="cfgAuto" data-v="0">✋ Escolher</div></div></div>
             ${cfg.auto ? '' : `<div class="box"><p class="sub" style="margin-bottom:8px">Toque no seu time</p>
               <div class="ps-teams">${G.teams.map((t, i) => `<div class="ps-team ${meuTime === i ? 'sel' : ''}" style="background:${col(i)}" data-a="time" data-i="${i}">${tname(i)}
-                <small>${t.players.map(pid => { const p = ply(pid); return p ? esc(p.name) : ''; }).filter(Boolean).join(', ') || 'vazio'}</small></div>`).join('')}</div></div>`}
+                <small>${t.players.map(pid => { const p = ply(pid); return p ? c.avatar(p, 22) + ' ' + esc(p.name) : ''; }).filter(Boolean).join(' · ') || 'vazio'}</small></div>`).join('')}</div></div>`}
             <div class="box"><p class="sub" style="margin-bottom:8px">Rodadas <span class="mut">(cada time joga uma vez por rodada)</span></p>${opt('cfgRounds', G.roundOpts, cfg.rounds)}</div>
             <div class="box"><p class="sub" style="margin-bottom:8px">Tempo por vez</p>${opt('cfgTime', G.timeOpts, cfg.turnSec, v => v + 's')}</div>
             <div class="box"><p class="sub" style="margin-bottom:8px">Dificuldade</p>
@@ -80,7 +80,7 @@
           const cab = `<div class="box center" style="border-color:${col(G.turn)}">
               <p class="sub mut">Rodada ${G.round} de ${G.cfg.rounds}</p>
               <h2 style="font-size:30px;color:${col(G.turn)};margin-top:4px">${tname(G.turn)}</h2>
-              <p class="sub" style="margin-top:8px">${cp ? nm(cp) : '—'} dá as dicas · ${gp ? nm(gp) : '—'} adivinha</p></div>`;
+              <p class="sub" style="margin-top:8px">${cp ? c.avatar(cp, 28) + ' ' + nm(cp) : '—'} dá as dicas · ${gp ? c.avatar(gp, 28) + ' ' + nm(gp) : '—'} adivinha</p></div>`;
           const pular = meuTime === G.turn ? '<button class="btn ghost" data-a="skip">⏭ Pular a vez (alguém sumiu)</button>' : '';
           if (souClue) return cab + `<div class="box center"><div class="big-emoji">🗝️</div><p class="sub" style="margin-top:8px">Você dá as dicas. Fale, mas <b>nunca diga a palavra</b>.</p></div>
             <button class="btn big ok ps-big" data-a="go">▶ Começar</button>${pular}`;

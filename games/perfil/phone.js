@@ -77,7 +77,7 @@
         // ---------- vitória ----------
         if (G.phase === 'win') {
           const w = c.C.players.find(p => p.pid === G.winner);
-          return `<div class="box center"><div class="big-emoji">🏆</div><h2 style="margin:8px 0;font-size:30px">${nm(w)} venceu!</h2></div>
+          return `<div class="box center"><div class="big-emoji">🏆</div><div>${c.avatar(w, 110)}</div><h2 style="margin:8px 0;font-size:30px">${nm(w)} venceu!</h2></div>
             <div class="box">${c.playersHtml({ info: p => `casa ${G.pos[p.pid] || 0}` })}</div>
             <button class="btn big ok" data-a="again">🔄 Jogar Perfil de novo</button>`;
         }
@@ -115,7 +115,7 @@
         } else if (isTurn && G.phase === 'choose') {
           h += `<div class="box pf-auto"><small>⚡ DICA ${L.n} · INSTRUÇÃO AUTOMÁTICA</small><div class="pf-clue">${esc(L.text)}</div>
             <p class="sub" style="margin-top:8px">Escolha quem vai ${G.choose.type === 'escolhaAvance' ? 'AVANÇAR' : 'VOLTAR'} ${G.choose.x} casas (pode ser você ou o mediador):</p></div>`
-            + c.C.players.filter(p => G.order.includes(p.pid)).map(p => `<button class="btn" data-a="escolher" data-pid="${p.pid}" style="display:flex;gap:10px;align-items:center;justify-content:flex-start">${nm(p)} <span class="sub mut">casa ${G.pos[p.pid] || 0}</span></button>`).join('');
+            + c.C.players.filter(p => G.order.includes(p.pid)).map(p => `<button class="btn" data-a="escolher" data-pid="${p.pid}" style="display:flex;gap:10px;align-items:center;justify-content:flex-start">${c.avatar(p, 34)}${nm(p)} <span class="sub mut">casa ${G.pos[p.pid] || 0}</span></button>`).join('');
         } else {
           const agora = G.phase === 'chip' ? `🔵 ${nm(c.C.players.find(p => p.pid === G.chip.player))} usou a ficha azul.`
             : G.phase === 'pick' ? `🎯 ${nm(g)} está escolhendo um número.`
@@ -147,8 +147,8 @@
         if (!m || !g) return;
         const big = novoRound || novoMed;
         const euMed = c.you && c.you.pid === m.pid, euVez = c.you && c.you.pid === g.pid;
-        c.turnover(`${big ? `<div class="round">Rodada ${G.round}</div><div><small>📖 MEDIADOR (lê as dicas)</small><span class="who2" style="${c.nmStyle(m)}">${c.esc(m.name)}</span></div>` : ''}
-          <div><small>🎯 ${big ? 'COMEÇA ADIVINHANDO' : 'AGORA É A VEZ DE'}</small><span class="who2 ${big ? 'sm' : ''}" style="${c.nmStyle(g)}">${c.esc(g.name)}</span></div>
+        c.turnover(`${big ? `<div class="round">Rodada ${G.round}</div><div><small>📖 MEDIADOR (lê as dicas)</small><div>${c.avatar(m, 72)}</div><span class="who2" style="${c.nmStyle(m)}">${c.esc(m.name)}</span></div>` : ''}
+          <div><small>🎯 ${big ? 'COMEÇA ADIVINHANDO' : 'AGORA É A VEZ DE'}</small><div>${c.avatar(g, big ? 72 : 110)}</div><span class="who2 ${big ? 'sm' : ''}" style="${c.nmStyle(g)}">${c.esc(g.name)}</span></div>
           ${euMed ? '<div class="mine">📖 O mediador é você!</div>' : euVez ? '<div class="mine">🎯 É a sua vez!</div>' : ''}
           ${big ? '' : `<div class="round" style="font-size:15px">mediador: ${c.esc(m.name)}</div>`}`,
           big ? 4000 : 2400, euVez || euMed ? [90, 60, 90] : 60);

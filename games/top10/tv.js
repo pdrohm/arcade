@@ -65,7 +65,7 @@
         const cracha = pid => {
           const r = ply(pid);
           if (!r) return '';
-          return `<div class="t10-pl ${G.cur === pid ? 'now' : ''} ${r.lives <= 0 ? 'dead' : ''}" style="${c.nmStyle({ color: r.color })}">${esc(r.name)}<small>${hearts(pid)}</small></div>`;
+          return `<div class="t10-pl ${G.cur === pid ? 'now' : ''} ${r.lives <= 0 ? 'dead' : ''}" style="${c.nmStyle({ color: r.color })};display:inline-flex;align-items:center"><span style="margin-right:8px;display:inline-block;background:rgba(255,255,255,.88);border-radius:50%;padding:3px;line-height:0">${c.avatar(r, 36)}</span>${esc(r.name)}<small>${hearts(pid)}</small></div>`;
         };
         const crachas = () => `<div class="t10-turn">${(G.roster || []).map(x => cracha(x.pid)).join('')}</div>`;
         const itens = () => !G.card || !G.card.items ? '' :
@@ -75,7 +75,7 @@
           ${G.card && G.card.src && !small ? `<div class="t10-src">fonte: ${esc(G.card.src)}</div>` : ''}`;
         const placar = () => `<div class="box"><p class="sub mut" style="margin-bottom:8px">Vidas</p>
           <div class="players">${(G.roster || []).map(r => `<div class="pl" style="border-color:${r.pid === G.cur ? '#f59e0b' : 'transparent'}">
-            <span class="dot" style="background:${c.ci(r.color).hex}"></span><b>${esc(r.name)}${r.on === false ? ' 📵' : ''}</b><span>${hearts(r.pid)}</span></div>`).join('')}</div></div>`;
+            ${c.avatar(r, 38)}<b>${esc(r.name)}${r.on === false ? ' 📵' : ''}</b><span>${hearts(r.pid)}</span></div>`).join('')}</div></div>`;
 
         let stage = `<style>${style}</style>`;
         let side = `<div class="box center"><div style="font-size:30px;font-weight:900">🔟 Top 10</div><p class="sub mut">${G.phase === 'setup' ? 'preparando' : 'Carta ' + G.round}</p></div>`;

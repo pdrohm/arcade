@@ -1,10 +1,11 @@
 'use strict';
 
-const CACHE = 'arcade-shell-v2';
+const CACHE = 'arcade-shell-v3';
 const CORE = [
   '/',
   '/shared/ui.css',
   '/shared/client.js',
+  '/shared/avatar.js',
   '/shared/kart/gamepad.js',
   '/qr-scan.js',
   '/qr-scan.css',

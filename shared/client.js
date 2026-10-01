@@ -42,7 +42,7 @@ window.ARCADE = (() => {
       if (kind === 'tv') send({ t: 'tv', room });
       else if (room) {
         const f = form();
-        if (f.color) send({ t: 'join', room, color: f.color, name: f.name, pid: identity(), prevName: prevName(), sid: sid() });
+        if (f.color) send({ t: 'join', room, color: f.color, name: f.name, av: f.av, pid: identity(), prevName: prevName(), sid: sid() });
         else send({ t: 'watch', room });     // só olhar a sala (cores livres, quem já entrou) antes de escolher a cor
       }
     };
@@ -98,6 +98,14 @@ window.ARCADE = (() => {
   const ci = c => (meta.colors || []).find(x => x.key === c) || { hex: '#888', dark: true, name: c };
   const nmStyle = p => `background:${ci(p.color).hex};color:${ci(p.color).dark ? '#fff' : '#111'}`;
   const nm = p => p ? `<span class="nm" style="${nmStyle(p)}">${esc(p.name)}</span>` : '';
+  // Boneco da pessoa (shared/avatar.js), na cor dela. size em px. Sem o arquivo carregado, volta a bolinha de cor.
+  function avatar(p, size) {
+    if (!size) size = 28;
+    const A = window.ARCADE && window.ARCADE.avatar;
+    const col = p ? ci(p.color).hex : '#94a3b8';
+    if (!A) return `<span class="dot" style="background:${col};width:${size}px;height:${size}px"></span>`;
+    return `<span class="avatar${p && p.on === false ? ' off' : ''}" style="width:${size}px;height:${size}px">${A.svg(p ? p.av : null, col, size)}</span>`;
+  }
   function hl(text) {   // destaca os nomes dos jogadores dentro de qualquer frase
     let out = esc(text);
     for (const p of [...(S.core.players || [])].sort((a, b) => b.name.length - a.name.length)) {
@@ -121,7 +129,7 @@ window.ARCADE = (() => {
       const info = opts.info ? opts.info(p, i) : '';
       const cls = ['pl', you && p.pid === you.pid ? 'me' : '', opts.cls ? opts.cls(p, i) : ''].join(' ');
       const style = opts.border ? `border-color:${opts.border(p, i) || 'transparent'}` : '';
-      return `<div class="${cls}" style="${style}"><span class="dot" style="background:${ci(p.color).hex}"></span><b>${i + 1}. ${nm(p)}${tag}${p.on === false ? ' 📵' : ''}</b><span>${info}</span>${p.on === false && you && p.pid !== you.pid && kind === 'phone' ? `<b class="kick" data-a="kick" data-pid="${p.pid}" data-name="${esc(p.name)}">✕</b>` : ''}</div>`;
+      return `<div class="${cls}" style="${style}">${avatar(p, 30)}<b>${i + 1}. ${nm(p)}${tag}${p.on === false ? ' 📵' : ''}</b><span>${info}</span>${p.on === false && you && p.pid !== you.pid && kind === 'phone' ? `<b class="kick" data-a="kick" data-pid="${p.pid}" data-name="${esc(p.name)}">✕</b>` : ''}</div>`;
     }).join('')}</div>`;
   }
   function turnover(html, ms, vibrate) {
@@ -166,7 +174,7 @@ window.ARCADE = (() => {
   // contexto entregue às telas dos jogos
   function ctx() {
     return {
-      S, you, meta, kind, room, noRoom, send, esc, ci, nm, nmStyle, hl, playersHtml, timerHtml, turnover, toast, beep, chord,
+      S, you, meta, kind, room, noRoom, send, esc, ci, nm, nmStyle, hl, avatar, playersHtml, timerHtml, turnover, toast, beep, chord,
       G: S ? S.game : null, C: S ? S.core : null, remaining, fmt,
       game: () => (meta.games || []).find(g => g.id === S.core.gameId) || {},
     };
@@ -191,7 +199,7 @@ window.ARCADE = (() => {
       }, 250);
       connect();
     },
-    ctx, send, esc, $, form, saveForm, setPrev, identity, sid, toast, beep, chord, turnover,
+    ctx, avatarHtml: (p, size) => avatar(p, size), send, esc, $, form, saveForm, setPrev, identity, sid, toast, beep, chord, turnover,
     get room() { return room; }, goRoom, createRoom: () => send({ t: 'create' }),
     redraw: draw,   // redesenhar sem esperar o servidor (ex.: mostrar/esconder a resposta)
   };

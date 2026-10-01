@@ -59,6 +59,8 @@
 .ks-place.p1{background:#fff3c4}
 .ks-place .ks-portrait{flex:none;width:36px;height:36px;margin-right:10px;border-radius:50%;border:2px solid var(--ink);overflow:hidden}
 .ks-place .ks-portrait .ki{transform:scale(1.15) translateY(4%)}
+.ks-roster .avatar,.ks-place .avatar,.kart-player .avatar{margin-right:8px}
+.kart-player .avatar{margin-left:-2px;margin-right:5px}
 .ks-place b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;text-transform:uppercase}
 .ks-place small{flex:none;font-size:12px;font-weight:800;color:#5d5488;margin-left:8px}
 .ks-place.me{outline:3px solid var(--grape);outline-offset:2px}
@@ -107,14 +109,14 @@ body.kart-driving #app>.head,body.kart-driving #app>.btn.ghost{display:none}
 .kart-item.empty{filter:saturate(.35)}.kart-item.empty.held{filter:saturate(.35) brightness(.85)}
 .kart-boost.cooldown{filter:grayscale(.8);color:#666}.kart-boost.cooldown.held{filter:grayscale(.8) brightness(.85)}
 .kart-help{margin:0;text-align:center;font-size:10px;font-weight:900;letter-spacing:.12em;color:var(--pixel);align-self:end}
-.kart-rotate{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;gap:14px}
-.kart-rotate h2{font-size:24px;letter-spacing:.06em;margin:0;color:var(--sun);text-transform:uppercase}
-.kart-rotate p{font-size:15px;max-width:250px;line-height:1.5;margin:0;color:var(--lilac);font-weight:700}
-.kart-rotate-phone{font-size:0;width:54px;height:90px;border:4px solid var(--paper);border-radius:14px;position:relative;animation:kart-rotate 3s ease-in-out infinite;margin-bottom:18px;background:rgba(255,246,227,.08)}
-.kart-rotate-phone::after{content:"";position:absolute;bottom:7px;left:19px;width:10px;height:4px;border-radius:3px;background:var(--paper)}
+/* aviso curto em pé: deitado é mais confortável, mas não é obrigatório */
+.kart-tip{position:absolute;left:50%;top:max(54px,calc(env(safe-area-inset-top) + 46px));transform:translateX(-50%);z-index:4;width:min(88%,340px);display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 14px 12px 64px;border:3px solid var(--pixel);border-radius:14px;background:#292b26;color:#bfffb4;box-shadow:4px 4px 0 var(--pixel);text-align:left;cursor:pointer}
+.kart-tip b{align-self:stretch;font-size:14px;letter-spacing:.02em}
+.kart-tip small{align-self:stretch;font-size:12px;color:#d8d3c4;font-weight:700}
+.kart-tip-phone{position:absolute;left:18px;top:50%;margin-top:-17px;width:22px;height:34px;border:3px solid #bfffb4;border-radius:6px;animation:kart-rotate 2.4s ease-in-out infinite}
 @keyframes kart-rotate{0%,20%{transform:rotate(0)}55%,90%{transform:rotate(90deg)}100%{transform:rotate(0)}}
 @keyframes kart-blink{50%{opacity:.35}}
-@media(prefers-reduced-motion:reduce){.kart-rotate-phone{animation:none;transform:rotate(90deg)}.ks-tag.wait{animation:none}}
+@media(prefers-reduced-motion:reduce){.kart-tip-phone{animation:none;transform:rotate(90deg)}.ks-tag.wait{animation:none}}
 @media(max-height:350px){.kart-gamepad{padding:5px 20px 8px;grid-template-rows:32px minmax(0,1fr) 13px}.kart-console{padding-top:7px}.kart-console-center{gap:5px}.kart-item-display{min-height:54px}.kart-item-slot{width:32px;height:32px}.kart-speaker i{height:16px}.kart-stick-well{padding:8px}.kart-stick{width:54dvh;height:54dvh}.kart-actions{width:63dvh;height:63dvh}.kart-pad{width:18dvh;height:18dvh;min-width:44px;min-height:44px}.kart-throttle{width:20dvh;height:20dvh}.kart-help{font-size:8px}}
 /* Mouse/keyboard users retain a usable controller in a tall desktop window. */
 @media(orientation:portrait) and (pointer:fine){.kart-gamepad{overflow:auto}.kart-console{grid-template-columns:1fr;gap:14px}.kart-console-center{order:3}.kart-stick{width:min(58vw,28dvh);height:min(58vw,28dvh)}.kart-actions{width:min(64vw,34dvh);height:min(64vw,34dvh)}}
@@ -123,3 +125,21 @@ body.kart-driving #app>.head,body.kart-driving #app>.btn.ghost{display:none}
 .kart-conn h2{margin:0;padding:10px 22px;border-radius:99px;background:var(--coral);border:3px solid var(--ink);font-size:20px;letter-spacing:.06em;color:#fff6e3}
 .kart-conn p{margin:0;font-size:15px;font-weight:700;color:var(--lilac);animation:kart-blink 1.2s ease-in-out infinite}
 .kart-controller.offline .kart-gamepad{opacity:.35;pointer-events:none}
+/* Celular em pé: o controle fica na vertical. Em cima o visor do item; embaixo o analógico (polegar esquerdo) e os botões (polegar direito). */
+@media(orientation:portrait) and (pointer:coarse){
+.kart-gamepad{padding:8px 12px 10px;border-radius:30px 30px 48px 48px}
+.kart-console{grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr) auto;align-items:center;gap:10px 6px;padding:14px 0 4px}
+.kart-console-center{grid-column:1 / -1;grid-row:1;align-self:center;gap:18px}
+.kart-pixel-logo b{font-size:40px}.kart-pixel-logo small{font-size:11px}
+.kart-item-display{width:82%;min-height:120px;gap:14px}
+.kart-item-slot{width:72px;height:72px}
+.kart-item-display b{font-size:20px}.kart-item-display small,.kart-item-display em{font-size:11px}
+.kart-stick-area{grid-column:1;grid-row:2;align-self:end}
+.kart-stick-well{padding:8px}
+.kart-stick{width:40vw;height:40vw;max-width:220px;max-height:220px}
+.kart-actions{grid-column:2;grid-row:2;align-self:end;width:46vw;height:46vw;max-width:250px;max-height:250px}
+.kart-pad{width:13vw;height:13vw;min-width:48px;min-height:48px;font-size:18px}
+.kart-throttle{width:15vw;height:15vw}
+.kart-pad small{font-size:8px}
+.kart-player{max-width:48%}
+}

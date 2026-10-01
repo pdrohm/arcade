@@ -27,7 +27,7 @@
     return `<div class="box" style="display:flex;flex-direction:column;gap:8px"><p class="sub mut">Dicas ditas</p>
       ${(so || G.order).map(pid => { const p = ply(c, pid); if (!p) return '';
         const cl = G.clues[pid] || [];
-        return `<div class="imp-cl ${G.speaker === pid ? 'now' : ''} ${G.out.includes(pid) ? 'dead' : ''}">${c.nm(p)}<b>${cl.length ? cl.map(c.esc).join(' · ') : '<span class="mut" style="font-size:15px">—</span>'}</b></div>`;
+        return `<div class="imp-cl ${G.speaker === pid ? 'now' : ''} ${G.out.includes(pid) ? 'dead' : ''}">${c.avatar(p, 30)}${c.nm(p)}<b>${cl.length ? cl.map(c.esc).join(' · ') : '<span class="mut" style="font-size:15px">—</span>'}</b></div>`;
       }).join('')}</div>`;
   }
   function minhaPalavra(c, curta) {
@@ -116,7 +116,7 @@
             <div style="display:flex;flex-direction:column;gap:10px">${alvos.map(pid => { const p = ply(c, pid); if (!p) return '';
               const cl = (G.clues[pid] || []).join(' · ');
               return `<button class="btn" data-a="votar" data-pid="${pid}" style="display:flex;align-items:center;gap:12px;justify-content:flex-start;text-align:left;${m.myVote === pid ? 'outline:4px solid #fff' : ''}">
-                <span class="dot" style="background:${c.ci(p.color).hex};width:26px;height:26px"></span><span style="flex:1">${esc(p.name)}<br><small style="font-size:14px;opacity:.7">${esc(cl) || '—'}</small></span>${m.myVote === pid ? '✅' : ''}</button>`;
+                ${c.avatar(p, 34)}<span style="flex:1">${esc(p.name)}<br><small style="font-size:14px;opacity:.7">${esc(cl) || '—'}</small></span>${m.myVote === pid ? '✅' : ''}</button>`;
             }).join('')}</div>
             <button class="btn ghost" data-a="fechar" ${G.voted.length >= G.need ? '' : 'disabled'}>🔒 Fechar votação (${G.voted.length}/${G.need})</button>
             ${minhaPalavra(c, true)}`;
@@ -127,7 +127,7 @@
           let h = `<div class="box center">`;
           if (R.aborted) h += `<div class="big-emoji">🚪</div><h2 style="font-size:24px;margin-top:8px">Rodada encerrada</h2>`;
           else if (R.tie) h += `<div class="big-emoji">🤝</div><h2 style="font-size:24px;margin-top:8px">Empate!</h2><p class="sub" style="margin-top:6px">${R.over ? 'Empatou de novo: o impostor escapou.' : 'Ninguém eliminado. Mais 30 segundos de discussão.'}</p>`;
-          else h += `<div class="big-emoji">${R.wasImp ? '🕵️' : '😬'}</div><h2 style="font-size:24px;margin-top:8px">${alvo ? esc(alvo.name) : '—'} ${R.wasImp ? 'ERA o impostor!' : 'não era o impostor.'}</h2>`;
+          else h += `<div class="big-emoji">${R.wasImp ? '🕵️' : '😬'}</div><h2 style="font-size:24px;margin-top:8px">${alvo ? c.avatar(alvo, 40) + ' ' + esc(alvo.name) : '—'} ${R.wasImp ? 'ERA o impostor!' : 'não era o impostor.'}</h2>`;
           h += `${G.word ? `<p class="sub" style="margin-top:10px">A palavra era <b style="font-size:22px">${esc(G.word)}</b></p>` : `<p class="sub mut" style="margin-top:10px">${G.needGuess ? 'A palavra continua secreta: o impostor ainda pode adivinhar.' : 'A palavra continua secreta.'}</p>`}
             ${G.whiteWord ? `<p class="sub mut">o impostor tinha "${esc(G.whiteWord)}"</p>` : ''}
             ${(G.impostors || []).length ? `<p class="sub mut" style="margin-top:6px">Impostor: ${(G.impostors || []).map(p => c.nm(ply(c, p))).join(' ')}</p>` : ''}</div>
@@ -148,7 +148,7 @@
             ${G.guess && G.guess.text ? `<p class="sub mut">chute: "${esc(G.guess.text)}" ${G.guess.ok ? '✅' : '❌'}</p>` : ''}</div>
           ${placar(c)}<button class="btn big ok" data-a="next">Próxima palavra ➡️</button>`;
         const lider = [...c.C.players].sort((a, b) => (G.scores[b.pid] || 0) - (G.scores[a.pid] || 0))[0];
-        return `<div class="box center"><div class="big-emoji">🏆</div><h2 style="font-size:28px;margin-top:8px">${c.nm(lider)} venceu!</h2></div>
+        return `<div class="box center"><div class="big-emoji">🏆</div><div style="margin-top:8px">${c.avatar(lider, 96)}</div><h2 style="font-size:28px;margin-top:8px">${c.nm(lider)} venceu!</h2></div>
           ${placar(c)}<button class="btn big ok" data-a="again">🔄 Jogar de novo</button>`;
       },
       after(c) {
@@ -163,7 +163,7 @@
         const k = `${G.round}:${G.turn}`;
         if (G.phase === 'clues' && G.speaker === c.you.pid && ovKey !== k) {
           ovKey = k;
-          c.turnover(`<div class="round">Palavra ${G.round}</div><small>sua vez</small><div class="who2" style="${c.nmStyle(c.C.players.find(p => p.pid === c.you.pid))}">Dê sua dica</div><div class="mine">uma palavra só</div>`, 1800, [60, 60, 160]);
+          c.turnover(`<div class="round">Palavra ${G.round}</div><small>sua vez</small><div>${c.avatar(c.C.players.find(p => p.pid === c.you.pid), 110)}</div><div class="who2" style="${c.nmStyle(c.C.players.find(p => p.pid === c.you.pid))}">Dê sua dica</div><div class="mine">uma palavra só</div>`, 1800, [60, 60, 160]);
           c.chord([784, 1046]);
         }
         if (G.phase !== 'clues') ovKey = '';

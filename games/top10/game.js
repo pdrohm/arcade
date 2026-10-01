@@ -12,6 +12,7 @@
 //               precisam de vaga na sala. O mediador pode jogar também — em Top 10 ele não
 //               vê nada antes da revelação, então não leva vantagem nenhuma.
 const { CATEGORIES, CARDS } = require('./cards');
+const AVATAR = require('../../shared/avatar.js');
 
 const VOTE_MS = Number(process.env.T10_VOTE_MS) || 25 * 1000;   // tempo da votação depois do DUVIDO
 const TURN_SECS = [0, 10, 15, 20, 30];                          // 0 = sem tempo
@@ -232,7 +233,7 @@ module.exports = {
             if (s.solo) {                                  // a roda são os nomes digitados
               const cores = api.colors || [];
               s.locals = s.cfg.names.map((n, i) => ({
-                pid: '#' + i, name: n,
+                pid: '#' + i, name: n, av: AVATAR.clean(null, n),
                 color: cores.length ? cores[i % cores.length].key : null,
               }));
               s.order = s.locals.map(x => x.pid);
@@ -357,7 +358,7 @@ module.exports = {
           roster: ordem.map(pid => {
             const part = partOf(pid);
             return {
-              pid, name: part ? part.name : '?', color: part ? part.color : null,
+              pid, name: part ? part.name : '?', color: part ? part.color : null, av: part ? part.av : null,
               lives: s.lives[pid] || 0, out: s.out.includes(pid),
               on: isLocal(pid) ? true : !!(part && part.on !== false),
               local: isLocal(pid),

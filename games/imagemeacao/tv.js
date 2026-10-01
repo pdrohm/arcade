@@ -209,7 +209,7 @@
           <div style="display:flex;flex-wrap:wrap;padding:0 0 2px 14px">${tt.players.map((pid, k) => {
             const p = c.C.players.find(x => x.pid === pid);
             const now = G.drawers[tt.key] === pid && G.phase !== 'setup';
-            return p ? `<span class="nm" style="${now ? 'background:#fbbf24;color:#111' : 'background:rgba(255,255,255,0.07);color:#cbd5e1'};font-size:14px;margin:0 6px 6px 0">${k + 1}. ${esc(p.name)}${now ? ' ✏️' : ''}${p.on === false ? ' 📵' : ''}</span>` : '';
+            return p ? `<span class="nm" style="${now ? 'background:#fbbf24;color:#111' : 'background:rgba(255,255,255,0.07);color:#cbd5e1'};font-size:14px;margin:0 6px 6px 0;display:inline-flex;align-items:center;padding-left:4px"><span style="margin-right:6px">${c.avatar(p, 30)}</span>${k + 1}. ${esc(p.name)}${now ? ' ✏️' : ''}${p.on === false ? ' 📵' : ''}</span>` : '';
           }).join('')}</div>`).join('')}</div>` : '<p class="sub center">Nenhuma equipe ainda. Escolham no celular!</p>'}</div>`;
 
         side += `<div class="event">${c.C.event ? hl(c.C.event.text) : ''}</div>`;
@@ -347,9 +347,10 @@
           lastTurn = G.turn; lastRound = G.round;
           if (mudou && G.phase === 'roll') {
             const k = ti(t.key), dn = drawerName(t);
+            const dpid = t && G.drawers[t.key], dp = dpid && c.C.players.find(x => x.pid === dpid);
             c.turnover(`<div class="round">Rodada ${G.round}</div>
               <div><small>🎨 AGORA É A VEZ DA EQUIPE</small><div class="who2" style="background:${k.hex};color:#111">${k.name}</div></div>
-              ${dn ? `<div><small>✏️ QUEM FAZ A CARTA</small><div class="who2 sm" style="background:#fff;color:#111">${esc(dn)}</div></div>` : ''}`, 3200);
+              ${dn ? `<div><small>✏️ QUEM FAZ A CARTA</small><div class="who2 sm" style="background:#fff;color:#111;display:inline-flex;align-items:center">${dp ? `<span style="margin-right:12px;display:inline-block">${c.avatar(dp, 56)}</span>` : ''}${esc(dn)}</div></div>` : ''}`, 3200);
             c.chord([523, 659, 784]);
           }
         } else { lastTurn = G.turn; lastRound = G.round; }

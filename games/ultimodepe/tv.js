@@ -30,7 +30,14 @@
   function stop() { token++; if (renderer) renderer.dispose(); renderer = null; context = null; overlayKey = ''; document.body.classList.remove('udp-tv'); }
   // mesma regra de contraste da paleta da casa (ui: branco no roxo, preto no verde)
   function ink(hex) { var n = parseInt(String(hex).replace('#', ''), 16) || 0; return ((n >> 16 & 255) * 299 + (n >> 8 & 255) * 587 + (n & 255) * 114) / 1000 > 133 ? '#111' : '#fff'; }
-  function chip(p, cls) { return '<span class="udp-chip ' + (cls || '') + '" style="background:' + p.color + ';color:' + ink(p.color) + '">' + A.esc(p.name) + '</span>'; }
+  // Boneco da pessoa (shared/avatar.js): quem está na sala usa o do núcleo (c.avatar); quem já saiu, o do roster.
+  function face(c, p, size) {
+    var ps = (c && c.C && c.C.players) || [], i;
+    for (i = 0; i < ps.length; i++) if (ps[i].pid === p.pid && c.avatar) return c.avatar(ps[i], size);
+    if (A.avatar && A.avatar.svg) return '<span class="avatar" style="width:' + size + 'px;height:' + size + 'px">' + A.avatar.svg(p.av, p.color, size) + '</span>';
+    return '';
+  }
+  function chip(p, cls, av) { return '<span class="udp-chip ' + (cls || '') + (av ? ' has-av' : '') + '" style="background:' + p.color + ';color:' + ink(p.color) + '">' + (av || '') + '<b>' + A.esc(p.name) + '</b></span>'; }
   // Classificação final: vencedores, depois quem saiu por último.
   function ranking(G) {
     var list = [], seen = {}, i, p;
@@ -49,7 +56,7 @@
     overlayKey = key;
     if (G.phase === 'setup') {
       var peng = G.variant === 'penguins', chips = '', ps = c.C.players;
-      for (var i = 0; i < ps.length && i < 8; i++) chips += chip({ name: ps[i].name, color: c.ci(ps[i].color).hex });
+      for (var i = 0; i < ps.length && i < 8; i++) chips += chip({ name: ps[i].name, color: c.ci(ps[i].color).hex }, '', face(c, ps[i], 52));
       el.innerHTML = '<div class="udp-card ' + G.variant + '"><div class="udp-logo">Último de Pé</div>' +
         '<div class="udp-variant">' + (peng ? '🐧 PINGUINS' : '🤠 TIROTEIO') + '</div>' +
         '<div class="udp-rule">' + (peng ? 'Decore onde todo mundo está, escolha a direção e escorregue junto com todo mundo. Quem cai na água sai.' : 'Decore onde todo mundo está, mire escondido e todo mundo atira no mesmo instante. Quem leva tiro sai.') + '</div>' +
@@ -58,7 +65,7 @@
         '<div class="udp-hint">' + (ps.length < 2 ? 'Precisa de pelo menos 2 jogadores' : 'O primeiro jogador escolhe a variante e começa pelo celular') + '</div></div>';
     } else if (G.phase === 'end') {
       var rk = ranking(G), row = '';
-      for (var j = 0; j < rk.length; j++) { var p = who(G, rk[j].pid); row += chip({ name: rk[j].pos + 'º ' + p.name, color: p.color }, rk[j].pos === 1 ? '' : 'rest'); }
+      for (var j = 0; j < rk.length; j++) { var p = who(G, rk[j].pid); row += chip({ name: rk[j].pos + 'º ' + p.name, color: p.color }, rk[j].pos === 1 ? '' : 'rest', face(c, { pid: rk[j].pid, av: p.av, color: p.color }, 52)); }
       el.innerHTML = '<div class="udp-rank">' + row + '<div class="udp-hint">Jogar de novo ou voltar ao Arcade pelo celular</div></div>';
     } else el.innerHTML = '';
   }

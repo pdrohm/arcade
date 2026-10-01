@@ -79,10 +79,10 @@ test('A must stay held to accelerate and release reaches the server quickly', ()
   h.actions[3].emit('pointerdown', { pointerId: 5 }); h.tick(17); assert.equal(h.sent.at(-1).throttle, true);
   h.actions[3].emit('pointerup', { pointerId: 5 }); h.tick(17); assert.equal(h.sent.at(-1).throttle, false); h.hooks.destroy();
 });
-test('portrait rotation, blur and disconnect stay neutral until recovery, with no stale held input', () => {
+test('rotating to portrait keeps driving but releases held input; blur and disconnect stay neutral until recovery', () => {
   const h = harness(); h.steer(1, 'pointerdown'); h.actions[0].emit('pointerdown', { pointerId: 2 }); h.tick(120);
   h.landscapeQuery.matches = false; h.landscapeQuery.emit('change'); h.tick(300);
-  assert.equal(h.els['.kart-gamepad'].hidden, true); assert.equal(h.sent.at(-1).active, false);
+  assert.equal(h.els['.kart-gamepad'].hidden, false); assert.equal(h.sent.at(-1).active, true, 'em pé também pilota'); assert.equal(h.sent.at(-1).steer, 0); assert.equal(h.sent.at(-1).drift, false);
   h.landscapeQuery.matches = true; h.landscapeQuery.emit('change'); h.tick(120); assert.equal(h.sent.at(-1).active, true); assert.equal(h.sent.at(-1).steer, 0); assert.equal(h.sent.at(-1).drift, false);
   h.window.emit('blur'); h.tick(400); assert.equal(h.sent.at(-1).active, false);
   h.window.emit('focus'); h.tick(100); assert.equal(h.sent.at(-1).active, true);

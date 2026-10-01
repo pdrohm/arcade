@@ -115,6 +115,7 @@
     this.act = null;        // replay em andamento: { key, played: {}, bodies }
     this.lastDown = null;   // pistoleiros derrubados (para continuar no chão no resultado)
     this.bg = null; this.bgKey = '';
+    this.faces = {}; this.faceN = 0;   // bonecos já desenhados (um canvas pequeno por pessoa e tamanho)
     this.W = 0; this.H = 0; this.sc = 20; this.cx = 0; this.cy = 0;
     this.lastT = now(); this.flakes = [];
     var self = this;
@@ -133,7 +134,7 @@
     var dpr = Math.min(this.kind === 'tv' ? 1 : 2, window.devicePixelRatio || 1);
     if (this.kind === 'tv' && w > 1920) dpr = 1920 / w;   // 4K: desenha em 1080p e o navegador amplia
     c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
-    this.dpr = dpr; this.W = w; this.H = h; this.bgKey = '';
+    this.dpr = dpr; this.W = w; this.H = h; this.bgKey = ''; this.faces = {}; this.faceN = 0;
     this.layout();
   };
   // Encaixa a arena (tamanho máximo, R0) na tela com espaço para o HUD em cima e embaixo.
@@ -419,8 +420,8 @@
       if (b.pid === me && (AIMING[phase] || phase === 'lock') && this.opts.aim) { var a = this.opts.aim(); if (a !== null && a !== undefined) face = a; }
       var pop = phase === 'reveal' ? easeBack(appear * 3.2 - i * .12) : 1;
       var at = b.pid === me && hidden ? this.ownAt(b) : b;
-      if (at !== b) out.push({ pid: b.pid + ':ghost', x: b.x, y: b.y, face: face, color: info.color, name: '', me: false, scale: 1, alpha: .28, hidden: true, ghost: 1 });
-      out.push({ pid: b.pid, x: at.x, y: at.y, face: face, color: info.color, name: info.name, me: b.pid === me, scale: Math.max(.01, pop), hidden: hidden });
+      if (at !== b) out.push({ pid: b.pid + ':ghost', x: b.x, y: b.y, face: face, color: info.color, av: info.av, name: '', me: false, scale: 1, alpha: .28, hidden: true, ghost: 1 });
+      out.push({ pid: b.pid, x: at.x, y: at.y, face: face, color: info.color, av: info.av, name: info.name, me: b.pid === me, scale: Math.max(.01, pop), hidden: hidden });
     }
     if (phase === 'result' && this.variant === 'shootout' && this.act && this.act.round === G.matchId + ':' + G.round && this.act.replay && this.act.replay.hitAt) {
       for (i = 0; i < this.act.bodies.length; i++) {
@@ -428,7 +429,7 @@
         if (!Object.prototype.hasOwnProperty.call(this.act.replay.hitAt, b.pid)) continue;
         info = this.nameOf(b.pid);
         var mvd = this.act.replay.moves && this.act.replay.moves[b.pid];
-        out.push({ pid: b.pid, x: mvd ? mvd[2] : b.x, y: mvd ? mvd[3] : b.y, face: b.face, color: info.color, name: info.name, me: b.pid === me, down: 1, gun: 0, alpha: .75, scale: 1 });
+        out.push({ pid: b.pid, x: mvd ? mvd[2] : b.x, y: mvd ? mvd[3] : b.y, face: b.face, color: info.color, av: info.av, name: info.name, me: b.pid === me, down: 1, gun: 0, alpha: .75, scale: 1 });
       }
     }
     return out;
@@ -452,7 +453,7 @@
     for (k = 0; k < n; k++) {
       var pid = rp.order[k], info = this.nameOf(pid);
       var x = lerp(fr[i0][k * 3], fr[i1][k * 3], fk), y = lerp(fr[i0][k * 3 + 1], fr[i1][k * 3 + 1], fk), face = lerpAngle(fr[i0][k * 3 + 2], fr[i1][k * 3 + 2], fk);
-      var s = { pid: pid, x: x, y: y, face: face, color: info.color, name: info.name, me: pid === me, scale: 1 };
+      var s = { pid: pid, x: x, y: y, face: face, color: info.color, av: info.av, name: info.name, me: pid === me, scale: 1 };
       if (st < 0) {   // antecipação: agacha, prepara
         var w = clamp(el / rp.lead, 0, 1);
         s.sqx = 1 + .22 * easeOut(w); s.sqy = 1 - .28 * easeOut(w); s.lean = -.25 * w;
@@ -502,7 +503,7 @@
         var wk = easeOut(el / (rp.walk || .45)); bx = lerp(mv[0], mv[2], wk); by = lerp(mv[1], mv[3], wk);
         if (wk < 1 && Math.random() < .35) this.part({ kind: 'smoke', x: bx, y: by, z: .1, vx: (Math.random() - .5) * 2, vy: (Math.random() - .5) * 2, vz: .5, size: .28, color: '#e7c08a', max: .4, drag: 3 });
       }
-      var s = { pid: b.pid, x: bx, y: by, face: face, color: info.color, name: info.name, me: b.pid === me, scale: 1, gun: clamp((el - w0) / ((rp.lead - w0) * .7), 0, 1) };
+      var s = { pid: b.pid, x: bx, y: by, face: face, color: info.color, av: info.av, name: info.name, me: b.pid === me, scale: 1, gun: clamp((el - w0) / ((rp.lead - w0) * .7), 0, 1) };
       if (st >= 0 && st < .12) s.muzzle = 1 - st / .12;
       if (st >= 0 && st < .2) s.recoil = 1 - st / .2;
       var th = rp.hitAt[b.pid];
@@ -626,16 +627,44 @@
     ctx.restore();
     if (s.sink) { ctx.fillStyle = 'rgba(255,255,255,' + (.6 * (1 - s.sink)).toFixed(3) + ')'; oval(ctx, p.x, p.y, sc * 1.2, sc * .45); ctx.fill(); }
     var showName = !s.sink && !s.down && !s.ghost && (!s.hidden || s.me) && this.G.phase !== 'end';
-    if (showName) this.tag(p.x, p.y - sc * (this.variant === 'penguins' ? 2.55 : 3.05), s.hidden && s.me ? 'VOCÊ' : s.name, s.color, s.me);
+    if (showName) this.tag(p.x, p.y - sc * (this.variant === 'penguins' ? 2.55 : 3.05), s.hidden && s.me ? 'VOCÊ' : s.name, s.color, s.me, s.av);
   };
-  R.tag = function (x, y, text, color, me) {
+  // Crachá em cima do personagem: o boneco da pessoa (shared/avatar.js) colado no nome, na cor dela.
+  // Sem o boneco carregado, só o nome, como antes.
+  R.tag = function (x, y, text, color, me, av) {
     var ctx = this.ctx, fs = Math.max(this.kind === 'tv' ? 11 : 13, this.sc * (this.kind === 'tv' ? .62 : .85));
     ctx.font = '900 ' + fs + 'px ' + FONT;
-    var w = ctx.measureText(text).width + fs * .9, h = fs * 1.35;
-    ctx.fillStyle = color; rrect(ctx, x - w / 2, y - h, w, h, h / 2); ctx.fill();
-    if (me) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(2, fs * .14); ctx.stroke(); }
+    var h = fs * 1.35, face = this.hasFaces(), a = face ? h * 1.75 : 0;
+    var tw = ctx.measureText(text).width, w = tw + fs * .9 + (face ? a * .78 : 0);
+    var left = x - w / 2;
+    ctx.fillStyle = color; rrect(ctx, left, y - h, w, h, h / 2); ctx.fill();
+    ctx.strokeStyle = me ? '#ffffff' : 'rgba(15,23,42,0.55)'; ctx.lineWidth = Math.max(me ? 2 : 1, fs * (me ? .14 : .08)); ctx.stroke();
     ctx.fillStyle = light(color) ? '#111827' : '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(text, x, y - h / 2 + 1);
+    ctx.fillText(text, face ? left + a * .78 + (w - a * .78) / 2 : x, y - h / 2 + 1);
+    // o boneco sai um pouco para fora do crachá, à esquerda, em cima de um disco claro (lê de longe)
+    if (face) {
+      var fx = left + a * .36, fy = y - h * .62;
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(fx, fy, a * .47, 0, TAU); ctx.fill();
+      ctx.strokeStyle = me ? '#ffffff' : 'rgba(15,23,42,0.55)'; ctx.stroke();
+      this.face(av, color, fx, fy, a * .9);
+    }
+  };
+  R.hasFaces = function () { return !!(window.ARCADE && window.ARCADE.avatar && window.Path2D); };
+  // Desenha o boneco centrado em (x, y), largura size. Cada boneco é pintado uma vez num canvas
+  // pequeno e depois só copiado: a TV antiga não precisa refazer os caminhos a cada quadro.
+  R.face = function (av, hex, x, y, size, k) {
+    if (!this.hasFaces() || size < 4) return false;
+    var px = Math.max(8, Math.round(size * (this.dpr || 1))), hgt = Math.round(px * 1.14);
+    var key = String(av) + '|' + hex + '|' + px, c = this.faces[key];
+    if (!c) {
+      if (this.faceN > 80) { this.faces = {}; this.faceN = 0; }
+      c = document.createElement('canvas'); c.width = px; c.height = hgt;
+      try { window.ARCADE.avatar.draw(c.getContext('2d'), av, hex, px / 2, hgt / 2, px); } catch (err) { return false; }
+      this.faces[key] = c; this.faceN++;
+    }
+    if (k === undefined) k = 1;   // k: escala só na cópia (animação), sem pintar o boneco de novo
+    if (k > 0) this.ctx.drawImage(c, x - size * k / 2, y - size * k * .57, size * k, size * k * 1.14);
+    return true;
   };
   // Pinguim de lado-e-de-cima: corpo, barriga virada para onde olha, bico apontando a direção.
   R.penguin = function (ctx, s, o, t) {
@@ -808,6 +837,10 @@
     var W = this.W, H = this.H, base = Math.min(W * .13, H * .2) * (scale || 1), k = easeBack(age / 260);
     if (k <= 0) return;
     if (y === undefined) y = H * .46;
+    // frase comprida numa tela estreita ("VOCÊ VENCEU!" no celular em pé): diminui até caber
+    this.ctx.font = '900 ' + Math.round(base) + 'px ' + FONT;
+    var tw = this.ctx.measureText(text).width + base * .36;
+    if (tw > W * .94) base *= W * .94 / tw;
     this.text(text, W / 2, y, base * k, color);
     if (sub) this.text(sub, W / 2, y + base * .62 + Math.max(13, base * .3) * .5, Math.max(13, base * .3), '#ffffff');
   };
@@ -825,16 +858,19 @@
     var vars = G.variant === 'penguins';
     // rodada
     if (G.round) this.text((G.tiebreak ? 'DESEMPATE · ' : '') + 'RODADA ' + G.round, pad, pad + fs * .5, fs, G.tiebreak ? '#fca5a5' : '#ffffff', 'left');
-    // vivos: bolinhas na cor de cada um
+    // vivos: o boneco de cada um (sem shared/avatar.js, bolinhas na cor de cada um)
     var alive = G.alive.length, total = G.roster.length, dot = fs * .42, x = W - pad;
     this.text(alive + (alive === 1 ? ' VIVO' : ' VIVOS'), x, pad + fs * .5, fs, '#ffffff', 'right');
     ctx.font = '900 ' + fs + 'px ' + FONT;
     var tw = ctx.measureText(alive + (alive === 1 ? ' VIVO' : ' VIVOS')).width;
     x -= tw + dot * 2;
+    var faces = this.hasFaces();
+    if (faces) x -= dot * .6;
     for (var i = G.roster.length - 1; i >= 0; i--) {
       var p = G.roster[i], on = G.alive.indexOf(p.pid) >= 0;
-      ctx.globalAlpha = on ? 1 : .3; ctx.fillStyle = p.color; oval(ctx, x, pad + fs * .5, dot, dot); ctx.fill();
-      ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2; ctx.stroke(); x -= dot * 2.6;
+      ctx.globalAlpha = on ? 1 : .3;
+      if (faces) { this.face(p.av, p.color, x, pad + fs * .45, dot * 3.4); x -= dot * 3.4; }   // o boneco de cada um; quem saiu fica apagado
+      else { ctx.fillStyle = p.color; oval(ctx, x, pad + fs * .5, dot, dot); ctx.fill(); ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2; ctx.stroke(); x -= dot * 2.6; }
     }
     ctx.globalAlpha = 1;
     ctx.restore();
@@ -918,8 +954,14 @@
     if (Math.random() < .5) this.confetti();
     if (winners.length === 1) {
       var p = this.nameOf(winners[0]), me = this.youPid() === p.pid;
+      var base = Math.min(W * .13, H * .2), ny = H * .3 + base * .85, nfs = Math.min(W * .08, H * .11);
       this.big(me ? 'VOCÊ VENCEU!' : 'VENCEU!', '', '#fde047', age, H * .3);
-      this.text(p.name, W / 2, H * .3 + Math.min(W * .13, H * .2) * .85, Math.min(W * .08, H * .11), p.color);
+      if (this.hasFaces()) {   // o boneco de quem venceu, ao lado do nome
+        this.ctx.font = '900 ' + Math.round(nfs) + 'px ' + FONT;
+        var nw = this.ctx.measureText(p.name).width, fsz = nfs * 1.4, k = Math.max(0, easeBack(age / 320));
+        this.face(p.av, p.color, W / 2 - nw / 2 - fsz * .6, ny + nfs * .02, fsz, k);
+      }
+      this.text(p.name, W / 2, ny, nfs, p.color);
     } else if (winners.length > 1) {
       var names = []; for (var i = 0; i < winners.length; i++) names.push(this.nameOf(winners[i]).name);
       this.big('EMPATE!', names.join(' · ') + ' dividem a vitória', '#fde047', age, H * .3);

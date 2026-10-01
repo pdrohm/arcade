@@ -59,7 +59,7 @@
   ARCADE.register('stopalfabeto', {
     tv: {
       html(c) {
-        const G = c.G, esc = c.esc, nm = c.nm; if (!G) return {};
+        const G = c.G, esc = c.esc, nm = p => p ? `<span style="display:inline-flex;align-items:center;vertical-align:middle"><span style="margin-right:8px;display:inline-block">${c.avatar(p, 38)}</span>${c.nm(p)}</span>` : ''; if (!G) return {};
         const ply = pid => c.C.players.find(p => p.pid === pid);
         let stage = `<style>${style}</style>`;
         let side = `<div class="box center"><div style="font-size:28px;font-weight:900">🔤 Stop Alfabeto</div><p class="sub mut">${G.phase === 'setup' ? 'ajustem as regras no celular' : `Categoria ${G.round} · ${G.left} letras livres`}</p></div>`;

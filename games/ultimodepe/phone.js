@@ -26,6 +26,13 @@
     document.head.appendChild(s);
   }
   const who = (G, pid) => G.roster.find(p => p.pid === pid) || { name: '?', color: '#94a3b8' };
+  // Boneco da pessoa: quem está na sala usa o do núcleo (c.avatar); quem já saiu, o do roster (cor em hex).
+  function face(c, p, size) {
+    const live = (c.C && c.C.players || []).find(x => x.pid === p.pid);
+    if (live && c.avatar) return c.avatar(live, size);
+    if (A.avatar && A.avatar.svg) return `<span class="avatar" style="width:${size}px;height:${size}px">${A.avatar.svg(p.av, p.color, size)}</span>`;
+    return '';
+  }
   const ownBody = G => G && G.you ? (G.bodies || []).find(b => b.pid === G.you.pid) : null;
   const left = c => { const r = c && c.remaining(); return r === null || r === undefined ? null : r * 1000; };
   // mesma regra de contraste da paleta da casa (branco no roxo, preto no verde)
@@ -273,7 +280,7 @@
     for (const o of G.outList.slice().reverse()) if (!seen.has(o.pid)) { seen.add(o.pid); list.push({ pid: o.pid, pos: pos++, round: o.round }); }
     for (const p of G.roster) if (!seen.has(p.pid)) list.push({ pid: p.pid, pos: pos++ });
     const host = c.you && c.you.pid === G.hostPid;
-    el.innerHTML = `<div class="udp-rank">${list.map(x => { const p = who(G, x.pid); return `<p class="${c.you && x.pid === c.you.pid ? 'me' : ''}"><i>${x.pos}º</i><span class="nm" style="background:${c.esc(p.color)};color:${ink(p.color)}">${c.esc(p.name)}</span>${x.round ? `<small>rodada ${x.round}</small>` : ''}</p>`; }).join('')}</div>
+    el.innerHTML = `<div class="udp-rank">${list.map(x => { const p = who(G, x.pid); return `<p class="${c.you && x.pid === c.you.pid ? 'me' : ''}"><i>${x.pos}º</i>${face(c, p, 34)}<span class="nm" style="background:${c.esc(p.color)};color:${ink(p.color)}">${c.esc(p.name)}</span>${x.round ? `<small>rodada ${x.round}</small>` : ''}</p>`; }).join('')}</div>
       ${host ? '<button class="btn big ok" id="udp-again">🔁 Jogar de novo</button>' : '<p class="sub center mut">O primeiro jogador pode começar outra partida.</p>'}`;
     const again = document.getElementById('udp-again');
     if (again) again.onclick = ev => { ev.stopPropagation(); A.send({ t: 'udp-again' }); };
@@ -321,7 +328,7 @@
     key(c) {
       const G = c.G;
       if (!G) return 'loading';
-      if (G.phase === 'setup') return 'setup:' + JSON.stringify([G.variant, G.showOthers, G.hostPid, c.C.players.map(p => [p.pid, p.name, p.color, p.on])]);
+      if (G.phase === 'setup') return 'setup:' + JSON.stringify([G.variant, G.showOthers, G.hostPid, c.C.players.map(p => [p.pid, p.name, p.color, p.av, p.on])]);
       return 'arena:' + G.matchId;
     },
     html(c) {

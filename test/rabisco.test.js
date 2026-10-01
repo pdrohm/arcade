@@ -219,10 +219,12 @@ test('modo Caos: sem borracha, o servidor recusa desfazer', () => {
 
 test('dicas aparecem com o tempo', async () => {
   const m = sala(2);
-  m.g.action(m.players[0], { t: 'rb-cfg', cfg: { drawSec: 30, hints: 4, pace: 'cedo' } });
+  // palavra longa e fixa: com palavra curta só sai 1 dica, no meio do tempo (o teste esperaria demais)
+  m.g.action(m.players[0], { t: 'rb-words', text: 'paralelepipedo, helicoptero, computador' });
+  m.g.action(m.players[0], { t: 'rb-cfg', cfg: { drawSec: 30, hints: 4, pace: 'cedo', onlyCustom: true } });
   const { outros } = comecar(m);
   const v = m.V(outros[0]);
-  if (v.hintsTotal === 0) return;   // palavra curta: sem dica
+  assert.equal(v.hintsTotal, 4);
   const tick = setInterval(() => {}, 1000);
   await new Promise(r => setTimeout(r, 30 * 1000 * 0.2 + 1500));
   clearInterval(tick);

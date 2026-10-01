@@ -71,7 +71,7 @@
             <div class="ps-mates">${t.players.map(pid => {
               const p = ply(pid); if (!p) return '';
               const papel = pid === G.clue && G.phase !== 'setup' ? ' 🗝️' : pid === G.guess && G.phase !== 'setup' ? ' 👂' : '';
-              return `<span class="nm" style="background:rgba(255,255,255,0.07);color:#cbd5e1;font-size:14px">${esc(p.name)}${papel}${p.on === false ? ' 📵' : ''}</span>`;
+              return `<span class="nm" style="background:rgba(255,255,255,0.07);color:#cbd5e1;font-size:14px">${c.avatar(p, 24)} ${esc(p.name)}${papel}${p.on === false ? ' 📵' : ''}</span>`;
             }).join('')}</div>`).join('')}</div></div>`;
         side += `<div class="event">${c.C.event ? c.hl(c.C.event.text) : ''}</div>`;
         return { side };
@@ -84,7 +84,7 @@
         const col = i => G.colors[i % G.colors.length];
         const ply = pid => c.C.players.find(p => p.pid === pid) || null;
         const nome = pid => { const p = ply(pid); return p ? esc(p.name) : '—'; };
-        const nmc = pid => { const p = ply(pid); return p ? `<span class="nm" style="${c.nmStyle(p)}">${esc(p.name)}</span>` : '—'; };
+        const nmc = pid => { const p = ply(pid); return p ? `${c.avatar(p, 44)} <span class="nm" style="${c.nmStyle(p)}">${esc(p.name)}</span>` : '—'; };
 
         const tag = `${G.phase}:${G.round}:${G.turn}:${G.hits}:${G.clue}:${G.guess}:${G.teams.map(t => t.score).join(',')}`;
         if (tag !== lastPhase) {
@@ -126,8 +126,8 @@
           lastTurnTag = t2; lastTick = -1;
           c.turnover(`<div class="round">Rodada ${G.round} de ${G.cfg.rounds}</div>
             <div><small>AGORA JOGA</small><div class="who2" style="background:${col(G.turn)};color:#08211f">${tname(G.turn)}</div></div>
-            <div><small>🗝️ DÁ AS DICAS</small><div class="who2 sm" style="background:#fff;color:#111">${nome(G.clue)}</div></div>
-            <div><small>👂 ADIVINHA</small><div class="who2 sm" style="background:#fff;color:#111">${nome(G.guess)}</div></div>`, 3000);
+            <div><small>🗝️ DÁ AS DICAS</small><div>${c.avatar(ply(G.clue), 80)}</div><div class="who2 sm" style="background:#fff;color:#111">${nome(G.clue)}</div></div>
+            <div><small>👂 ADIVINHA</small><div>${c.avatar(ply(G.guess), 80)}</div><div class="who2 sm" style="background:#fff;color:#111">${nome(G.guess)}</div></div>`, 3000);
           c.chord([523, 659, 784]);
         } else if (G.phase === 'result' && t2 !== lastTurnTag) { lastTurnTag = t2; c.chord([784, 587, 392]); }
         else if (G.phase !== 'ready' && G.phase !== 'result') lastTurnTag = t2;

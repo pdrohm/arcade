@@ -69,7 +69,7 @@ test('tiroteio: nascem espalhados, longe uns dos outros', () => {
 function sala(n) {
   const players = [];
   const cores = ['roxo', 'rosa', 'ciano', 'amarelo', 'verde', 'vermelho', 'azul', 'branco'];
-  for (let i = 0; i < n; i++) players.push({ pid: 'p' + i, name: 'J' + i, color: cores[i], on: true });
+  for (let i = 0; i < n; i++) players.push({ pid: 'p' + i, name: 'J' + i, color: cores[i], av: [i, (i + 3) % 10, (i + 5) % 12], on: true });
   let timer = null;
   const api = {
     players,
@@ -108,6 +108,12 @@ test('só o primeiro jogador escolhe a variante e começa; precisa de 2', () => 
   m.g.action(m.players[0], { t: 'udp-start' });
   assert.equal(m.V('p0').phase, 'intro');
   assert.equal(m.V('p0').roster.length, 3);
+  // o boneco de cada um vai junto no roster (TV e celular desenham o rosto em cima do personagem)
+  assert.deepEqual(m.V('p0').roster.map(p => p.av), [[0, 3, 5], [1, 4, 6], [2, 5, 7]]);
+  assert.deepEqual(m.V(null, 'tv').roster[1].av, [1, 4, 6]);
+  // trocou o boneco no meio da partida: o roster acompanha
+  m.players[2].av = [9, 9, 11];
+  assert.deepEqual(m.V('p1').roster[2].av, [9, 9, 11]);
 });
 
 test('fases na ordem certa, com o servidor armando cada uma', () => {

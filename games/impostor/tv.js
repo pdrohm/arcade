@@ -47,7 +47,7 @@
     const p = ply(c, pid); if (!p) return '';
     const G = c.G, cl = G.clues[pid] || [];
     const cls = ['imp-p', G.speaker === pid ? 'now' : '', G.out.includes(pid) ? 'dead' : '', extra && extra.ok ? 'ok' : ''].join(' ');
-    return `<div class="${cls}"><span class="who">${c.nm(p)}</span>
+    return `<div class="${cls}">${c.avatar(p, 52)}<span class="who">${c.nm(p)}</span>
       ${cl.length ? `<div class="cl">${cl.map((x, i) => `<b>${c.esc(x)}</b>${i === 0 && cl.length > 1 ? '' : ''}`).join('')}</div>` : `<div class="cl"><small>${G.speaker === pid ? 'falando agora…' : '—'}</small></div>`}
       ${extra && extra.st ? `<div class="st">${extra.st}</div>` : ''}</div>`;
   }
@@ -71,7 +71,7 @@
       return `<div class="imp-stage"><div class="imp-tag">Rodada ${G.round} de ${G.rounds}${cat ? ' · ' + cat : ''}</div>
         <div class="imp-big">👀 Vejam a palavra no celular</div>
         <div class="imp-tag">ninguém mostra a tela para ninguém</div>
-        <div class="imp-ring">${c.C.players.map(p => `<div class="imp-p ${G.seen.includes(p.pid) ? 'ok' : ''}"><span class="who">${c.nm(p)}</span><div class="st">${G.seen.includes(p.pid) ? '✅ já vi' : '⏳'}</div></div>`).join('')}</div></div>`;
+        <div class="imp-ring">${c.C.players.map(p => `<div class="imp-p ${G.seen.includes(p.pid) ? 'ok' : ''}">${c.avatar(p, 52)}<span class="who">${c.nm(p)}</span><div class="st">${G.seen.includes(p.pid) ? '✅ já vi' : '⏳'}</div></div>`).join('')}</div></div>`;
     }
     if (G.phase === 'clues') {
       const sp = ply(c, G.speaker);
@@ -99,8 +99,8 @@
         <div class="imp-mid">${R.over ? 'Empatou de novo: o impostor escapou.' : 'Ninguém foi eliminado. Mais 30 segundos.'}</div>
         ${R.over ? `<div class="imp-mid">A palavra era <span class="imp-word">${esc(G.word || '')}</span> · impostor: ${(G.impostors || []).map(p => c.nm(ply(c, p))).join(' ')}</div>` : ''}</div>`;
       if (step === 0) return `<div class="imp-stage"><div class="imp-tag">votação fechada</div><div class="imp-big">O mais votado foi…</div><div class="imp-dots">• • •</div></div>`;
-      if (step === 1) return `<div class="imp-stage"><div class="imp-tag">o mais votado foi</div><div class="imp-big" style="font-size:110px;font-size:clamp(40px,7vw,110px) /* tv-ok */">${c.nm(alvo)}</div><div class="imp-dots">• • •</div></div>`;
-      return `<div class="imp-stage"><div class="imp-big" style="font-size:80px;font-size:clamp(34px,5vw,80px) /* tv-ok */">${c.nm(alvo)} ${R.wasImp ? 'ERA o impostor! 🕵️‍♂️' : 'NÃO era o impostor. 😬'}</div>
+      if (step === 1) return `<div class="imp-stage"><div class="imp-tag">o mais votado foi</div><div>${c.avatar(alvo, 140)}</div><div class="imp-big" style="font-size:110px;font-size:clamp(40px,7vw,110px) /* tv-ok */">${c.nm(alvo)}</div><div class="imp-dots">• • •</div></div>`;
+      return `<div class="imp-stage"><div>${c.avatar(alvo, 120)}</div><div class="imp-big" style="font-size:80px;font-size:clamp(34px,5vw,80px) /* tv-ok */">${c.nm(alvo)} ${R.wasImp ? 'ERA o impostor! 🕵️‍♂️' : 'NÃO era o impostor. 😬'}</div>
         ${G.word ? `<div class="imp-mid">A palavra era <span class="imp-word">${esc(G.word)}</span></div>` : ''}
         ${G.whiteWord ? `<div class="imp-tag">o impostor tinha "${esc(G.whiteWord)}"</div>` : ''}
         <div class="imp-mid">${R.winner === 'inocentes' ? '✅ Os inocentes venceram a rodada!' : R.winner === 'impostores' ? `😈 ${(G.impostors || []).map(p => c.nm(ply(c, p))).join(' ')} venceu!` : 'A caçada continua…'}</div></div>`;
@@ -116,7 +116,7 @@
       ${G.phase === 'end' ? `<div style="font-size:100px">🏆</div><div class="imp-big">${c.nm(ordem[0])} venceu!</div>`
         : `<div class="imp-big">Palavra: <span class="imp-word">${esc(G.word || '')}</span></div>
            <div class="imp-mid">${R.winner === 'inocentes' ? '✅ Inocentes venceram' : R.winner === 'impostores' ? '😈 Impostor venceu' : 'Sem vencedor'}${G.guess && G.guess.text ? ` · chute: "${esc(G.guess.text)}" ${G.guess.ok ? '✅' : '❌'}` : ''}</div>`}
-      <div class="imp-rank">${ordem.map((p, i) => `<div class="imp-row"><span style="min-width:44px">${i + 1}º</span>${c.nm(p)}<span class="g">${(G.gain || {})[p.pid] ? `+${G.gain[p.pid]}` : ''}</span><span class="p">${G.scores[p.pid] || 0}</span></div>`).join('')}</div>
+      <div class="imp-rank">${ordem.map((p, i) => `<div class="imp-row"><span style="min-width:44px">${i + 1}º</span>${c.avatar(p, 40)}${c.nm(p)}<span class="g">${(G.gain || {})[p.pid] ? `+${G.gain[p.pid]}` : ''}</span><span class="p">${G.scores[p.pid] || 0}</span></div>`).join('')}</div>
       <div class="imp-tag">${G.phase === 'end' ? 'toque em "Jogar de novo" no celular' : 'toque em "Próxima palavra" no celular'}</div></div>`;
   }
 

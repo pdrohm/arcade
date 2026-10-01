@@ -14,8 +14,9 @@
     .qm-bar .n { min-width:160px; text-align:right; }
     .qm-tag { font-size:24px; font-size:clamp(16px,1.6vw,24px); color:#9aa6c0; font-weight:800; letter-spacing:1px; text-transform:uppercase; } /* tv-ok: valor fixo antes */
     .qm-vs { display:flex; flex-wrap:wrap; justify-content:center; margin-left:-6px; margin-right:-6px; margin-bottom:-12px; }
-    .qm-vs > * { margin:0 6px 12px; }   /* no lugar de gap:12px */
-    .qm-v { padding:12px 22px; border-radius:14px; font-size:26px; font-size:clamp(16px,1.8vw,26px); font-weight:900; opacity:.35; } .qm-v.ok { opacity:1; box-shadow:0 0 0 4px #22c55e; } /* tv-ok: valor fixo antes */
+    .qm-vs > * { margin:0 6px 12px; }
+    .qm-v .avatar { margin-right:10px; }   /* no lugar de gap:12px */
+    .qm-v { display:flex; align-items:center; padding:12px 22px; border-radius:14px; font-size:26px; font-size:clamp(16px,1.8vw,26px); font-weight:900; opacity:.35; } .qm-v.ok { opacity:1; box-shadow:0 0 0 4px #22c55e; } /* tv-ok: valor fixo antes */
     .qm-win { font-size:60px; font-size:clamp(28px,4vw,60px); font-weight:900; animation:qmpop .4s; } /* tv-ok: valor fixo antes */
     @keyframes qmpop { from { transform:scale(.6); opacity:0; } }
   `;
@@ -27,13 +28,13 @@
         let side = `<div class="box center"><div style="font-size:28px;font-weight:900">👉 Quem é mais provável?</div><p class="sub mut">Pergunta ${G.round} de ${G.rounds}</p></div>`;
         if (G.phase === 'vote') {
           stage += `<div class="qm-stage"><div class="qm-tag">Pergunta ${G.round} de ${G.rounds}</div><div class="qm-q">${esc(G.q)}</div>
-            <div class="qm-tag">votem no celular</div><div class="qm-vs">${c.C.players.map(p => `<div class="qm-v ${G.voted.includes(p.pid) ? 'ok' : ''}" style="${c.nmStyle(p)}">${G.voted.includes(p.pid) ? '✓ ' : ''}${esc(p.name)}</div>`).join('')}</div></div>`;
+            <div class="qm-tag">votem no celular</div><div class="qm-vs">${c.C.players.map(p => `<div class="qm-v ${G.voted.includes(p.pid) ? 'ok' : ''}" style="${c.nmStyle(p)}">${c.avatar(p, 36)} ${G.voted.includes(p.pid) ? '✓ ' : ''}${esc(p.name)}</div>`).join('')}</div></div>`;
           side += c.timerHtml('', G.turnMs);
         } else {
           const cnt = G.count || {}, L = G.last, total = Math.max(1, ...Object.keys(cnt).map(k => cnt[k]));
           const ordem = [...c.C.players].sort((a, b) => (cnt[b.pid] || 0) - (cnt[a.pid] || 0));
           stage += `<div class="qm-stage"><div class="qm-q" style="font-size:44px;font-size:clamp(22px,2.8vw,44px) /* tv-ok */">${esc(G.q)}</div>
-            <div class="qm-bars">${ordem.map(p => `<div class="qm-bar"><span class="n">${nm(p)}</span><div class="b" style="width:${Math.max(2, (cnt[p.pid] || 0) / total * 100)}%;background:${c.ci(p.color).hex}">${cnt[p.pid] || ''}</div>${L && L.tops.includes(p.pid) ? '<span>👑</span>' : ''}</div>`).join('')}</div>
+            <div class="qm-bars">${ordem.map(p => `<div class="qm-bar"><span class="n">${nm(p)}</span>${c.avatar(p, 44)}<div class="b" style="width:${Math.max(2, (cnt[p.pid] || 0) / total * 100)}%;background:${c.ci(p.color).hex}">${cnt[p.pid] || ''}</div>${L && L.tops.includes(p.pid) ? '<span>👑</span>' : ''}</div>`).join('')}</div>
             ${L ? `<div class="qm-win">${c.hl(c.C.event ? c.C.event.text : '')}</div>` : ''}
             <div class="qm-tag">${G.phase === 'end' ? '🏆 fim de jogo' : 'toque em "Próxima pergunta" no celular'}</div></div>`;
         }

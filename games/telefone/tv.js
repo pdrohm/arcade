@@ -27,7 +27,7 @@
   ARCADE.register('telefone', {
     tv: {
       html(c) {
-        const G = c.G, esc = c.esc, nm = c.nm;
+        const G = c.G, esc = c.esc, nm = p => p ? `<span style="display:inline-flex;align-items:center;vertical-align:middle"><span style="margin-right:8px;display:inline-block">${c.avatar(p, 38)}</span>${c.nm(p)}</span>` : '';
         if (!G) return { stage: '', side: '' };
         const ply = pid => c.C.players.find(p => p.pid === pid);
         let stage = `<style>${style}</style>`, side = '';

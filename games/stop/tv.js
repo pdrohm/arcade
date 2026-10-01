@@ -27,7 +27,7 @@
   ARCADE.register('stop', {
     tv: {
       html(c) {
-        const G = c.G, esc = c.esc, nm = c.nm; if (!G) return {};
+        const G = c.G, esc = c.esc, nm = p => p ? `<span style="display:inline-flex;align-items:center;vertical-align:middle"><span style="margin-right:8px;display:inline-block">${c.avatar(p, 38)}</span>${c.nm(p)}</span>` : ''; if (!G) return {};
         const ply = pid => c.C.players.find(p => p.pid === pid);
         const placar = () => `<div class="box"><p class="sub mut" style="margin-bottom:8px">Placar</p>${c.playersHtml({ info: p => `${G.scores[p.pid] || 0} pts${G.roundScores[p.pid] !== undefined ? ` (+${G.roundScores[p.pid]})` : ''}` })}</div>`;
         let stage = `<style>${style}</style>`, side = `<div class="box center"><div style="font-size:30px;font-weight:900">🛑 Stop</div><p class="sub mut">Rodada ${G.round} de ${G.rounds}</p></div>`;

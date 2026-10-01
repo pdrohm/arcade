@@ -78,7 +78,9 @@
   .rb-opt small { font-size:13px; font-weight:800; color:#6b6252; white-space:nowrap; }
   .rb-opt .e { font-size:28px; }
   .rb-wait { text-align:center; padding:26px 16px; }
-  .rb-wait .rb-av { width:64px; height:64px; font-size:28px; margin:0 auto 10px; border-width:3px; animation:rbbob 1.2s ease-in-out infinite; }
+  .rb-bob { display:flex; justify-content:center; margin-bottom:8px; animation:rbbob 1.2s ease-in-out infinite; }
+  .rb-pod .f { display:flex; justify-content:center; margin-bottom:2px; }
+  .rb-aw .e { display:flex; align-items:center; gap:6px; }
   @keyframes rbbob { 50% { transform:translateY(-6px); } }
   .rb-reveal { background:#f6f1e7; color:#141a2b; border-radius:20px; padding:18px; text-align:center; animation:rbin .35s cubic-bezier(.2,.8,.2,1); }
   @keyframes rbin { from { transform:scale(.85) rotate(-2deg); opacity:0; } }
@@ -195,7 +197,8 @@
     const col = C.ci(p.color);
     return { name: p.name, hex: col.hex, fg: col.dark ? '#fff' : '#111', on: p.on !== false };
   }
-  const av = (pid, size) => { const w = who(pid); const sz = size ? `width:${size}px;height:${size}px;font-size:${Math.round(size / 2)}px;border-width:1px;` : ''; return `<span class="rb-av" style="${sz}background:${w.hex};color:${w.fg}">${esc(initial(w.name))}</span>`; };
+  // Boneco da pessoa (shared/avatar.js, via ARCADE.avatarHtml); quem saiu da sala vira um boneco cinza.
+  const av = (pid, size) => A.avatarHtml(player(pid) || { color: null, av: null }, size || 30);
   const isRemote = () => G().place === 'remoto';
   const plural = (n, a, b) => `${n} ${n === 1 ? a : b}`;
   const $ = id => document.getElementById(id);
@@ -369,7 +372,7 @@
       const w = who(r.pid);
       const cls = ['rb-rk', r.pid === me() ? 'me' : '', g.guessed.indexOf(r.pid) >= 0 ? 'ok' : '', r.pid === g.drawer && (g.phase === 'draw' || g.phase === 'choose') ? 'dr' : '', w.on ? '' : 'off'].join(' ');
       const badge = (r.pid === g.drawer && (g.phase === 'draw' || g.phase === 'choose') ? ' ✏️' : '') + (g.guessed.indexOf(r.pid) >= 0 ? ' ✓' : '') + (r.pid === g.leader && r.score > 0 ? ' 👑' : '') + (w.on ? '' : ' 📵');
-      return `<div class="${cls}" data-pid="${esc(r.pid)}"><span class="rb-pl">${r.place}º</span><span class="dot" style="background:${w.hex}"></span><span>${esc(w.name)}${badge}</span><span class="sc">${r.score}</span></div>`;
+      return `<div class="${cls}" data-pid="${esc(r.pid)}"><span class="rb-pl">${r.place}º</span>${av(r.pid, 22)}<span>${esc(w.name)}${badge}</span><span class="sc">${r.score}</span></div>`;
     }).join('');
   }
 
@@ -446,7 +449,7 @@
           <p class="rb-small" style="text-align:center;margin-top:8px">Se não escolher a tempo, o jogo escolhe por você.</p>`;
       } else {
         const d = who(g.drawer);
-        st.innerHTML = `<div class="box rb-wait">${av(g.drawer)}<p class="sub"><b style="color:${d.hex}">${esc(d.name)}</b> está escolhendo a palavra…</p><p class="rb-small" style="margin-top:6px">Prepare os dedos para digitar ⌨️</p></div>`;
+        st.innerHTML = `<div class="box rb-wait"><div class="rb-bob">${av(g.drawer, 72)}</div><p class="sub"><b style="color:${d.hex}">${esc(d.name)}</b> está escolhendo a palavra…</p><p class="rb-small" style="margin-top:6px">Prepare os dedos para digitar ⌨️</p></div>`;
       }
       return;
     }
@@ -487,11 +490,11 @@
       const was = before.indexOf(r.pid);
       const mv = was < 0 || was === i ? '' : was > i ? `<span class="up">▲${was - i}</span>` : `<span class="down">▼${i - was}</span>`;
       const w = who(r.pid);
-      return `<div><span style="min-width:26px">${r.place}º</span><span class="dot" style="background:${w.hex};width:16px;height:16px;border-color:#141a2b"></span>${esc(w.name)} ${mv}<span class="sc">${r.score}</span></div>`;
+      return `<div><span style="min-width:26px">${r.place}º</span>${av(r.pid, 22)}${esc(w.name)} ${mv}<span class="sc">${r.score}</span></div>`;
     }).join('');
     const none = !g.guessed.length;
     return `<div class="rb-reveal"><div class="k">A palavra era</div><div class="w">${esc(g.word || '')}</div>
-      ${none ? '<div style="font-weight:900;font-size:18px">Ninguém acertou 😭</div>' : `<div class="rb-gains">${gains.map(x => { const w = who(x.pid); return `<div class="rb-gain"><span class="pts">+${x.pts}</span><span class="dot" style="background:${w.hex};width:16px;height:16px;border-color:#141a2b"></span>${esc(w.name)}${x.pid === g.drawer ? ' ✏️' : ''}</div>`; }).join('')}</div>`}
+      ${none ? '<div style="font-weight:900;font-size:18px">Ninguém acertou 😭</div>' : `<div class="rb-gains">${gains.map(x => { const w = who(x.pid); return `<div class="rb-gain"><span class="pts">+${x.pts}</span>${av(x.pid, 22)}${esc(w.name)}${x.pid === g.drawer ? ' ✏️' : ''}</div>`; }).join('')}</div>`}
       <div class="rb-mini">${mini}</div></div>`;
   }
 
@@ -604,12 +607,12 @@
     if (pod) {
       const medal = ['🥇', '🥈', '🥉'];
       const order = [1, 0, 2].filter(i => r[i]);
-      pod.innerHTML = order.map(i => { const w = who(r[i].pid); return `<div class="rb-pod p${i + 1}"><div class="m">${medal[i]}</div><div class="n" style="color:${w.hex}">${esc(w.name)}</div><div class="s">${r[i].score}</div><div class="bar"></div></div>`; }).join('');
+      pod.innerHTML = order.map(i => { const w = who(r[i].pid); return `<div class="rb-pod p${i + 1}"><div class="f">${av(r[i].pid, i ? 52 : 64)}</div><div class="m">${medal[i]}</div><div class="n" style="color:${w.hex}">${esc(w.name)}</div><div class="s">${r[i].score}</div><div class="bar"></div></div>`; }).join('');
     }
     const aw = $('rb-awards');
-    if (aw) aw.innerHTML = (g.awards || []).map(a => { const w = who(a.pid); return `<div class="rb-aw"><div class="e">${a.emoji}</div><b>${esc(a.title)}</b><div class="n" style="color:${w.hex}">${esc(w.name)}</div><small>${esc(a.detail)}</small></div>`; }).join('');
+    if (aw) aw.innerHTML = (g.awards || []).map(a => { const w = who(a.pid); return `<div class="rb-aw"><div class="e">${a.emoji} ${av(a.pid, 30)}</div><b>${esc(a.title)}</b><div class="n" style="color:${w.hex}">${esc(w.name)}</div><small>${esc(a.detail)}</small></div>`; }).join('');
     const fin = $('rb-final');
-    if (fin) fin.innerHTML = `<div class="players">${r.map(x => { const w = who(x.pid); return `<div class="pl ${x.pid === me() ? 'me' : ''}"><span class="dot" style="background:${w.hex}"></span><b>${x.place}º ${esc(w.name)}</b><span>${x.score} pts</span></div>`; }).join('')}</div>`;
+    if (fin) fin.innerHTML = `<div class="players">${r.map(x => { const w = who(x.pid); return `<div class="pl ${x.pid === me() ? 'me' : ''}">${av(x.pid, 30)}<b>${x.place}º ${esc(w.name)}</b><span>${x.score} pts</span></div>`; }).join('')}</div>`;
   }
 
   // ---------- cliques (delegados: os pedaços atualizados por dentro não passam pelo index.html) ----------

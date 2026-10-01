@@ -28,7 +28,9 @@ window.ARCADE.tvLobby = (() => {
   const rgba = (hex, a) => { const h = String(hex).replace('#', ''); const n = parseInt(h.length === 3 ? h.replace(/(.)/g, '$1$1') : h, 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
   function avatar(c, p) {
     const col = c.ci(p.color);
-    return { style: `background:${col.hex};color:${col.dark ? '#fff' : '#111'}`, html: `<span class="tvl-av"><span>${esc(initial(p.name))}</span></span>` };
+    const AV = A.avatar;   // boneco da pessoa (shared/avatar.js); sem ele, a inicial como antes
+    const face = AV ? AV.svg(p.av, col.hex) : `<span>${esc(initial(p.name))}</span>`;
+    return { style: `background:${col.hex};color:${col.dark ? '#fff' : '#111'}`, sig: col.hex + '|' + (p.av || []).join(',') + '|' + (AV ? '' : initial(p.name)), html: `<span class="tvl-av${AV ? ' face' : ''}">${face}</span>` };
   }
 
   // ---------- montagem (uma vez) ----------
@@ -126,7 +128,7 @@ window.ARCADE.tvLobby = (() => {
       chip.classList.toggle('off', p.on === false);
       w.classList.remove('out');
       const nm = chip.querySelector('.tvl-nm'); if (nm.textContent !== p.name) nm.textContent = p.name;
-      const ini = chip.querySelector('.tvl-av span'); if (ini.textContent !== initial(p.name)) ini.textContent = initial(p.name);
+      if (chip.dataset.av !== av.sig) { chip.dataset.av = av.sig; const old = chip.querySelector('.tvl-av'); old.outerHTML = av.html; }   // trocou o boneco: troca o rosto
       if (el.chips.children[i] !== w) el.chips.insertBefore(w, el.chips.children[i] || null);
     });
     have.forEach((w, pid) => {

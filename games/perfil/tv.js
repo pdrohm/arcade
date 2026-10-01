@@ -27,6 +27,7 @@
     .pf-pawn { aspect-ratio:1; } /* tv-ok */
     /* TV antiga (sem aspect-ratio): um espaçador de largura zero dá a altura ao peão e à casinha do número */
     .pf-pawn::before { content:''; display:block; padding-top:100%; }
+    .pf-pawn { overflow:hidden; } .pf-pawn .avatar { position:absolute; left:0; top:0; width:100% !important; height:100% !important; }
     .pf-pawn.hop { animation:pfhop .3s; }
     @keyframes pfhop { 50% { transform:translate(-50%,-95%) scale(1.15); } }
     /* 10 colunas com 5px de vão, na conta (calc a TV tem): igualzinho ao grid de baixo */
@@ -105,8 +106,8 @@
             <span class="sub mut">Rodada ${G.round}</span>
             ${G.card ? `<span class="badge" style="background:${cat.color};color:${cat.text}">${cat.name}</span>` : ''}</div>
           <div class="pf-papeis">
-            <span>${nm(m)} <span class="sub mut">📖 mediador</span></span>
-            <span>${G.phase === 'chip' && G.chip ? nm(c.C.players.find(p => p.pid === G.chip.player)) + ' <span class="sub mut">🔵 ficha azul</span>' : nm(g) + ' <span class="sub mut">🎯 adivinha</span>'}</span>
+            <span>${c.avatar(m, 36)} ${nm(m)} <span class="sub mut">📖 mediador</span></span>
+            <span>${c.avatar(G.phase === 'chip' && G.chip ? c.C.players.find(p => p.pid === G.chip.player) : g, 36)} ${G.phase === 'chip' && G.chip ? nm(c.C.players.find(p => p.pid === G.chip.player)) + ' <span class="sub mut">🔵 ficha azul</span>' : nm(g) + ' <span class="sub mut">🎯 adivinha</span>'}</span>
           </div>${c.timerHtml('', G.turnMs)}</div>`;
 
         if ((G.phase === 'bonus' || G.phase === 'bonusguess') && G.bonus) {
@@ -156,6 +157,7 @@
             let el = document.getElementById('pf-pawn-' + pid);
             if (!el) { el = document.createElement('div'); el.id = 'pf-pawn-' + pid; el.className = 'pf-pawn'; board.appendChild(el); }
             el.style.background = c.ci(p.color).hex;
+            if (el.getAttribute('data-av') !== JSON.stringify(p.av)) { el.setAttribute('data-av', JSON.stringify(p.av)); el.innerHTML = c.avatar(p, 40); }
             const at = posMap[pid] || 0, gr = Object.keys(groups).length ? (groups[G.pos[pid] || 0] || [pid]) : [pid];
             const k = gr.indexOf(pid), n = gr.length;
             const rc = cell(at), row = rc.row, col = rc.col;
@@ -197,7 +199,7 @@
         const ov = document.getElementById('pf-overlay');
         if (ov && G.phase === 'win') {
           const w = c.C.players.find(p => p.pid === G.winner);
-          ov.innerHTML = `<div class="pf-win"><div style="font-size:110px">🏆</div><h2 style="font-size:52px">${c.nm(w)} venceu!</h2><p class="sub">Toque em "Jogar de novo" no celular</p></div>`;
+          ov.innerHTML = `<div class="pf-win">${c.avatar(w, 180)}<div style="font-size:110px">🏆</div><h2 style="font-size:52px">${c.nm(w)} venceu!</h2><p class="sub">Toque em "Jogar de novo" no celular</p></div>`;
         }
 
         // aviso de troca de vez em tela cheia
@@ -209,8 +211,8 @@
             const m = c.C.players.find(p => p.pid === G.order[G.mediator]), g = c.C.players.find(p => p.pid === G.order[G.turn]);
             if (m && g) {
               const big = novoRound || novoMed;
-              c.turnover(`${big ? `<div class="round">Rodada ${G.round}</div><div><small>📖 MEDIADOR (lê as dicas)</small><div class="who2" style="${c.nmStyle(m)}">${c.esc(m.name)}</div></div>` : ''}
-                <div><small>🎯 ${big ? 'COMEÇA ADIVINHANDO' : 'AGORA É A VEZ DE'}</small><div class="who2 ${big ? 'sm' : ''}" style="${c.nmStyle(g)}">${c.esc(g.name)}</div></div>
+              c.turnover(`${big ? `<div class="round">Rodada ${G.round}</div><div><small>📖 MEDIADOR (lê as dicas)</small><div>${c.avatar(m, 110)}</div><div class="who2" style="${c.nmStyle(m)}">${c.esc(m.name)}</div></div>` : ''}
+                <div><small>🎯 ${big ? 'COMEÇA ADIVINHANDO' : 'AGORA É A VEZ DE'}</small><div>${c.avatar(g, big ? 110 : 150)}</div><div class="who2 ${big ? 'sm' : ''}" style="${c.nmStyle(g)}">${c.esc(g.name)}</div></div>
                 ${big ? '' : `<div class="round" style="font-size:18px">mediador: ${c.esc(m.name)}</div>`}`, big ? 4200 : 2600);
               if (big) c.chord([523, 659, 784]); else c.beep(660, .12, 'triangle', .18);
             }

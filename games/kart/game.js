@@ -24,9 +24,9 @@ module.exports = {
     let tvReady = false, countdown = 3, error = '', loop = null, inputs = new Map();
     let previous = 0, accumulator = 0, streamClock = 0, phaseClock = 0, disposed = false;
     const now = () => performance.now();
-    function entrant(p, i) { return { pid: p.pid, name: p.name, color: api.colorInfo(p.color).hex, driver: i % DRIVERS.length, kart: 0, ready: false }; }
+    function entrant(p, i) { return { pid: p.pid, name: p.name, av: p.av, color: api.colorInfo(p.color).hex, driver: i % DRIVERS.length, kart: 0, ready: false }; }
     function syncNames() {
-      for (const p of roster) { const live = api.byPid(p.pid); if (live) p.name = live.name; }
+      for (const p of roster) { const live = api.byPid(p.pid); if (live) { p.name = live.name; p.av = live.av; } }
     }
     function canStart() { return roster.length >= 1 && roster.length <= 4 && roster.every(p => p.ready); }
     function stopLoop() { clearInterval(loop); loop = null; inputs.clear(); }

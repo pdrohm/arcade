@@ -8,6 +8,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const QRCode = require('qrcode');
+const Avatar = require('./shared/avatar');   // boneco de cada pessoa: [olhos, boca, enfeite]
 
 const PORT = Number(process.env.PORT) || 3000;
 const GRACE_MS = 2 * 60 * 1000;                 // tela bloqueada não é "sem conexão"
@@ -265,7 +266,7 @@ function makeRoom(code) {
         for (const [ws, c] of clients) {
           if (ws.readyState !== 1 || ws.bufferedAmount > 65536) continue;
           const p = playerOf(ws);
-          const me = p ? { pid: p.pid, name: p.name, color: p.color, on: p.on } : null;
+          const me = p ? { pid: p.pid, name: p.name, color: p.color, av: p.av, on: p.on } : null;
           send(ws, { t: 'game-frame', gameId: core.gameId, game: game.view(me, c.type) });
         }
       },
@@ -328,12 +329,13 @@ function makeRoom(code) {
       if (i < 0) {
         if (core.players.length >= MAX_PLAYERS_PER_ROOM) return recusa('A sala está cheia.');
         if (core.players.some(p => p.color === msg.color)) return recusa('Essa cor já tem dono. Escolha outra.');
-        core.players.push({ pid: c.pid, name, color: msg.color, on: true, k: mkSecret() });
+        core.players.push({ pid: c.pid, name, color: msg.color, av: Avatar.clean(msg.av, c.pid), on: true, k: mkSecret() });
         core.event = { text: `${name} entrou na sala.`, color: msg.color, at: Date.now() };
         if (game && game.onPlayerJoin) game.onPlayerJoin(core.players[core.players.length - 1]);
       } else {
         if (!core.players[i].k) core.players[i].k = claimSid || mkSecret();   // vaga restaurada/antiga sem dono: fixa o segredo agora
         core.players[i].name = name;
+        if (msg.av) core.players[i].av = Avatar.clean(msg.av, core.players[i].pid);
         if (core.screen === 'library' && !core.players.some((q, j) => j !== i && q.color === msg.color)) core.players[i].color = msg.color;
       }
       c.name = name;
@@ -361,6 +363,13 @@ function makeRoom(code) {
       } else core.players[i].name = name;
       c.name = name;
       core.event = { text: `${old} agora se chama ${name}.`, color: (core.players[byPid(c.pid)] || {}).color, at: Date.now() };
+      broadcast();
+    },
+    avatar(ws, msg) {                                // trocar o boneco (vale na hora, em qualquer tela)
+      const c = clients.get(ws);
+      const i = c && c.pid ? byPid(c.pid) : -1;
+      if (i < 0) return;
+      core.players[i].av = Avatar.clean(msg.av, core.players[i].pid);
       broadcast();
     },
     kick(ws, msg) {                                  // tira da sala quem está sem conexão
@@ -402,15 +411,15 @@ function makeRoom(code) {
   function viewFor(c) {
     const me = c && c.pid ? core.players.find(p => p.pid === c.pid) : null;
     // o segredo (k) da vaga NUNCA sai para os outros: a lista pública leva só pid/nome/cor/on.
-    const publicPlayers = core.players.map(p => ({ pid: p.pid, name: p.name, color: p.color, on: p.on }));
+    const publicPlayers = core.players.map(p => ({ pid: p.pid, name: p.name, color: p.color, av: p.av, on: p.on }));
     // uma cópia sem segredo é o que o jogo recebe como "me" (evita vazar k por engano numa view)
-    const mePub = me ? { pid: me.pid, name: me.name, color: me.color, on: me.on } : null;
+    const mePub = me ? { pid: me.pid, name: me.name, color: me.color, av: me.av, on: me.on } : null;
     const out = {
       t: 'state',
       now: Date.now(),
       room: code,
       // só o próprio dono recebe o seu sid (para reconectar), e só no seu próprio "you".
-      you: me ? { pid: me.pid, name: me.name, color: me.color, i: byPid(me.pid), sid: me.k } : null,
+      you: me ? { pid: me.pid, name: me.name, color: me.color, av: me.av, i: byPid(me.pid), sid: me.k } : null,
       core: { screen: core.screen, gameId: core.gameId, players: publicPlayers, event: core.event, timerEnd: core.timerEnd, startedBy: core.startedBy || null },
       game: null,
     };
@@ -460,7 +469,7 @@ function makeRoom(code) {
     if (!data || !data.core || !Array.isArray(data.core.players)) return;
     core = { ...freshCore(), ...data.core };
     room.lastActive = data.lastActive || Date.now();
-    for (const p of core.players) seen(p.pid);
+    for (const p of core.players) { seen(p.pid); p.av = Avatar.clean(p.av, p.pid); }
     if (core.gameId && games.has(core.gameId) && data.gameState) {
       game = games.get(core.gameId).create(makeApi());
       if (typeof game.restore === 'function') game.restore(data.gameState);

@@ -38,7 +38,7 @@
       key(c) { const G = c.G; return G ? `${G.phase}:${G.round}:${G.review}:${G.stopBy ? 1 : 0}:${G.phase === 'setup' ? JSON.stringify(G.cfg) : ''}` : ''; },
       html(c) {
         ensureStyle();
-        const G = c.G, esc = c.esc, nm = c.nm;
+        const G = c.G, esc = c.esc, nm = p => p ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle">${c.avatar(p, 26)}${c.nm(p)}</span>` : '';
         if (!G) return '';
         const ply = pid => c.C.players.find(p => p.pid === pid);
         const placar = () => `<div class="box"><p class="sub mut" style="margin-bottom:8px">Placar</p>${c.playersHtml({ info: p => `${G.scores[p.pid] || 0} pts${G.roundScores[p.pid] !== undefined ? ` (+${G.roundScores[p.pid]})` : ''}` })}</div>`;

@@ -94,7 +94,7 @@
 
       html(c) {
         ensureStyle();
-        const G = c.G, esc = c.esc, nm = c.nm;
+        const G = c.G, esc = c.esc, nm = p => p ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle">${c.avatar(p, 26)}${c.nm(p)}</span>` : '';
         if (!G) return '<div class="box center"><p class="sub">Preparando…</p></div>';
         const prog = () => `<div class="box"><p class="sub mut" style="margin-bottom:6px" id="tsf-progtxt">Rodada ${G.step + 1} de ${G.total} · ${G.done.length}/${G.order.length} entregaram</p>
           <div class="tsf-prog" id="tsf-prog">${G.order.map(pid => { const p = c.C.players.find(x => x.pid === pid); return p ? `<span class="nm" style="${c.nmStyle(p)};opacity:${G.done.includes(pid) ? 1 : .35}">${G.done.includes(pid) ? '✓ ' : ''}${esc(p.name)}</span>` : ''; }).join('')}</div></div>`;

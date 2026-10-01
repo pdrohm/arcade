@@ -39,7 +39,7 @@
       },
       html(c) {
         ensureStyle();
-        const G = c.G, esc = c.esc, nm = c.nm;
+        const G = c.G, esc = c.esc, nm = p => p ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle">${c.avatar(p, 26)}${c.nm(p)}</span>` : '';
         if (!G || !c.you) return '';
         const me = c.you.pid;
         const ply = pid => c.C.players.find(p => p.pid === pid);

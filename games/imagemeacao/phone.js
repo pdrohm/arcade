@@ -271,7 +271,7 @@
               <div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 6px 10px 14px">${tt.players.map((pid, i) => {
                 const p = c.C.players.find(x => x.pid === pid);
                 const now = G.drawers[tt.key] === pid;
-                return p ? `<span class="nm" style="${now ? 'background:#fbbf24;color:#111' : 'background:#ffffff12;color:#cbd5e1'};font-size:15px">${i + 1}. ${esc(p.name)}${now ? ' ✏️' : ''}${p.on === false ? ' 📵' : ''}</span>` : '';
+                return p ? `<span class="nm" style="${now ? 'background:#fbbf24;color:#111' : 'background:#ffffff12;color:#cbd5e1'};font-size:15px;display:inline-flex;align-items:center;gap:6px;padding-left:4px">${c.avatar(p, 22)}${i + 1}. ${esc(p.name)}${now ? ' ✏️' : ''}${p.on === false ? ' 📵' : ''}</span>` : '';
               }).join('')}</div>`;
           }).join('')}</div>`;
         return h;
@@ -303,7 +303,7 @@
         const euDesenho = c.you && pid === c.you.pid;
         c.turnover(`<div class="round">Rodada ${G.round}</div>
           <div><small>🎨 AGORA É A VEZ DA EQUIPE</small><span class="who2" style="background:${k.hex};color:#111">${k.name}</span></div>
-          ${p ? `<div><small>✏️ QUEM FAZ A CARTA</small><span class="who2 sm" style="background:#fff;color:#111">${c.esc(p.name)}</span></div>` : ''}
+          ${p ? `<div><small>✏️ QUEM FAZ A CARTA</small><span class="who2 sm" style="background:#fff;color:#111;display:inline-flex;align-items:center;gap:8px">${c.avatar(p, 32)}${c.esc(p.name)}</span></div>` : ''}
           ${euDesenho ? '<div class="mine">✏️ É você quem faz a carta!</div>' : ''}`,
           3000, euDesenho ? [90, 60, 90] : 60);
       },

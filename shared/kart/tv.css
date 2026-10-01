@@ -50,6 +50,7 @@ body.kart-tv #game{display:block}body.kart-tv #stage{width:100%;height:calc(100v
 .kpd-1 .kp-portrait{box-shadow:0 0 0 .3rem #ffd23f}
 .kpd .kpd-crown{position:absolute;left:50%;top:-1.6rem;width:3rem;height:3rem;margin-left:-1.5rem;-webkit-transform:rotate(-8deg);transform:rotate(-8deg)}
 .kart-podium-base{width:47rem;max-width:100%;height:1.2rem;background:#1b1035}
+.kv-av{margin-right:.4em}
 .kart-others{display:flex;flex-wrap:wrap;justify-content:center;margin-top:.7rem}
 .kart-others span{display:inline-flex;align-items:center;margin:.3rem;padding:.4rem .9rem;font-size:1rem;font-weight:900}
 .kv-portrait{display:inline-block;width:1.8em;height:1.8em;margin-right:.4em;border-radius:50%;border:.12rem solid #1b1035;overflow:hidden;vertical-align:middle}

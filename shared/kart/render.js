@@ -331,6 +331,8 @@
     ctx.drawImage(spr.frames[8], pad + 3, pad + 3, ah, ah);
     var nw = this.label(pad + ah + 8, pad + Math.round(4 * u), upper(k.name), fs, CREAM, INK), swx = pad + ah + 8 + nw + 6, swy = pad + Math.round(4 * u), swh = fs * 1.5;
     ctx.fillStyle = INK; ctx.fillRect(swx - 2, swy - 2, swh + 4, swh + 4); ctx.fillStyle = k.color; ctx.fillRect(swx, swy, swh, swh);
+    var rost = g && g.roster, av = null, ri; if (rost) for (ri = 0; ri < rost.length; ri++) if (rost[ri].pid === k.pid) av = rost[ri].av;
+    if (av && window.ARCADE && window.ARCADE.avatar) { try { window.ARCADE.avatar.draw(ctx, av, k.color, swx + swh + 8 + ah * .6, pad + ah * .5 + 3, ah * 1.2); } catch (e) { /* sem boneco */ } }
     // Caixa de item no estilo dos jogos de corrida dos anos 90. A TV mostra o item e o mesmo botão X do celular.
     var item = k.item || null, iw = Math.round(154 * u), ih = Math.round(42 * u), iy = pad + ah + Math.round(14 * u), icon = Math.round(34 * u);
     ctx.fillStyle = INK; ctx.fillRect(pad, iy, iw, ih); ctx.fillStyle = item ? CREAM : '#3a2d63'; ctx.fillRect(pad + 3, iy + 3, iw - 6, ih - 6);

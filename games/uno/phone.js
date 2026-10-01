@@ -92,7 +92,7 @@
 
       html(c) {
         ensure();
-        const G = c.G, esc = c.esc, nm = c.nm; if (!G || !c.you) return '';
+        const G = c.G, esc = c.esc, nm = p => p ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle">${c.avatar(p, 26)}${c.nm(p)}</span>` : ''; if (!G || !c.you) return '';
         const ply = pid => c.C.players.find(p => p.pid === pid);
         const eu = c.you.pid;
         const minhaVez = G.turn === eu;
@@ -138,7 +138,7 @@
         if (G.phase === 'swap') {
           if (G.swapBy === eu) {
             return `<div class="box center hi"><h2 style="font-size:26px">🔁 Trocar de mão</h2><p class="sub mut" style="margin-top:6px">Escolha com quem você troca as cartas.</p></div>
-              <div style="display:flex;flex-direction:column;gap:10px">${G.order.filter(o => o.pid !== eu).map(o => { const p = ply(o.pid); return p ? `<button class="btn" data-a="unoTrocar" data-pid="${o.pid}" style="display:flex;align-items:center;gap:12px;justify-content:flex-start"><span class="dot" style="background:${c.ci(p.color).hex};width:26px;height:26px"></span>${esc(p.name)} <span class="sub mut">${o.n} cartas</span></button>` : ''; }).join('')}</div>`;
+              <div style="display:flex;flex-direction:column;gap:10px">${G.order.filter(o => o.pid !== eu).map(o => { const p = ply(o.pid); return p ? `<button class="btn" data-a="unoTrocar" data-pid="${o.pid}" style="display:flex;align-items:center;gap:12px;justify-content:flex-start">${c.avatar(p, 30)}${esc(p.name)} <span class="sub mut">${o.n} cartas</span></button>` : ''; }).join('')}</div>`;
           }
           return `<div class="un-game"><div class="box center un-mesabox"><div class="big-emoji">🔁</div><p class="sub" style="margin-top:8px">${nm(ply(G.swapBy))} está trocando de mão…</p></div><div class="un-handwrap">${maoHtml()}</div></div>`;
         }
@@ -179,7 +179,7 @@
         const foot = `<div class="box"><p class="sub mut lab2" style="margin-bottom:8px">Na mesa</p><div class="un-bar">${G.order.map(o => {
           const p = ply(o.pid); if (!p) return '';
           const eh = G.turn === o.pid;
-          return `<span class="nm" style="${c.nmStyle(p)};${eh ? 'box-shadow:0 0 0 3px #fff' : ''}">${esc(p.name)} ${o.n}${o.n === 1 ? (o.said ? ' 🔔' : ' ⚠️') : ''}</span>`;
+          return `<span class="nm" style="${c.nmStyle(p)};${eh ? 'box-shadow:0 0 0 3px #fff' : ''};display:inline-flex;align-items:center;gap:6px;padding-left:4px">${c.avatar(p, 22)}${esc(p.name)} ${o.n}${o.n === 1 ? (o.said ? ' 🔔' : ' ⚠️') : ''}</span>`;
         }).join('')}</div></div>
         <p class="sub center evento">${c.C.event ? c.hl(c.C.event.text) : ''}</p>`;
 

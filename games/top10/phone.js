@@ -55,7 +55,7 @@
   };
   // a mesa vem pronta do servidor: vale para nome digitado e para celular conectado
   const quem = (G, pid) => (G.roster || []).find(r => r.pid === pid) || null;
-  const cracha = (c, r) => r ? `<span class="nm" style="${c.nmStyle({ color: r.color })}">${c.esc(r.name)}</span>` : '';
+  const cracha = (c, r) => r ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle">${c.avatar(r, 26)}<span class="nm" style="${c.nmStyle({ color: r.color })}">${c.esc(r.name)}</span></span>` : '';
   const nomeDe = (c, G, pid) => cracha(c, quem(G, pid));
 
   ARCADE.register('top10', {
@@ -182,7 +182,7 @@
             h += `<div class="box center" style="border-color:#ef4444"><div style="font-size:22px;font-weight:900">🚨 Quem duvidou?</div>
                 <p class="sub mut" style="margin-top:6px">de ${cracha(c, lastR)} · quem duvidar à toa perde uma vida</p></div>
               <div class="t10-pick">${alvos.map(r => `<button class="btn" data-a="duvidoQuem" data-pid="${r.pid}" style="display:flex;align-items:center;gap:12px;justify-content:flex-start">
-                <span class="dot" style="background:${c.ci(r.color).hex};width:26px;height:26px"></span>${esc(r.name)}${r.pid === G.cur ? ' <span class="sub mut">(era a vez)</span>' : ''}</button>`).join('')}</div>
+                ${c.avatar(r, 28)}${esc(r.name)}${r.pid === G.cur ? ' <span class="sub mut">(era a vez)</span>' : ''}</button>`).join('')}</div>
               <button class="btn ghost" data-a="duvidoCancela">⬅️ Deixa pra lá</button>`;
             return h + mesa(c, G);
           }
@@ -304,7 +304,7 @@
     const rs = G.roster || [];
     return `<div class="box"><p class="sub mut" style="margin-bottom:8px">Ordem e vidas</p>
       <div class="t10-list">${rs.map(r => `<div class="t10-row ${r.pid === G.cur ? 'now' : ''} ${r.lives <= 0 ? 'dead' : ''}">
-        <span class="dot" style="background:${c.ci(r.color).hex}"></span><b>${c.esc(r.name)}${r.on === false ? ' 📵' : ''}</b>
+        ${c.avatar(r, 30)}<b>${c.esc(r.name)}${r.on === false ? ' 📵' : ''}</b>
         <span class="t10-hp">${hearts(G, r.pid)}</span></div>`).join('')}</div></div>
       <p class="sub center">${c.C.event ? c.hl(c.C.event.text) : ''}</p>`;
   }

@@ -20,7 +20,7 @@
   // Posição de cada cadeira em volta da mesa (em % da mesa), a partir do topo, no sentido horário.
   const cadeira = (i, n) => {
     const ang = (-90 + i * 360 / Math.max(1, n)) * Math.PI / 180;
-    return { x: 50 + 41 * Math.cos(ang), y: 47 + 37 * Math.sin(ang) };
+    return { x: 50 + 41 * Math.cos(ang), y: 45 + 33 * Math.sin(ang) };   // assento de baixo acima do aviso do rodapé
   };
   const DECK = { x: 42.5, y: 47 }, PILHA = { x: 56, y: 47 };
 
@@ -85,13 +85,14 @@
       box-shadow:0 .15vw .4vw rgba(0,0,0,.5), inset 0 0 0 .12vw rgba(255,255,255,.3); transform-origin:50% 130%; }
     .un-fan i:after { content:''; position:absolute; left:15%; top:15%; width:70%; height:70%; border-radius:50%; background:${ARCO_TV}; opacity:.75; transform:rotate(-22deg); }
     .un-fan i:after { background:${ARCO}; } /* tv-ok: linear antes */
-    .un-av { position:relative; width:4.4vw; height:4.4vw; margin:0 auto; border-radius:50%; display:flex; align-items:center; justify-content:center;
-      font-size:2vw; font-weight:900; box-shadow:0 .4vw 1vw rgba(0,0,0,.5); transition:transform .3s; }
+    .un-av { position:relative; width:6vw; height:6vw; margin:0 auto; border-radius:50%; display:flex; align-items:center; justify-content:center;
+      font-size:2vw; font-weight:900; transition:transform .3s; }
+    .un-av > span { display:none; } .un-av > i { display:block; line-height:0; }
     .un-av b { position:absolute; left:-.45vw; top:-.45vw; right:-.45vw; bottom:-.45vw; border-radius:50%; border:.35vw solid #fff; opacity:0; transition:opacity .3s; }
     .un-seat.now .un-av { transform:scale(1.12); }
     .un-seat.now .un-av b { opacity:1; animation:unring 1.1s ease-in-out infinite alternate; }
     @keyframes unring { from { box-shadow:0 0 0 0 rgba(255,255,255,.6); } to { box-shadow:0 0 0 .7vw rgba(255,255,255,0); } }
-    .un-name { margin-top:.5vw; font-size:1.25vw; font-weight:900; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 .1vw .5vw rgba(0,0,0,.7); }
+    .un-name { margin-top:.9vw; font-size:1.25vw; font-weight:900; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 .1vw .5vw rgba(0,0,0,.7); }
     .un-count { display:inline-block; margin-top:.3vw; padding:.2vw .9vw; border-radius:99px; background:rgba(0,0,0,.45); color:#cfe9d9; font-size:1.05vw; font-weight:800; white-space:nowrap; }
     .un-count b { color:#fff; font-size:1.3vw; }
     .un-seat.uno .un-count { background:#facc15; color:#1a1400; animation:unblink .7s infinite alternate; }
@@ -271,14 +272,15 @@
           let s = have[o.pid];
           if (!s) {
             s = document.createElement('div'); s.className = 'un-seat'; s.dataset.pid = o.pid;
-            s.innerHTML = `<div class="un-fan"></div><div class="un-av"><span></span><b></b></div><div class="un-name"></div><div class="un-count"></div><div class="un-timer"><i></i></div><div class="un-x">⊘</div>`;
+            s.innerHTML = `<div class="un-fan"></div><div class="un-av"><span></span><i></i><b></b></div><div class="un-name"></div><div class="un-count"></div><div class="un-timer"><i></i></div><div class="un-x">⊘</div>`;
             seats.appendChild(s);
           }
           const at = pos[o.pid];
           s.style.left = at.x + '%'; s.style.top = at.y + '%';
           const col = c.ci(p.color);
-          const av = s.querySelector('.un-av'); av.style.background = col.hex; av.style.color = col.dark ? '#fff' : '#111';
-          av.firstElementChild.textContent = (p.name.match(/[A-Za-z0-9À-ɏ]/) || ['?'])[0].toUpperCase();
+          const av = s.querySelector('.un-av'); av.style.color = col.dark ? '#fff' : '#111';
+          const avh = c.avatar(p, Math.round(window.innerWidth * 0.06));
+          const ai = av.children[1]; if (ai.dataset.k !== avh) { ai.dataset.k = avh; ai.innerHTML = avh; }
           const nm = s.querySelector('.un-name'); const nome = p.name + (p.on === false ? ' 📵' : ''); if (nm.textContent !== nome) nm.textContent = nome;
           const cnt = s.querySelector('.un-count'); const ch = `<b>${o.n}</b> ${o.n === 1 ? 'carta' : 'cartas'}${o.n === 1 ? (o.said ? ' · UNO!' : ' · sem UNO ⚠️') : ''}`;
           if (cnt.innerHTML !== ch) cnt.innerHTML = ch;
@@ -336,7 +338,7 @@
           const w = ply(G.phase === 'end' ? G.winner : G.roundWinner);
           h = `<div class="un-over"><div class="big-emoji">${G.phase === 'end' ? '🏆' : '🏁'}</div>
             <h2>${w ? esc(w.name) : ''} ${G.phase === 'end' ? 'venceu!' : 'bateu a rodada!'}</h2>
-            <div class="un-sc">${ordem.map(p => `<div><span class="dot" style="background:${c.ci(p.color).hex}"></span><span>${esc(p.name)}</span>
+            <div class="un-sc">${ordem.map(p => `<div>${c.avatar(p, 34)}<span>${esc(p.name)}</span>
               <span>${G.scores[p.pid] || 0}${G.roundScores[p.pid] ? ` <b style="color:#22c55e">(+${G.roundScores[p.pid]})</b>` : ''}</span></div>`).join('')}</div>
             <p class="sub mut">${G.phase === 'end' ? 'Toquem em "Jogar de novo" no celular.' : 'Toquem em "Próxima rodada" no celular.'}</p></div>`;
         }

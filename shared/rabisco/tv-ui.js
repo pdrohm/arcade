@@ -171,6 +171,10 @@ window.ARCADE.rabiscoTv = (() => {
     .rb-su-cta b { color:#f59e0b; font-weight:900; }
 
     /* comum */
+    .rb-face { background:transparent !important; border:0 !important; box-shadow:none !important; }
+    .rb-face svg { display:block; width:100%; height:100%; overflow:visible; }
+    .rb-pc-f { width:96px; height:96px; margin:0 auto 4px; }
+    .rb-drawer .rb-av.rb-face { background:#0b0e17 !important; border-radius:50%; padding:5px 5px 0; overflow:hidden; border:3px solid rgba(255,255,255,0.75) !important; }
     .rb-av { display:inline-flex; align-items:center; justify-content:center; flex:none; border-radius:50%; font-weight:900; border:2px solid rgba(255,255,255,0.75); line-height:1; }
 
     /* painel da direita */
@@ -261,8 +265,11 @@ window.ARCADE.rabiscoTv = (() => {
     const name = p ? p.name : (m && m.name) || 'Alguém';
     const key = p ? p.color : (m && m.color) || null;
     const info = key ? c.ci(key) : { hex: '#64748b', dark: true };
-    return { name, hex: info.hex, fg: info.dark ? '#fff' : '#111', on: p ? p.on !== false : false };
+    return { name, hex: info.hex, fg: info.dark ? '#fff' : '#111', on: p ? p.on !== false : false, av: p ? p.av : null };
   }
+  // Rosto da pessoa (shared/avatar.js); sem o arquivo, a inicial como antes.
+  const face = w => (window.ARCADE.avatar ? window.ARCADE.avatar.svg(w.av, w.hex) : esc0(initial(w.name)));
+  const esc0 = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
   function notes(c, fs, vol, type, gap, dur) {
     fs.forEach((f, i) => setTimeout(() => c.beep(f, dur || .22, type || 'triangle', vol), i * (gap || 110)));
   }
@@ -323,7 +330,7 @@ window.ARCADE.rabiscoTv = (() => {
     if (G.drawer && G.phase !== 'end') {
       const w = who(c, G.drawer);
       const verb = G.phase === 'choose' ? 'escolhendo…' : G.phase === 'reveal' ? 'desenhou' : 'desenhando';
-      setHtml(dr, `<span class="rb-av">${esc(initial(w.name))}</span><b>${esc(w.name)}</b><small>✏️ ${verb}</small>`);
+      setHtml(dr, `<span class="rb-av rb-face">${face(w)}</span><b>${esc(w.name)}</b><small>✏️ ${verb}</small>`);
       dr.style.background = w.hex; dr.style.color = w.fg; dr.style.display = '';
     } else dr.style.display = 'none';
     let m = '';
@@ -384,7 +391,7 @@ window.ARCADE.rabiscoTv = (() => {
   function chooseHtml(c) {
     const G = c.G, esc = c.esc, w = who(c, G.drawer), r = c.remaining();
     return `<div class="rb-ncard rb-ch">
-      <div class="rb-ch-av" style="background:${w.hex};color:${w.fg}">${esc(initial(w.name))}</div>
+      <div class="rb-ch-av rb-face">${face(w)}</div>
       <div class="rb-ch-t">✏️ <b style="color:${w.hex}">${esc(w.name)}</b> está escolhendo a palavra…</div>
       <div class="rb-ch-n" id="rb-ocount">${r === null ? '' : Math.ceil(r)}</div>
       ${G.mod ? `<div class="rb-ch-mod"><b>🌀 Caos: ${G.mod.emoji} ${esc(G.mod.name)}</b><span>${esc(G.mod.desc)}</span></div>` : ''}
@@ -434,7 +441,7 @@ window.ARCADE.rabiscoTv = (() => {
     const order = top.length === 3 ? [top[1], top[0], top[2]] : top.length === 2 ? [top[1], top[0]] : top;
     const pod = order.map((r, i) => {
       const w = who(c, r.pid);
-      return `<div class="rb-pc" style="animation-delay:${r.place === 1 ? 500 : 150 + i * 120}ms"><div class="rb-pc-m">${medal(r.place)}</div><div class="rb-pc-n" style="color:${w.hex}">${esc(w.name)}</div><div class="rb-pc-s">${r.score} pts</div><div class="rb-pc-b" style="height:${hgt(r.place)}px;border-top:4px solid ${w.hex}">${r.place}º</div></div>`;
+      return `<div class="rb-pc" style="animation-delay:${r.place === 1 ? 500 : 150 + i * 120}ms"><div class="rb-pc-f rb-face">${face(w)}</div><div class="rb-pc-m">${medal(r.place)}</div><div class="rb-pc-n" style="color:${w.hex}">${esc(w.name)}</div><div class="rb-pc-s">${r.score} pts</div><div class="rb-pc-b" style="height:${hgt(r.place)}px;border-top:4px solid ${w.hex}">${r.place}º</div></div>`;
     }).join('');
     const rest = rank.slice(3, 8).map(r => `<span>${r.place}º ${esc(who(c, r.pid).name)} · ${r.score}</span>`).join('');
     const aw = (G.awards || []).slice(0, 6).map((a, i) => {
@@ -482,7 +489,7 @@ window.ARCADE.rabiscoTv = (() => {
     const ps = c.C.players || [];
     const ppl = ps.length ? `<div class="rb-chips" style="margin-top:0">${ps.map(p => {
       const w = who(c, p.pid);
-      return `<span class="rb-su-pl${p.on === false ? ' rb-off' : ''}"><span class="rb-av" style="background:${w.hex};color:${w.fg}">${esc(initial(w.name))}</span>${esc(w.name)}${p.on === false ? ' 📵' : ''}</span>`;
+      return `<span class="rb-su-pl${p.on === false ? ' rb-off' : ''}"><span class="rb-av rb-face">${face(w)}</span>${esc(w.name)}${p.on === false ? ' 📵' : ''}</span>`;
     }).join('')}</div>` : '<div class="rb-su-empty">Ninguém ainda. Entre pelo celular!</div>';
     const online = ps.filter(p => p.on !== false).length;
     const cta = online >= 2 ? '📱 Ajustem no celular e toquem em <b>Começar</b>' : '📱 Precisa de <b>2 pessoas</b> para começar';
@@ -544,7 +551,8 @@ window.ARCADE.rabiscoTv = (() => {
       const w = who(c, r.pid);
       q(el, '.rb-pos').textContent = r.place;
       const av = q(el, '.rb-av');
-      av.textContent = initial(w.name); av.style.background = w.hex; av.style.color = w.fg;
+      const avSig = w.hex + '|' + (w.av || []).join(',');
+      if (av.dataset.s !== avSig) { av.dataset.s = avSig; av.innerHTML = face(w); av.className = 'rb-av rb-face'; }
       q(el, '.rb-nm').textContent = w.name;
       const sc = q(el, '.rb-sc');
       if (scoresShown[r.pid] !== r.score) {
