@@ -26,11 +26,13 @@ window.ARCADE.tvLobby = (() => {
   // querySelectorAll devolve uma NodeList; o Chrome 47 não percorre NodeList com for...of nem [...]
   const qa = (raiz, sel) => Array.prototype.slice.call(raiz.querySelectorAll(sel));
   const rgba = (hex, a) => { const h = String(hex).replace('#', ''); const n = parseInt(h.length === 3 ? h.replace(/(.)/g, '$1$1') : h, 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
+  // Fundo do círculo do boneco: a cor da pessoa, clareada (mistura com branco). Sem fundo escuro aparecendo.
+  const tint = (hex, k) => { const h = String(hex).replace('#', ''); const n = parseInt(h.length === 3 ? h.replace(/(.)/g, '$1$1') : h, 16) || 0; const f = v => Math.round(v + (255 - v) * k); return `rgb(${f(n >> 16 & 255)},${f(n >> 8 & 255)},${f(n & 255)})`; };
   function avatar(c, p) {
     const col = c.ci(p.color);
     const AV = A.avatar;   // boneco da pessoa (shared/avatar.js); sem ele, a inicial como antes
     const face = AV ? AV.svg(p.av, col.hex) : `<span>${esc(initial(p.name))}</span>`;
-    return { style: `background:${col.hex};color:${col.dark ? '#fff' : '#111'}`, sig: col.hex + '|' + (p.av || []).join(',') + '|' + (AV ? '' : initial(p.name)), html: `<span class="tvl-av${AV ? ' face' : ''}">${face}</span>` };
+    return { style: `background:${col.hex};color:${col.dark ? '#fff' : '#111'}`, sig: col.hex + '|' + (p.av || []).join(',') + '|' + (AV ? '' : initial(p.name)), html: `<span class="tvl-av${AV ? ' face' : ''}"${AV ? ` style="background:${tint(col.hex, .6)}"` : ''}>${face}</span>` };
   }
 
   // ---------- montagem (uma vez) ----------

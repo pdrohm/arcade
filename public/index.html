@@ -30,7 +30,7 @@
 (() => {
   const A = ARCADE, $ = A.$, esc = A.esc;
   const app = $('#app');
-  let form = A.form(), pickTarget = null, ctx = null, selectedGameId = null, verQR = false, editAv = false;
+  let form = A.form(), pickTarget = null, ctx = null, selectedGameId = null, verQR = false, editAv = false, nameDraft = '';
   // Boneco: quem nunca montou ganha um sorteado (dá para trocar nas setas).
   if (!Array.isArray(form.av) && A.avatar) { form.av = A.avatar.random(); A.saveForm(form); }
   // Busca/filtro/ordenação da biblioteca (prateleira de jogos). Guardado em memória; filtro e
@@ -75,7 +75,8 @@
   }
 
   // Editor do boneco, no estilo do skribbl: setas dos dois lados (olhos, boca, enfeite) e o dado para sortear.
-  function avatarBox(c) {
+  // comNome: dentro da sala, o editor do boneco também troca o nome (vale no "Pronto" ou no Enter).
+  function avatarBox(c, comNome) {
     if (!A.avatar) return '';
     const col = form.color ? c.ci(form.color).hex : '#94a3b8';
     const arrows = dir => `<div class="av-col">${A.avatar.NAMES.map((n, i) => `<button class="av-arrow" data-a="av-${dir}" data-i="${i}" aria-label="${dir === 'prev' ? 'Voltar' : 'Mudar'} ${n.toLowerCase()}">${dir === 'prev' ? '‹' : '›'}</button>`).join('')}</div>`;
@@ -84,6 +85,7 @@
         <p class="sub mut" style="margin-bottom:6px">Seu boneco</p>
         <div class="av-stage">${arrows('prev')}<div class="av-face" id="av-face">${A.avatar.svg(form.av, col, 132)}</div>${arrows('next')}</div>
         <p class="sub mut center" style="font-size:13px;margin-top:4px">Olhos · Boca · Enfeite. A cor é a sua cor.</p>
+        ${comNome ? `<p class="sub mut" style="margin:12px 0 8px">Seu nome</p><input id="av-name" placeholder="Ex.: Pedro" maxlength="20" enterkeyhint="done" value="${esc(nameDraft)}">` : ''}
       </div>`;
   }
   function avatarStep(i, d) {
@@ -130,8 +132,8 @@
       <div id="lib-results">${libResults(c)}</div>
       <div class="box">${c.playersHtml()}</div>
       ${c.C.event ? `<p class="sub center">${c.hl(c.C.event.text)}</p>` : ''}
-      ${editAv ? avatarBox(c) : ''}
-      <button class="btn ghost" data-a="av-edit">${editAv ? 'Pronto' : '🎭 Mudar meu boneco'}</button>
+      ${editAv ? avatarBox(c, true) : ''}
+      <button class="btn ${editAv ? 'ok' : 'ghost'}" data-a="av-edit">${editAv ? 'Pronto' : '🎭 Mudar meu boneco e nome'}</button>
       <button class="btn ghost" data-a="rename">✏️ Mudar meu nome</button>
       <button class="btn ghost" data-a="sair">Trocar de cor / sair da sala</button>
       <button class="btn ghost" data-a="trocar">🚪 Ir para outra sala</button>
@@ -243,8 +245,9 @@
     // O innerHTML inteiro é trocado a cada estado do servidor. Se o campo de busca da biblioteca
     // estiver focado, guardamos o cursor antes de trocar o HTML e devolvemos o foco depois —
     // senão a pessoa digitaria uma letra e o teclado fecharia sozinho a cada atualização.
-    const buscaFocada = document.activeElement && document.activeElement.id === 'lib-search';
-    const buscaSel = buscaFocada ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
+    // O mesmo vale para o nome no editor do boneco.
+    const focoId = document.activeElement && ['lib-search', 'av-name'].includes(document.activeElement.id) ? document.activeElement.id : null;
+    const focoSel = focoId ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
     app.innerHTML = h;
     app.querySelectorAll('[data-a]').forEach(el => el.onclick = ev => { ev.stopPropagation(); act(el.dataset.a, el); });
     const n = $('#name'); if (n) n.oninput = () => { form.name = n.value; };
@@ -256,13 +259,27 @@
         res.innerHTML = libResults(ctx);
         res.querySelectorAll('[data-a]').forEach(el => el.onclick = ev => { ev.stopPropagation(); act(el.dataset.a, el); });
       };
-      if (buscaFocada) {
-        buscaEl.focus();
-        if (buscaSel) buscaEl.setSelectionRange(buscaSel[0], buscaSel[1]);
-      }
+    }
+    const avName = $('#av-name');
+    if (avName) {
+      avName.oninput = () => { nameDraft = avName.value; };
+      avName.onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); salvarNome(nameDraft); avName.blur(); } };
+    }
+    const focoEl = focoId && $('#' + focoId);
+    if (focoEl) {
+      focoEl.focus();
+      if (focoSel) focoEl.setSelectionRange(focoSel[0], focoSel[1]);
     }
     const impl = c.C.screen === 'game' ? A.games[c.C.gameId] : null;
     if (impl && impl.phone && impl.phone.after) impl.phone.after(c);
+  }
+
+  // Troca o nome já dentro da sala (prompt do ✏️ ou campo do editor do boneco).
+  function salvarNome(n) {
+    n = String(n || '').trim().slice(0, 20);
+    const me = ctx && ctx.you && ctx.C.players.find(p => p.pid === ctx.you.pid);
+    if (!n || (me && me.name === n)) return;
+    A.setPrev(form.name); form.name = n; A.saveForm(form); A.send({ t: 'rename', name: n });
   }
 
   function act(a, el) {
@@ -283,7 +300,12 @@
       case 'av-prev': return avatarStep(Number(el.dataset.i), -1);
       case 'av-next': return avatarStep(Number(el.dataset.i), 1);
       case 'av-rand': return avatarStep(-1, 0);
-      case 'av-edit': editAv = !editAv; return render(c);
+      case 'av-edit': {
+        const me = c.you && c.C.players.find(p => p.pid === c.you.pid);
+        if (editAv) salvarNome(nameDraft);
+        else nameDraft = me ? me.name : form.name;
+        editAv = !editAv; return render(c);
+      }
       case 'entrar': {
         const before = A.form().name;
         if (before && before !== form.name) A.setPrev(before);
@@ -292,7 +314,7 @@
       }
       case 'rename': {
         const n = prompt('Seu nome:', c.you ? c.you.name : form.name);
-        if (n && n.trim()) { A.setPrev(form.name); form.name = n.trim().slice(0, 20); A.saveForm(form); A.send({ t: 'rename', name: form.name }); }
+        if (n && n.trim()) { salvarNome(n); if (editAv) { nameDraft = n.trim().slice(0, 20); render(c); } }
         return;
       }
       case 'sair': if (confirm('Sair da sala? Você perde seu lugar na ordem.')) { A.send({ t: 'leave' }); form.color = null; A.saveForm(form); } return;
