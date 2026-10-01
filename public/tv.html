@@ -87,7 +87,7 @@ window.addEventListener('error', function (e) {
     if (fixo && mounted !== c.C.gameId) { $('#stage').innerHTML = impl.tv.mount(c); mounted = c.C.gameId; }
     const out = impl.tv.html(c) || {};
     if (!fixo) $('#stage').innerHTML = out.stage || '';
-    $('#side').innerHTML = out.side || '';
+    if (!out.keepSide) $('#side').innerHTML = out.side || '';   // keepSide: o jogo atualiza o painel por dentro (animações não reiniciam)
     if (impl.tv.after) impl.tv.after(c);
   }
 

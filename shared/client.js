@@ -55,7 +55,8 @@ window.ARCADE = (() => {
       if (m.t === 'game-frame') {
         if (!S || S.core.screen !== 'game' || m.gameId !== S.core.gameId || !m.game) return;
         if (S.game && S.game.matchId && S.game.matchId !== m.game.matchId) return;
-        S.game = m.game;
+        // $merge: o jogo mandou só o pedaço que mudou (ex.: traços novos do quadro); o resto continua igual
+        S.game = m.game.$merge ? Object.assign({}, S.game, m.game) : m.game;
         const view = games[m.gameId] && games[m.gameId][kind];
         if (view && view.frame) view.frame(ctx());
         return;

@@ -252,6 +252,8 @@ function makeRoom(code) {
       byPid: pid => core.players.find(p => p.pid === pid) || null,
       indexOf: pid => byPid(pid),
       onlinePids,
+      // quantas TVs estão abertas nesta sala agora (o jogo decide se o desenho vai para a TV ou para cada celular)
+      tvCount() { let n = 0; for (const c of clients.values()) if (c.type === 'tv') n++; return n; },
       setEvent(text, color) { core.event = { text, color: color || null, at: Date.now() }; },
       addEvent(text) { core.event = { text: (core.event ? core.event.text + ' ' : '') + text, color: core.event && core.event.color, at: Date.now() }; },
       get event() { return core.event; },
