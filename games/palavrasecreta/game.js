@@ -7,7 +7,7 @@ const KIND = 'megasenha';                       // marcador do estado salvo (ign
 const RESULT_MS = Number(process.env.PS_RESULT_MS) || 6000;   // tela de fim de vez antes do próximo time
 const TEAM_COLORS = ['#22d3ee', '#f472b6', '#facc15', '#a3e635'];
 const TEAM_OPTS = [2, 3, 4];
-const MODES = [{ id: 'times', name: '👥 Times' }, { id: 'todos', name: '🙌 Todos com todos' }];
+const MODES = [{ id: 'times', name: '👥 Times' }, { id: 'todos', name: '🔁 Todos com todos' }];
 const ROUND_OPTS = [3, 5, 8, 10];
 const TIME_OPTS = process.env.PS_TIME_OPTS ? process.env.PS_TIME_OPTS.split(',').map(Number) : [30, 45, 60, 90, 120];
 const DIFFS = [
@@ -33,7 +33,7 @@ module.exports = {
       'O colega da vez adivinha em voz alta. Acertou? Toque em ACERTOU e vem outra palavra.',
       'Travou? Toque em PASSAR (se estiver liberado). Passar não tira ponto.',
       'Cada acerto vale 1. Quem somar mais pontos no fim das rodadas vence.',
-      'Modo Todos com todos: sem times. Na sua vez você dá dicas para todo mundo; quem acertar primeiro ganha 1 ponto e você também.',
+      'Modo Todos com todos: sem times. Cada um dá dicas para cada um dos outros, em duplas que vão girando. Cada acerto dá 1 ponto para quem deu a dica e 1 para quem adivinhou.',
     ],
   },
 
@@ -43,7 +43,8 @@ module.exports = {
       phase: 'setup',            // setup | ready | play | result | end
       cfg: defCfg(),
       teams: [],                 // [{ players:[pid], score }]
-      order: [], scores: {},     // modo 'todos': ordem de quem dá as dicas e pontos de cada um
+      sched: [],                 // modo 'todos': fila de duplas [quem dá as dicas, quem adivinha]
+      scores: {},                // modo 'todos': { pid: { give, guess } } pontos dando dica / adivinhando
       round: 1, turn: 0,
       clue: null, guess: null,   // pid de quem dá as dicas / de quem adivinha
       clueN: {}, guessN: {},     // quantas vezes cada pid já fez cada papel
@@ -60,10 +61,45 @@ module.exports = {
     const clearRes = () => { clearTimeout(resT); resT = null; };
     const alive = t => t.players.filter(pid => api.byPid(pid));
     const todos = () => s.cfg.mode === 'todos';
-    const ranking = () => {
-      const pids = [...new Set([...s.order, ...Object.keys(s.scores)])].filter(pid => api.byPid(pid));
-      return pids.map(pid => ({ pid, score: s.scores[pid] || 0 })).sort((a, b) => b.score - a.score);
-    };
+    const sc = pid => (s.scores[pid] = s.scores[pid] || { give: 0, guess: 0 });
+    const ranking = () => Object.keys(s.scores).filter(pid => api.byPid(pid))
+      .map(pid => ({ pid, give: s.scores[pid].give, guess: s.scores[pid].guess, score: s.scores[pid].give + s.scores[pid].guess }))
+      .sort((a, b) => b.score - a.score);
+
+    // todos com todos: cada um dá dica para cada um. Monta a fila de duplas espalhando as pessoas
+    // (evita a mesma pessoa jogar duas vezes seguidas e equilibra quem já jogou mais)
+    function orderPairs(pairs, last) {
+      pairs = shuffle(pairs);
+      const out = [], cnt = {};
+      let prev = last || [];
+      while (pairs.length) {
+        let bi = 0, bw = Infinity;
+        pairs.forEach(([a, b], i) => {
+          const w = (prev.includes(a) ? 100 : 0) + (prev.includes(b) ? 100 : 0) + (cnt[a] || 0) + (cnt[b] || 0);
+          if (w < bw) { bw = w; bi = i; }
+        });
+        const pr = pairs.splice(bi, 1)[0];
+        out.push(pr); prev = pr;
+        cnt[pr[0]] = (cnt[pr[0]] || 0) + 1; cnt[pr[1]] = (cnt[pr[1]] || 0) + 1;
+      }
+      return out;
+    }
+    function buildSched() {
+      const ids = shuffle(api.players.map(p => p.pid));
+      const pairs = [];
+      for (const a of ids) for (const b of ids) if (a !== b) pairs.push([a, b]);
+      s.sched = orderPairs(pairs);
+      s.scores = {}; for (const pid of ids) sc(pid);
+    }
+    function syncSched() {   // depois de cada vez: tira quem saiu e encaixa quem chegou
+      const fut = s.sched.slice(s.turn + 1).filter(([a, b]) => api.byPid(a) && api.byPid(b));
+      const novos = api.players.map(p => p.pid).filter(pid => !s.scores[pid]);
+      for (const n of novos) {
+        sc(n);
+        for (const o of api.players.map(p => p.pid)) if (o !== n && (!novos.includes(o) || o < n)) fut.push([n, o], [o, n]);
+      }
+      s.sched = s.sched.slice(0, s.turn + 1).concat(novos.length ? orderPairs(fut, s.sched[s.turn]) : fut);
+    }
 
     function ensureTeams(n) {
       s.teams = Array.from({ length: n }, (_, i) => s.teams[i] || { players: [], score: 0 });
@@ -120,9 +156,9 @@ module.exports = {
       clearRes(); api.clearTimer();
       s.phase = 'ready'; s.word = null; s.turnWords = []; s.hits = 0;
       if (todos()) {
-        s.clue = s.order[s.turn] || null; s.guess = null;
-        if (s.clue) s.clueN[s.clue] = (s.clueN[s.clue] || 0) + 1;
-        api.setEvent(`Rodada ${s.round} de ${s.cfg.rounds} · ${s.clue ? nameOf(s.clue) : 'Alguém'} dá as dicas para todos!`, null);
+        const pr = s.sched[s.turn] || [null, null];
+        s.clue = pr[0]; s.guess = pr[1];
+        api.setEvent(`Vez ${s.turn + 1} de ${s.sched.length} · ${nameOf(s.clue)} dá as dicas para ${nameOf(s.guess)}.`, null);
         return;
       }
       const t = cur();
@@ -135,18 +171,20 @@ module.exports = {
       s.phase = 'result';
       s.word = null;                                    // a palavra da vez que sobrou não conta
       s.last = { team: s.turn, hits: s.hits, words: s.turnWords.slice(), clue: s.clue, guess: s.guess };
-      if (todos()) api.setEvent(why || `⏰ Tempo! ${nameOf(s.clue)} fez ${s.hits} ${s.hits === 1 ? 'acerto' : 'acertos'}.`, null);
+      if (todos()) api.setEvent(why || `⏰ Tempo! ${nameOf(s.clue)} e ${nameOf(s.guess)} fizeram ${s.hits} ${s.hits === 1 ? 'acerto' : 'acertos'}.`, null);
       else api.setEvent(why || `⏰ Tempo! Time ${s.turn + 1} fez ${s.hits} ${s.hits === 1 ? 'acerto' : 'acertos'}.`, null);
       resT = setTimeout(() => { resT = null; advance(); api.broadcast(); }, RESULT_MS);
     }
     function advance() {
       clearRes();
-      s.turn++;
       if (todos()) {
-        s.order = s.order.filter(pid => api.byPid(pid));
-        for (const p of api.players) if (!s.order.includes(p.pid)) s.order.push(p.pid);   // quem chegou depois entra na fila
+        syncSched();
+        s.turn++;
+        if (s.turn >= s.sched.length) return finish();
+        return startTurn();
       }
-      if (s.turn >= (todos() ? s.order.length : s.teams.length)) { s.turn = 0; s.round++; }
+      s.turn++;
+      if (s.turn >= s.teams.length) { s.turn = 0; s.round++; }
       if (s.round > s.cfg.rounds) return finish();
       startTurn();
     }
@@ -166,7 +204,7 @@ module.exports = {
 
     const inst = {
       start() {
-        s.phase = 'setup'; s.cfg = defCfg(); s.round = 1; s.turn = 0; s.used = []; s.order = []; s.scores = {};
+        s.phase = 'setup'; s.cfg = defCfg(); s.round = 1; s.turn = 0; s.used = []; s.sched = []; s.scores = {};
         s.clue = null; s.guess = null; s.clueN = {}; s.guessN = {}; s.word = null; s.turnWords = []; s.hits = 0; s.last = null;
         ensureTeams(s.cfg.teams);
         api.clearTimer(); clearRes();
@@ -203,7 +241,7 @@ module.exports = {
           }
           case 'begin': {
             if (s.phase !== 'setup' || !canBegin()) return;
-            if (todos()) { s.order = shuffle(api.players.map(x => x.pid)); s.scores = {}; for (const pid of s.order) s.scores[pid] = 0; }
+            if (todos()) buildSched();
             else if (s.cfg.auto) autoTeams(); else ensureTeams(s.cfg.teams);
             for (const t of s.teams) t.score = 0;
             s.round = 1; s.turn = 0; s.used = []; s.clueN = {}; s.guessN = {}; s.last = null;
@@ -224,26 +262,16 @@ module.exports = {
             if (s.phase !== 'play' || me !== s.clue || !s.word) return;
             if (msg.t === 'pass' && !s.cfg.pass) return;
             const ok = msg.t === 'hit';
-            if (ok && todos()) {                               // modo todos: diz quem acertou; os dois pontuam
-              const by = String(msg.by || '');
-              if (by === s.clue || !api.byPid(by)) return;
-              s.turnWords.push({ w: s.word.w, ok, by });
-              s.hits++;
-              s.scores[by] = (s.scores[by] || 0) + 1;
-              s.scores[s.clue] = (s.scores[s.clue] || 0) + 1;
-              api.setEvent(`${nameOf(by)} acertou!`, api.byPid(by).color);
-              drawWord();
-              return;
-            }
             s.turnWords.push({ w: s.word.w, ok });
-            if (ok) { s.hits++; const t = cur(); if (t) t.score++; }
+            if (ok && todos()) { s.hits++; sc(s.clue).give++; if (s.guess) sc(s.guess).guess++; }   // os dois da dupla pontuam
+            else if (ok) { s.hits++; const t = cur(); if (t) t.score++; }
             drawWord();
             return;
           }
           case 'skip': {                                       // vez travada (alguém offline)
             if (s.phase !== 'ready') return;
             if (!todos() && teamOf(me) !== s.turn) return;
-            api.setEvent(todos() ? `${p.name} pulou a vez de ${s.clue ? nameOf(s.clue) : 'alguém'}.` : `${p.name} pulou a vez do Time ${s.turn + 1}.`, p.color);
+            api.setEvent(todos() ? `${p.name} pulou a vez de ${nameOf(s.clue)} e ${nameOf(s.guess)}.` : `${p.name} pulou a vez do Time ${s.turn + 1}.`, p.color);
             s.last = { team: s.turn, hits: 0, words: [], clue: s.clue, guess: s.guess };
             advance();
             return;
@@ -260,8 +288,7 @@ module.exports = {
             s.phase = 'setup'; s.round = 1; s.turn = 0; s.used = []; s.clueN = {}; s.guessN = {};
             s.word = null; s.turnWords = []; s.hits = 0; s.last = null;
             for (const t of s.teams) t.score = 0;
-            for (const pid of Object.keys(s.scores)) s.scores[pid] = 0;
-            if (todos()) { api.setEvent('Ajustem as regras e toquem em "Começar".', null); return; }
+            s.sched = []; s.scores = {};
             s.cfg.teams = s.teams.length;
             api.setEvent('Mesmos times. Ajustem as regras e toquem em "Começar".', null);
             return;
@@ -271,11 +298,11 @@ module.exports = {
 
       rekey(o, n) {
         for (const t of s.teams) t.players = t.players.map(x => (x === o ? n : x));
-        s.order = s.order.map(x => (x === o ? n : x));
-        if (s.scores[o] !== undefined) { s.scores[n] = s.scores[o]; delete s.scores[o]; }
         for (const m of [s.clueN, s.guessN]) if (m[o] !== undefined) { m[n] = m[o]; delete m[o]; }
         if (s.clue === o) s.clue = n;
         if (s.guess === o) s.guess = n;
+        s.sched = s.sched.map(pr => pr.map(x => (x === o ? n : x)));
+        if (s.scores[o]) { s.scores[n] = s.scores[o]; delete s.scores[o]; }
         if (s.last) { if (s.last.clue === o) s.last.clue = n; if (s.last.guess === o) s.last.guess = n; }
       },
 
@@ -284,15 +311,13 @@ module.exports = {
         delete s.clueN[pid]; delete s.guessN[pid];
         if (s.phase === 'setup') return;
         if (todos()) {
-          const idx = s.order.indexOf(pid);
-          if (idx >= 0) { s.order.splice(idx, 1); if (idx <= s.turn && s.phase !== 'end') s.turn--; }   // a próxima vez cai em quem vinha depois
-          if (s.clue === pid && (s.phase === 'ready' || s.phase === 'play')) endTurn(`Quem dava as dicas saiu. ${s.hits} ${s.hits === 1 ? 'acerto' : 'acertos'} nesta vez.`);
+          if ((s.clue === pid || s.guess === pid) && (s.phase === 'ready' || s.phase === 'play')) endTurn(`Um jogador da dupla saiu. ${s.hits} ${s.hits === 1 ? 'acerto' : 'acertos'} nesta vez.`);
           if (s.phase !== 'end' && api.players.filter(x => x.pid !== pid).length < 3) {
             clearRes(); api.clearTimer();
             s.phase = 'setup'; s.word = null; s.clue = null; s.guess = null; s.turn = 0;
             api.setEvent('Ficaram menos de 3 jogadores. Ajustem as regras e comecem de novo.', null);
           }
-          return;
+          return;   // as duplas com quem saiu somem da fila na próxima vez (syncSched)
         }
         const era = s.clue === pid || s.guess === pid;
         if (era && (s.phase === 'ready' || s.phase === 'play')) endTurn(`Um jogador saiu no meio da vez. Time ${s.turn + 1}: ${s.hits} ${s.hits === 1 ? 'acerto' : 'acertos'}.`);
@@ -307,11 +332,12 @@ module.exports = {
       view(me) {
         const eu = me ? me.pid : null;
         // todo celular vê a palavra, menos o de quem adivinha (e a TV, que não tem pid)
-        const vePalavra = !!eu && (todos() ? eu === s.clue : eu !== s.guess);   // no modo todos, só quem dá as dicas
+        const vePalavra = !!eu && eu !== s.guess;
         const publico = s.phase === 'result' || s.phase === 'end';
         return {
           phase: s.phase, round: s.round, turn: s.turn, mode: s.cfg.mode, modes: MODES,
-          ranking: ranking(), order: s.order,
+          ranking: ranking(), turnNo: s.turn + 1, turnTotal: s.sched.length,
+          pairTotal: api.players.length * (api.players.length - 1),
           cfg: s.cfg, teamOpts: TEAM_OPTS.filter(n => api.players.length >= 2 * n), roundOpts: ROUND_OPTS, timeOpts: TIME_OPTS,
           diffs: DIFFS.map(d => ({ id: d.id, name: d.name })), cats: CATS, catIds: CAT_IDS,
           colors: TEAM_COLORS, canBegin: canBegin(),
@@ -336,8 +362,9 @@ module.exports = {
         if (!d || d.kind !== KIND || !d.s || d.s.kind !== KIND || !Array.isArray(d.s.teams)) { ensureTeams(s.cfg.teams); return; }
         s = { ...s, ...d.s };
         s.cfg = { ...defCfg(), ...(s.cfg || {}) };
-        s.order = Array.isArray(s.order) ? s.order : [];
+        s.sched = Array.isArray(s.sched) ? s.sched : [];
         s.scores = s.scores && typeof s.scores === 'object' ? s.scores : {};
+        for (const k of Object.keys(s.scores)) if (!s.scores[k] || typeof s.scores[k] !== 'object') s.scores[k] = { give: 0, guess: 0 };
         s.teams = s.teams.map(t => ({ players: Array.isArray(t && t.players) ? t.players : [], score: Number(t && t.score) || 0 }));
         if (s.phase === 'setup') ensureTeams(s.cfg.teams);
         if (s.phase === 'result') { clearRes(); resT = setTimeout(() => { resT = null; advance(); api.broadcast(); }, RESULT_MS); }

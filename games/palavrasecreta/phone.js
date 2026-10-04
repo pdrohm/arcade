@@ -30,7 +30,7 @@
       key(c) {
         const G = c.G; if (!G) return '';
         return [G.phase, G.round, G.turn, G.clue, G.guess, G.word || '', G.hits, G.myTeam, G.mode, c.C.players.length,
-          (G.ranking || []).map(r => r.pid + '=' + r.score).join(','),
+          (G.ranking || []).map(r => r.pid + '=' + r.give + '/' + r.guess).join(','),
           G.phase === 'setup' ? JSON.stringify(G.cfg) + ':' + G.teams.map(t => t.players.join(',')).join('|') : ''].join(':');
       },
 
@@ -44,9 +44,10 @@
         const souClue = eu && eu === G.clue, souGuess = eu && eu === G.guess;
         const meuTime = G.myTeam;
         const todos = G.mode === 'todos';
-        const ranking = () => `<div class="box"><p class="sub mut" style="margin-bottom:8px">Placar</p>
+        const pnm = pid => { const p = ply(pid); return p ? c.avatar(p, 26) + ' ' + nm(p) : '—'; };
+        const ranking = () => `<div class="box"><p class="sub mut" style="margin-bottom:8px">Placar <span class="mut">(🗝️ dando dica · 👂 adivinhando)</span></p>
           <div style="display:flex;flex-direction:column;gap:8px">${(G.ranking || []).map((r, i) => { const p = ply(r.pid); return p ? `<div class="ps-score" style="${r.pid === eu ? 'outline:2px solid #14b8a6' : ''}">
-            <span class="mut">${i + 1}º</span><b>${c.avatar(p, 26)} ${esc(p.name)}</b><span>${r.score}</span></div>` : ''; }).join('')}</div></div>`;
+            <span class="mut">${i + 1}º</span><b>${c.avatar(p, 26)} ${esc(p.name)}<small class="mut" style="display:block;font-size:13px;font-weight:700">🗝️ ${r.give} · 👂 ${r.guess}</small></b><span>${r.score}</span></div>` : ''; }).join('')}</div></div>`;
         const placar = () => todos ? ranking() : `<div class="box"><p class="sub mut" style="margin-bottom:8px">Placar</p>
           <div style="display:flex;flex-direction:column;gap:8px">${G.teams.map((t, i) => `<div class="ps-score" style="border-left:6px solid ${col(i)}">
             <b style="color:${col(i)}">${tname(i)}</b><span>${t.score}</span></div>`).join('')}</div></div>`;
@@ -60,7 +61,7 @@
               <p class="sub mut" style="margin-top:6px">Qualquer um pode mudar as regras. Vale para todos.</p></div>
             <div class="box"><p class="sub" style="margin-bottom:8px">Modo de jogo</p>
               <div class="ps-opt">${G.modes.map(m => `<div class="ps-o ${cfg.mode === m.id ? 'sel' : ''}" data-a="cfgMode" data-v="${m.id}">${m.name}</div>`).join('')}</div>
-              <p class="sub mut" style="margin-top:8px">${todos ? 'Sem times: na sua vez você dá dicas para todo mundo. Quem acertar ganha 1 ponto, e você também.' : 'Em times: um dá as dicas, o colega do time adivinha.'}</p></div>
+              <p class="sub mut" style="margin-top:8px">${todos ? `Sem times. Cada um dá dicas para cada um, em duplas que vão girando (${G.pairTotal} vezes com ${c.C.players.length} jogadores). Acertou: 1 ponto para quem deu a dica e 1 para quem adivinhou.` : 'Em times: um dá as dicas, o colega do time adivinha.'}</p></div>
             ${todos ? '' : `<div class="box"><p class="sub" style="margin-bottom:8px">Quantos times</p>${opt('cfgTeams', G.teamOpts, cfg.teams)}
               ${G.teamOpts.length ? '' : '<p class="sub mut">Precisa de pelo menos 4 jogadores.</p>'}</div>
             <div class="box"><p class="sub" style="margin-bottom:8px">Como formar os times</p>
@@ -68,7 +69,7 @@
             ${cfg.auto || todos ? '' : `<div class="box"><p class="sub" style="margin-bottom:8px">Toque no seu time</p>
               <div class="ps-teams">${G.teams.map((t, i) => `<div class="ps-team ${meuTime === i ? 'sel' : ''}" style="background:${col(i)}" data-a="time" data-i="${i}">${tname(i)}
                 <small>${t.players.map(pid => { const p = ply(pid); return p ? c.avatar(p, 22) + ' ' + esc(p.name) : ''; }).filter(Boolean).join(' · ') || 'vazio'}</small></div>`).join('')}</div></div>`}
-            <div class="box"><p class="sub" style="margin-bottom:8px">Rodadas <span class="mut">(${todos ? 'cada um dá as dicas uma vez por rodada' : 'cada time joga uma vez por rodada'})</span></p>${opt('cfgRounds', G.roundOpts, cfg.rounds)}</div>
+            ${todos ? '' : `<div class="box"><p class="sub" style="margin-bottom:8px">Rodadas <span class="mut">(cada time joga uma vez por rodada)</span></p>${opt('cfgRounds', G.roundOpts, cfg.rounds)}</div>`}
             <div class="box"><p class="sub" style="margin-bottom:8px">Tempo por vez</p>${opt('cfgTime', G.timeOpts, cfg.turnSec, v => v + 's')}</div>
             <div class="box"><p class="sub" style="margin-bottom:8px">Dificuldade</p>
               <div class="ps-opt">${G.diffs.map(d => `<div class="ps-o ${cfg.diff === d.id ? 'sel' : ''}" data-a="cfgDiff" data-v="${d.id}">${d.name}</div>`).join('')}</div></div>
@@ -83,53 +84,24 @@
         }
 
         // ---------- vez começando ----------
-        if (G.phase === 'ready' && todos) {
-          const cp = ply(G.clue);
-          const cab = `<div class="box center"><p class="sub mut">Rodada ${G.round} de ${G.cfg.rounds}</p>
-              <h2 style="font-size:28px;margin-top:6px">${cp ? c.avatar(cp, 36) + ' ' + nm(cp) : '—'}</h2>
-              <p class="sub" style="margin-top:6px">dá as dicas para todos</p></div>`;
-          const pular = '<button class="btn ghost" data-a="skip">⏭ Pular a vez (alguém sumiu)</button>';
-          if (souClue) return cab + `<div class="box center"><div class="big-emoji">🗝️</div><p class="sub" style="margin-top:8px">Você dá as dicas para todo mundo. Fale, mas <b>nunca diga a palavra</b>. Quando alguém acertar, toque no nome dessa pessoa.</p></div>
-            <button class="btn big ok ps-big" data-a="go">▶ Começar</button>${pular}`;
-          return cab + `<div class="box center"><div class="big-emoji">👂</div><h2 style="font-size:26px;margin-top:8px">Prepare-se para adivinhar!</h2>
-            <p class="sub mut" style="margin-top:6px">Quem acertar primeiro ganha o ponto.</p></div>${pular}`;
-        }
         if (G.phase === 'ready') {
           const cp = ply(G.clue), gp = ply(G.guess);
-          const cab = `<div class="box center" style="border-color:${col(G.turn)}">
+          const cab = todos ? `<div class="box center"><p class="sub mut">Vez ${G.turnNo} de ${G.turnTotal}</p>
+              <p class="sub" style="margin-top:8px">${pnm(G.clue)} 🗝️ dá as dicas</p>
+              <p class="sub" style="margin-top:6px">${pnm(G.guess)} 👂 adivinha</p></div>` : `<div class="box center" style="border-color:${col(G.turn)}">
               <p class="sub mut">Rodada ${G.round} de ${G.cfg.rounds}</p>
               <h2 style="font-size:30px;color:${col(G.turn)};margin-top:4px">${tname(G.turn)}</h2>
               <p class="sub" style="margin-top:8px">${cp ? c.avatar(cp, 28) + ' ' + nm(cp) : '—'} dá as dicas · ${gp ? c.avatar(gp, 28) + ' ' + nm(gp) : '—'} adivinha</p></div>`;
-          const pular = meuTime === G.turn ? '<button class="btn ghost" data-a="skip">⏭ Pular a vez (alguém sumiu)</button>' : '';
+          const pular = todos || meuTime === G.turn ? '<button class="btn ghost" data-a="skip">⏭ Pular a vez (alguém sumiu)</button>' : '';
           if (souClue) return cab + `<div class="box center"><div class="big-emoji">🗝️</div><p class="sub" style="margin-top:8px">Você dá as dicas. Fale, mas <b>nunca diga a palavra</b>.</p></div>
             <button class="btn big ok ps-big" data-a="go">▶ Começar</button>${pular}`;
           if (souGuess) return cab + `<div class="box center"><div class="big-emoji">👂</div><h2 style="font-size:26px;margin-top:8px">Você adivinha!</h2>
             <p class="sub mut" style="margin-top:6px">Espere ${cp ? esc(cp.name) : 'seu colega'} começar.</p></div>${pular}`;
           return cab + `<div class="box center"><div class="big-emoji">📺</div><h2 style="font-size:24px;margin-top:8px">Veja a TV</h2>
-            <p class="sub mut" style="margin-top:6px">${tname(G.turn)} vai jogar.</p></div>${pular}`;
+            <p class="sub mut" style="margin-top:6px">${todos ? 'Você vai ver a palavra. Fique quieto!' : tname(G.turn) + ' vai jogar.'}</p></div>${pular}`;
         }
 
         // ---------- vez rolando ----------
-        if (G.phase === 'play' && todos) {
-          const cp = ply(G.clue);
-          const cat = (G.cats.find(k => k.id === G.wordCat) || {}).name || '';
-          if (souClue) {
-            const outros = c.C.players.filter(p => p.pid !== eu);
-            return `<div class="box"><p class="sub mut center">Sua palavra${cat ? ' · ' + esc(cat) : ''}</p>
-                <div class="ps-word" id="ps-word">${G.word ? esc(G.word) : '—'}</div>
-                <p class="ps-cat">Acertos nesta vez: ${G.hits}</p></div>
-              ${c.timerHtml('', G.turnMs)}
-              <div class="box"><p class="sub center" style="margin-bottom:8px">✅ Quem acertou?</p>
-                <div class="ps-teams">${outros.map(p => `<div class="ps-team" style="background:${p.color || '#14b8a6'}" data-a="hitBy" data-p="${esc(p.pid)}">${c.avatar(p, 30)}<small style="color:#08211f;font-size:17px">${esc(p.name)}</small></div>`).join('')}</div></div>
-              ${G.allowPass ? '<button class="btn big warn ps-big" data-a="pass">⏭ PASSAR</button>' : '<p class="sub center mut">Passar está desligado nesta partida.</p>'}`;
-          }
-          const meu = (G.ranking || []).find(r => r.pid === eu);
-          return `<div class="box center"><div class="big-emoji">🗣️</div>
-              <h2 style="font-size:26px;margin-top:8px">Adivinhe!</h2>
-              <p class="sub" style="margin-top:6px">Escute as dicas de ${cp ? nm(cp) : 'alguém'} e fale alto.</p>
-              <p class="sub mut" style="margin-top:6px">Seus pontos: <b>${meu ? meu.score : 0}</b></p></div>
-            ${c.timerHtml('', G.turnMs)}`;
-        }
         if (G.phase === 'play') {
           const cp = ply(G.clue);
           const cat = (G.cats.find(k => k.id === G.wordCat) || {}).name || '';
@@ -142,58 +114,49 @@
               ${G.allowPass ? '<button class="btn big warn ps-big" data-a="pass">⏭ PASSAR</button>' : '<p class="sub center mut">Passar está desligado nesta partida.</p>'}`;
           }
           if (souGuess) {
-            return `<div class="box center" style="border-color:${col(G.turn)}"><div class="big-emoji">🗣️</div>
+            return `<div class="box center" style="border-color:${todos ? '#facc15' : col(G.turn)}"><div class="big-emoji">🗣️</div>
                 <h2 style="font-size:26px;margin-top:8px">Sua vez de adivinhar</h2>
                 <p class="sub" style="margin-top:6px">Escute as dicas de ${cp ? nm(cp) : 'seu colega'}!</p>
                 <p class="sub mut" style="margin-top:6px">Fale alto. Acertos: <b>${G.hits}</b></p></div>
               ${c.timerHtml('', G.turnMs)}`;
           }
           if (G.word) {
-            return `<div class="box"><p class="sub mut center">${tname(G.turn)} jogando · ${cp ? nm(cp) : 'alguém'} dá as dicas</p>
+            return `<div class="box"><p class="sub mut center">${todos ? `${cp ? nm(cp) : 'alguém'} → ${G.guess && ply(G.guess) ? nm(ply(G.guess)) : 'alguém'}` : `${tname(G.turn)} jogando · ${cp ? nm(cp) : 'alguém'} dá as dicas`}</p>
                 <p class="sub mut center" style="margin-top:6px">Palavra${cat ? ' · ' + esc(cat) : ''} · 🤫 não fale!</p>
                 <div class="ps-word" style="border-color:${col(G.turn)}">${esc(G.word)}</div>
                 <p class="ps-cat">Acertos nesta vez: ${G.hits}</p></div>
               ${c.timerHtml('', G.turnMs)}`;
           }
           return `<div class="box center"><div class="big-emoji">📺</div><h2 style="font-size:24px;margin-top:8px">Veja a TV</h2>
-              <p class="sub mut" style="margin-top:6px">${tname(G.turn)} está jogando.</p>
+              <p class="sub mut" style="margin-top:6px">${todos ? 'Sua vez já chega.' : tname(G.turn) + ' está jogando.'}</p>
               <p class="sub mut" style="margin-top:6px">Acertos: <b>${G.hits}</b></p></div>
             ${c.timerHtml('', G.turnMs)}`;
         }
 
         // ---------- fim da vez ----------
-        if (G.phase === 'result' && todos) {
-          const L = G.last || { hits: 0, words: [] };
-          const cp = ply(L.clue);
-          const lista = (L.words || []).length ? `<div class="box"><p class="sub mut" style="margin-bottom:8px">Palavras desta vez</p>
-              <div style="display:flex;flex-direction:column;gap:6px">${L.words.map(w => { const b = w.by ? ply(w.by) : null; return `<div class="ps-w ${w.ok ? '' : 'no'}">${w.ok ? '✅' : '⏭'} ${esc(w.w)}${b ? ` <span class="mut" style="margin-left:auto;font-size:15px">${esc(b.name)}</span>` : ''}</div>`; }).join('')}</div></div>` : '';
-          return `<div class="box center"><p class="sub mut">Fim da vez de</p>
-              <h2 style="font-size:28px;margin-top:4px">${cp ? c.avatar(cp, 34) + ' ' + nm(cp) : '—'}</h2>
-              <div style="font-size:56px;font-weight:900;margin-top:6px">${L.hits}</div>
-              <p class="sub mut">${L.hits === 1 ? 'acerto' : 'acertos'}</p></div>
-            ${lista}${placar()}
-            <button class="btn big ok" data-a="next">Próximo ➡️</button>`;
-        }
         if (G.phase === 'result') {
           const L = G.last || { team: G.turn, hits: 0, words: [] };
-          const meu = meuTime === L.team;
+          const meu = todos || meuTime === L.team;
           const lista = (L.words || []).length ? `<div class="box"><p class="sub mut" style="margin-bottom:8px">Palavras desta vez</p>
               <div style="display:flex;flex-direction:column;gap:6px">${L.words.map(w => `<div class="ps-w ${w.ok ? '' : 'no'}">${w.ok ? '✅' : '⏭'} ${esc(w.w)}</div>`).join('')}</div></div>` : '';
-          return `<div class="box center" style="border-color:${col(L.team)}"><p class="sub mut">Fim da rodada</p>
-              <h2 style="font-size:30px;color:${col(L.team)};margin-top:4px">${tname(L.team)}</h2>
+          return `<div class="box center" style="border-color:${todos ? '#14b8a6' : col(L.team)}"><p class="sub mut">${todos ? 'Fim da vez' : 'Fim da rodada'}</p>
+              ${todos ? `<p class="sub" style="margin-top:6px">${pnm(L.clue)} → ${pnm(L.guess)}</p>` : `<h2 style="font-size:30px;color:${col(L.team)};margin-top:4px">${tname(L.team)}</h2>`}
               <div style="font-size:56px;font-weight:900;margin-top:6px">${L.hits}</div>
               <p class="sub mut">${L.hits === 1 ? 'acerto' : 'acertos'}</p></div>
             ${lista}${placar()}
-            ${meu ? '<button class="btn big ok" data-a="next">Próximo time ➡️</button>' : '<p class="sub center mut">Já já é a vez do próximo time.</p>'}`;
+            ${meu ? `<button class="btn big ok" data-a="next">${todos ? 'Próxima dupla' : 'Próximo time'} ➡️</button>` : '<p class="sub center mut">Já já é a vez do próximo time.</p>'}`;
         }
 
         // ---------- fim de jogo ----------
         if (G.phase === 'end' && todos) {
           const r = G.ranking || [], top = r.length ? r[0].score : 0;
           const win = r.filter(x => x.score === top).map(x => ply(x.pid)).filter(Boolean);
+          const melhor = k => { const m = Math.max(0, ...r.map(x => x[k])); const q = r.filter(x => x[k] === m && m > 0).map(x => ply(x.pid)).filter(Boolean); return q.length ? q.map(p => esc(p.name)).join(' e ') + ` (${m})` : '—'; };
           return `<div class="box center"><div class="big-emoji">🏆</div>
               <h2 style="font-size:28px;margin-top:8px">${win.length > 1 ? 'Empate!' : win.length ? esc(win[0].name) + ' venceu!' : 'Fim!'}</h2>
               <p class="sub mut" style="margin-top:6px">${win.map(p => esc(p.name)).join(' e ')} · ${top} ${top === 1 ? 'ponto' : 'pontos'}</p></div>
+            <div class="box"><p class="sub">🗝️ Melhor dando dica: <b>${melhor('give')}</b></p>
+              <p class="sub" style="margin-top:6px">👂 Melhor adivinhando: <b>${melhor('guess')}</b></p></div>
             ${placar()}<button class="btn big ok" data-a="again">🔄 Jogar de novo</button>`;
         }
         if (G.phase === 'end') {
@@ -215,7 +178,6 @@
         if (G.phase === 'play' && tag !== lastTurnTag) {
           lastTurnTag = tag;
           if (eu === G.clue) c.turnover('<div><small>🗝️ VOCÊ DÁ AS DICAS</small><div class="who2" style="background:#14b8a6;color:#04211d">Fale!</div></div>', 1500, [90, 60, 90]);
-          else if (G.mode === 'todos') c.turnover('<div><small>👂 TODOS ADIVINHAM</small><div class="who2" style="background:#facc15;color:#111">Escute!</div></div>', 1500, [90, 60, 90]);
           else if (eu === G.guess) c.turnover('<div><small>👂 VOCÊ ADIVINHA</small><div class="who2" style="background:#facc15;color:#111">Escute!</div></div>', 1500, [90, 60, 90]);
         }
         if (G.phase === 'result' && tag !== lastTurnTag) { lastTurnTag = tag; c.chord([784, 587, 392]); }
@@ -240,7 +202,6 @@
         else if (a === 'begin') send({ t: 'begin' });
         else if (a === 'go') send({ t: 'go' });
         else if (a === 'hit') { c.beep(1046, .1, 'square', .2); send({ t: 'hit' }); }
-        else if (a === 'hitBy') { c.beep(1046, .1, 'square', .2); send({ t: 'hit', by: el.dataset.p }); }
         else if (a === 'pass') { c.beep(180, .18, 'sawtooth', .22); send({ t: 'pass' }); }
         else if (a === 'skip') { if (confirm('Pular a vez deste time?')) send({ t: 'skip' }); }
         else if (a === 'next') send({ t: 'next' });
