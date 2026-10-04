@@ -26,6 +26,17 @@
   // Ferramentas: caneta, borracha, reta, retângulo, círculo. Desfazer e refazer guardam fotos do quadro.
   let cv = null, cx2 = null, cor = CORES[0], tam = 8, tool = 'pen', desenhando = false;
   let hist = [], redo = [], snap = null, p0 = null, last = null, mountedFor = '', autoSent = '';
+  let draftT = null, textEl = null;
+  // rascunho: a cada traço (ou letra) o celular guarda no servidor o estado atual.
+  // Se a pessoa esquecer de tocar em Enviar (ou o celular apagar), vai o último rascunho.
+  function sendDraft() {
+    draftT = null;
+    const c = ARCADE.ctx(), G = c && c.G;
+    if (!G || !G.me || G.me.submitted) return;
+    if (G.phase === 'draw') { if (cv) ARCADE.send({ t: 'input', kind: 'draft', image: exportImg() }); }
+    else if (G.phase === 'write' || G.phase === 'describe') { const t = document.getElementById('tsf-text'); if (t) ARCADE.send({ t: 'input', kind: 'draft', text: t.value }); }
+  }
+  const scheduleDraft = ms => { clearTimeout(draftT); draftT = setTimeout(sendDraft, ms || 700); };
   const W = () => (tool === 'eraser' ? tam * 3 : tam);
   function initCanvas(el) {
     cv = el; cx2 = cv.getContext('2d');
@@ -56,7 +67,7 @@
       if (tool === 'pen' || tool === 'eraser') { style(); cx2.beginPath(); cx2.moveTo(last[0], last[1]); cx2.lineTo(p[0], p[1]); cx2.stroke(); last = p; }
       else { cx2.putImageData(snap, 0, 0); shape(p0, p); }   // prévia da forma
     };
-    const up = e => { if (!desenhando) return; desenhando = false; if (tool !== 'pen' && tool !== 'eraser' && e && e.clientX !== undefined) { cx2.putImageData(snap, 0, 0); shape(p0, pos(e)); } snap = null; };
+    const up = e => { if (!desenhando) return; desenhando = false; if (tool !== 'pen' && tool !== 'eraser' && e && e.clientX !== undefined) { cx2.putImageData(snap, 0, 0); shape(p0, pos(e)); } snap = null; scheduleDraft(); };
     cv.addEventListener('pointerdown', down); cv.addEventListener('pointermove', move);
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up); cv.addEventListener('pointerleave', e => { if (desenhando && (tool === 'pen' || tool === 'eraser')) up(e); });
   }
@@ -83,6 +94,7 @@
       else if (a === 'undo') undo();
       else if (a === 'redo') redoFn();
       else if (a === 'limpar') { if (confirm('Apagar tudo?')) clear(); }
+      if (a === 'undo' || a === 'redo' || a === 'limpar') scheduleDraft();
       refreshTools(root);
     });
   }
@@ -141,7 +153,17 @@
         const root = document.getElementById('app');
         const canvasEl = document.getElementById('tsf-cv');
         const tag = `${G.phase}:${G.step}`;
-        if (canvasEl && mountedFor !== tag) { mountedFor = tag; initCanvas(canvasEl); bindTools(root); }
+        if (canvasEl && (mountedFor !== tag || canvasEl !== cv)) {
+          mountedFor = tag; initCanvas(canvasEl); bindTools(root);
+          // tela recarregou no meio do desenho: volta do último rascunho salvo
+          if (G.me && G.me.draft) { const img = new Image(); img.onload = () => { if (cv === canvasEl) cx2.drawImage(img, 0, 0, SIZE, SIZE); }; img.src = G.me.draft; }
+        }
+        const tEl = document.getElementById('tsf-text');
+        if (tEl && tEl !== textEl) {
+          textEl = tEl;
+          if (G.me && G.me.draft && !tEl.value) tEl.value = G.me.draft;
+          tEl.addEventListener('input', () => scheduleDraft(800));
+        }
         const progtxt = document.getElementById('tsf-progtxt');
         if (progtxt) progtxt.textContent = `Rodada ${G.step + 1} de ${G.total} · ${G.done.length}/${G.order.length} entregaram`;
         const prog = document.getElementById('tsf-prog');

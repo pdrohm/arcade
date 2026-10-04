@@ -38,6 +38,7 @@ module.exports = {
       done: [],              // pids que já entregaram nesta rodada
       reveal: { chain: 0, upto: 0 },
       sug: {},               // pid -> sugestão de frase
+      drafts: {},            // pid -> último rascunho desta rodada (o celular manda enquanto a pessoa faz)
     };
     let graceHandle = null;
     const n = () => s.order.length;
@@ -50,7 +51,7 @@ module.exports = {
 
     function beginStep(k) {
       clearTimeout(graceHandle); graceHandle = null;
-      s.step = k; s.done = [];
+      s.step = k; s.done = []; s.drafts = {};
       s.phase = stepKind(k);
       api.armTimer(stepMs(k));
       api.setEvent(k === 0 ? 'Todo mundo escreve uma frase maluca!' : s.phase === 'draw' ? `Rodada ${k}: desenhem o que receberam!` : `Rodada ${k}: descrevam o desenho que receberam!`, null);
@@ -59,13 +60,17 @@ module.exports = {
     function finishStep() {
       clearTimeout(graceHandle); graceHandle = null;
       api.clearTimer();
-      // quem não entregou recebe um item vazio, para a corrente não quebrar
+      // quem não tocou em Enviar entrega o último rascunho, do jeito que estava.
+      // Só se não fez nada mesmo entra um item vazio, para a corrente não quebrar.
       for (const pid of s.order) {
         if (s.done.includes(pid)) continue;
         const ci = chainFor(pid);
         if (ci < 0) continue;
-        s.chains[ci].items.push({ type: s.phase === 'draw' ? 'draw' : 'text', by: pid, content: s.phase === 'draw' ? '' : (s.phase === 'write' ? SUGESTOES[Math.floor(Math.random() * SUGESTOES.length)] : '(não deu tempo)') });
+        const d = s.drafts[pid] && s.drafts[pid].step === s.step ? s.drafts[pid].content : '';
+        const content = d || (s.phase === 'draw' ? '' : s.phase === 'write' ? (s.sug[pid] || SUGESTOES[Math.floor(Math.random() * SUGESTOES.length)]) : '(não deu tempo)');
+        s.chains[ci].items.push({ type: s.phase === 'draw' ? 'draw' : 'text', by: pid, content });
       }
+      s.drafts = {};
       if (s.step + 1 >= n()) {
         s.phase = 'reveal'; s.reveal = { chain: 0, upto: 1 };
         api.setEvent('Acabou! Vamos ver o que cada frase virou. Toque em "Próximo" no celular.', null);
@@ -128,11 +133,25 @@ module.exports = {
             inst.start(); return;
         }
       },
+      // rascunho automático (chega por 'input', que não redesenha a sala; não conta como entregue)
+      input(p, msg) {
+        if (msg.kind !== 'draft') return;
+        const me = p.pid;
+        if (!['write', 'draw', 'describe'].includes(s.phase)) return;
+        if (idx(me) < 0 || s.done.includes(me)) return;
+        let content = '';
+        if (s.phase === 'draw') {
+          content = String(msg.image || '');
+          if (!/^data:image\/(png|jpeg|webp);base64,/.test(content) || content.length > 900000) return;
+        } else content = String(msg.text || '').trim().slice(0, 120);
+        s.drafts[me] = { step: s.step, content };
+      },
       rekey(o, nw) {
         s.order = s.order.map(x => (x === o ? nw : x));
         s.done = s.done.map(x => (x === o ? nw : x));
         for (const ch of s.chains) { if (ch.owner === o) ch.owner = nw; for (const it of ch.items) if (it.by === o) it.by = nw; }
         if (s.sug[o]) { s.sug[nw] = s.sug[o]; delete s.sug[o]; }
+        if (s.drafts[o]) { s.drafts[nw] = s.drafts[o]; delete s.drafts[o]; }
       },
       onPlayerLeave(pid) {
         // quem sai continua na ordem (as correntes precisam dele), só não trava mais o jogo
@@ -144,7 +163,8 @@ module.exports = {
           const ci = chainFor(me.pid);
           const ch = ci >= 0 ? s.chains[ci] : null;
           const prev = ch && ch.items.length ? ch.items[ch.items.length - 1] : null;
-          out.me = { chain: ci, submitted: s.done.includes(me.pid), prev: prev ? { type: prev.type, content: prev.content, by: prev.by } : null, sug: s.sug[me.pid] || '', ownerName: ch ? nameOf(ch.owner) : '' };
+          const dr = s.drafts[me.pid] && s.drafts[me.pid].step === s.step ? s.drafts[me.pid].content : '';
+          out.me = { chain: ci, submitted: s.done.includes(me.pid), prev: prev ? { type: prev.type, content: prev.content, by: prev.by } : null, sug: s.sug[me.pid] || '', ownerName: ch ? nameOf(ch.owner) : '', draft: dr };
         }
         if (s.phase === 'reveal' || s.phase === 'end') {
           const ch = s.chains[s.reveal.chain];
@@ -156,6 +176,7 @@ module.exports = {
       restore(d) {
         if (!d || !d.s) return;
         s = { ...s, ...d.s };
+        s.drafts = s.drafts && typeof s.drafts === 'object' ? s.drafts : {};
         if (['write', 'draw', 'describe'].includes(s.phase) && !api.timerEnd) api.armTimer(stepMs(s.step));
       },
     };
