@@ -1,4 +1,4 @@
-// Palavra Secreta — tela do celular. Só quem dá as dicas vê a palavra.
+// Palavra Secreta — tela do celular. Todos veem a palavra, menos quem adivinha.
 'use strict';
 (() => {
   let styled = false, lastTurnTag = '', lastEnd = '';
@@ -107,6 +107,13 @@
                 <h2 style="font-size:26px;margin-top:8px">Sua vez de adivinhar</h2>
                 <p class="sub" style="margin-top:6px">Escute as dicas de ${cp ? nm(cp) : 'seu colega'}!</p>
                 <p class="sub mut" style="margin-top:6px">Fale alto. Acertos: <b>${G.hits}</b></p></div>
+              ${c.timerHtml('', G.turnMs)}`;
+          }
+          if (G.word) {
+            return `<div class="box"><p class="sub mut center">${tname(G.turn)} jogando · ${cp ? nm(cp) : 'alguém'} dá as dicas</p>
+                <p class="sub mut center" style="margin-top:6px">Palavra${cat ? ' · ' + esc(cat) : ''} · 🤫 não fale!</p>
+                <div class="ps-word" style="border-color:${col(G.turn)}">${esc(G.word)}</div>
+                <p class="ps-cat">Acertos nesta vez: ${G.hits}</p></div>
               ${c.timerHtml('', G.turnMs)}`;
           }
           return `<div class="box center"><div class="big-emoji">📺</div><h2 style="font-size:24px;margin-top:8px">Veja a TV</h2>

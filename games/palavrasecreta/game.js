@@ -1,5 +1,6 @@
 // Palavra Secreta (estilo Mega Senha) — em times: um vê a palavra e dá dicas em voz alta,
-// o colega adivinha em voz alta. Acerto vale 1. A TV nunca recebe a palavra.
+// o colega adivinha em voz alta. Acerto vale 1.
+// Os outros celulares também veem a palavra; quem adivinha e a TV nunca recebem.
 const { CATS, WORDS } = require('./words');
 
 const KIND = 'megasenha';                       // marcador do estado salvo (ignora estado de outro jogo)
@@ -27,6 +28,7 @@ module.exports = {
     howTo: [
       'Formem times de 2 ou mais. Cada time joga uma vez por rodada.',
       'Um jogador vê a palavra no celular e dá dicas falando. Não pode dizer a palavra.',
+      'Todo mundo vê a palavra no celular, menos quem adivinha. Quem não está dando dicas fica quieto!',
       'O colega da vez adivinha em voz alta. Acertou? Toque em ACERTOU e vem outra palavra.',
       'Travou? Toque em PASSAR (se estiver liberado). Passar não tira ponto.',
       'Cada acerto vale 1. Quem somar mais pontos no fim das rodadas vence.',
@@ -251,7 +253,8 @@ module.exports = {
 
       view(me) {
         const eu = me ? me.pid : null;
-        const souClue = !!eu && eu === s.clue;
+        // todo celular vê a palavra, menos o de quem adivinha (e a TV, que não tem pid)
+        const vePalavra = !!eu && eu !== s.guess;
         const publico = s.phase === 'result' || s.phase === 'end';
         return {
           phase: s.phase, round: s.round, turn: s.turn,
@@ -262,10 +265,10 @@ module.exports = {
           myTeam: eu ? (teamOf(eu) < 0 ? null : teamOf(eu)) : null,
           clue: s.clue, guess: s.guess, hits: s.hits,
           turnMs: s.cfg.turnSec * 1000, turnSec: s.cfg.turnSec, allowPass: s.cfg.pass,
-          // PRIVADO: só o celular de quem está dando as dicas recebe a palavra
-          word: souClue && s.phase === 'play' && s.word ? s.word.w : null,
-          wordCat: souClue && s.phase === 'play' && s.word ? s.word.cat : null,
-          turnWords: publico ? s.turnWords : (souClue ? s.turnWords : null),
+          // PRIVADO: quem adivinha e a TV nunca recebem a palavra
+          word: vePalavra && s.phase === 'play' && s.word ? s.word.w : null,
+          wordCat: vePalavra && s.phase === 'play' && s.word ? s.word.cat : null,
+          turnWords: publico ? s.turnWords : (vePalavra ? s.turnWords : null),
           last: publico ? s.last : null,
           resultMs: RESULT_MS,
         };
