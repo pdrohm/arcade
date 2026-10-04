@@ -268,6 +268,8 @@ module.exports = {
           // PRIVADO: quem adivinha e a TV nunca recebem a palavra
           word: vePalavra && s.phase === 'play' && s.word ? s.word.w : null,
           wordCat: vePalavra && s.phase === 'play' && s.word ? s.word.cat : null,
+          // público: a categoria da palavra da vez (a TV mostra; a palavra em si continua escondida)
+          curCat: s.phase === 'play' && s.word ? s.word.cat : null,
           turnWords: publico ? s.turnWords : (vePalavra ? s.turnWords : null),
           last: publico ? s.last : null,
           resultMs: RESULT_MS,

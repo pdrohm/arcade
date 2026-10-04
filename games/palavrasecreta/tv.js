@@ -1,4 +1,4 @@
-// Palavra Secreta — tela da TV. Placar público, cronômetro gigante. A TV nunca recebe a palavra.
+// Palavra Secreta — tela da TV. Placar público, cronômetro gigante. A TV nunca recebe a palavra, só a categoria.
 'use strict';
 (() => {
   let lastTick = -1, lastTurnTag = '', lastPhase = '';
@@ -36,6 +36,11 @@
     .ps-mates { display:flex; flex-wrap:wrap; padding:0 4px 4px 14px; margin-bottom:-6px; }
     .ps-mates > * { margin:0 6px 6px 0; }
     .ps-sc b { flex:1; }
+    .ps-cat { padding:10px 28px; border-radius:99px; background:rgba(45,212,191,0.14); border:2px solid #2dd4bf; color:#5eead4;
+      font-size:40px; font-weight:900; letter-spacing:2px; text-transform:uppercase; }
+    .ps-cat { font-size:clamp(20px,2.4vw,40px); } /* tv-ok */
+    .ps-cat small { display:block; font-size:14px; color:#8ba0b8; letter-spacing:3px; margin-bottom:2px; }
+    .ps-cat small { font-size:clamp(10px,.8vw,14px); } /* tv-ok */
     .ps-bar { height:10px; border-radius:99px; background:#0b0e17; overflow:hidden; width:60%; }
     .ps-bar i { display:block; height:100%; background:#14b8a6; transition:width .3s linear; }
   `;
@@ -86,7 +91,7 @@
         const nome = pid => { const p = ply(pid); return p ? esc(p.name) : '—'; };
         const nmc = pid => { const p = ply(pid); return p ? `${c.avatar(p, 44)} <span class="nm" style="${c.nmStyle(p)}">${esc(p.name)}</span>` : '—'; };
 
-        const tag = `${G.phase}:${G.round}:${G.turn}:${G.hits}:${G.clue}:${G.guess}:${G.teams.map(t => t.score).join(',')}`;
+        const tag = `${G.phase}:${G.round}:${G.turn}:${G.hits}:${G.curCat || ''}:${G.clue}:${G.guess}:${G.teams.map(t => t.score).join(',')}`;
         if (tag !== lastPhase) {
           lastPhase = tag;
           let h = '';
@@ -101,6 +106,7 @@
           } else if (G.phase === 'play') {
             h = `<div class="ps-tname" style="color:${col(G.turn)}">${tname(G.turn)}</div>
               <div class="ps-roles"><div><small>🗝️ dá as dicas</small>${nmc(G.clue)}</div><div><small>👂 adivinha</small>${nmc(G.guess)}</div></div>
+              ${G.curCat ? `<div class="ps-cat"><small>categoria</small>${esc((G.cats.find(k => k.id === G.curCat) || {}).name || '')}</div>` : ''}
               <div class="ps-clock" id="ps-clock">–</div><div class="ps-bar"><i id="ps-bar"></i></div>
               <div class="ps-hits">Rodada: ${G.hits} ${G.hits === 1 ? 'acerto' : 'acertos'}</div>`;
           } else if (G.phase === 'result') {
