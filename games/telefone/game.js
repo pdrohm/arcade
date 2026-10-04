@@ -6,6 +6,49 @@ const DRAW_MS = Number(process.env.TSF_DRAW_MS) || 100 * 1000;
 const DESCRIBE_MS = Number(process.env.TSF_DESCRIBE_MS) || 60 * 1000;
 const GRACE_MS = 4000;          // depois do tempo, espera os desenhos chegarem
 
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+// Plano sorteado de quem pega cada corrente em cada rodada: plan[rodada][corrente] = pid.
+// Regras: cada corrente passa uma vez por cada pessoa; cada rodada todo mundo pega uma corrente.
+// Entre os sorteios, fica o que menos repete "de quem eu recebo" (assim muda a cada rodada).
+function makePlan(pids) {
+  const n = pids.length;
+  if (n % 2 === 0) {
+    // número par: sequência 0, 1, n-1, 2, n-2… dá saltos todos diferentes, então
+    // ninguém recebe duas vezes da mesma pessoa. A ordem das pessoas e o salto são sorteados.
+    const gente = shuffle(pids);
+    const units = [...Array(n).keys()].filter(u => { let a = u, b = n; while (b) [a, b] = [b, a % b]; return a === 1; });
+    const u = units[Math.floor(Math.random() * units.length)];
+    const seq = [0]; for (let i = 1; seq.length < n; i++) { seq.push(i); if (seq.length < n) seq.push(n - i); }
+    return seq.map(r => [...Array(n).keys()].map(ci => gente[((r * u + ci) % n + n) % n]));
+  }
+  let best = null, bestScore = Infinity;
+  for (let tent = 0; tent < 400 && bestScore > 0; tent++) {
+    const plan = [shuffle(pids)];
+    const pares = {};
+    let score = 0, ok = true;
+    for (let k = 1; k < n && ok; k++) {
+      const row = new Array(n), usado = new Set();
+      // monta a rodada corrente por corrente (aleatório, com volta atrás se travar)
+      const ordemCh = shuffle([...Array(n).keys()]);
+      const tenta = j => {
+        if (j === n) return true;
+        const ci = ordemCh[j];
+        const jaPegou = new Set(plan.map(r => r[ci]));
+        const cands = shuffle(pids.filter(pid => !usado.has(pid) && !jaPegou.has(pid)))
+          .sort((a, b) => (pares[plan[k - 1][ci] + '>' + a] || 0) - (pares[plan[k - 1][ci] + '>' + b] || 0));
+        for (const pid of cands) { row[ci] = pid; usado.add(pid); if (tenta(j + 1)) return true; usado.delete(pid); }
+        return false;
+      };
+      if (!tenta(0)) { ok = false; break; }
+      for (let ci = 0; ci < n; ci++) { const kp = plan[k - 1][ci] + '>' + row[ci]; if (pares[kp]) score++; pares[kp] = (pares[kp] || 0) + 1; }
+      plan.push(row);
+    }
+    if (ok && score < bestScore) { best = plan; bestScore = score; }
+  }
+  return best || [...Array(n).keys()].map(k => pids.map((_, ci) => pids[(ci + k) % n]));
+}
+
 const SUGESTOES = [
   'Um jacaré tomando café na padaria', 'Cachorro dirigindo um fusca', 'Vovó jogando videogame', 'Pinguim no carnaval',
   'Gato astronauta comendo pizza', 'Dinossauro de patins', 'Elefante numa banheira', 'Palhaço triste no dentista',
@@ -38,13 +81,14 @@ module.exports = {
       done: [],              // pids que já entregaram nesta rodada
       reveal: { chain: 0, upto: 0 },
       sug: {},               // pid -> sugestão de frase
+      plan: [],              // plan[rodada][corrente] = pid (sorteado no começo)
       drafts: {},            // pid -> último rascunho desta rodada (o celular manda enquanto a pessoa faz)
     };
     let graceHandle = null;
     const n = () => s.order.length;
     const idx = pid => s.order.indexOf(pid);
-    // Na rodada k, o jogador i cuida da corrente (i - k) mod n.
-    const chainFor = pid => { const i = idx(pid); return i < 0 ? -1 : ((i - s.step) % n() + n()) % n(); };
+    // Na rodada k, cada jogador cuida da corrente que o plano sorteado mandou.
+    const chainFor = pid => { const row = s.plan[s.step]; return row ? row.indexOf(pid) : -1; };
     const stepKind = k => (k === 0 ? 'write' : (k % 2 === 1 ? 'draw' : 'describe'));
     const stepMs = k => (k === 0 ? WRITE_MS : (k % 2 === 1 ? DRAW_MS : DESCRIBE_MS));
     const nameOf = pid => { const p = api.byPid(pid); return p ? p.name : 'Alguém'; };
@@ -80,7 +124,8 @@ module.exports = {
     const inst = {
       start() {
         s.order = api.players.map(p => p.pid);
-        s.chains = s.order.map(pid => ({ owner: pid, items: [] }));
+        s.plan = makePlan(s.order);
+        s.chains = s.plan[0].map(pid => ({ owner: pid, items: [] }));
         s.sug = {};
         for (const pid of s.order) s.sug[pid] = SUGESTOES[Math.floor(Math.random() * SUGESTOES.length)];
         beginStep(0);
@@ -148,6 +193,7 @@ module.exports = {
       },
       rekey(o, nw) {
         s.order = s.order.map(x => (x === o ? nw : x));
+        s.plan = s.plan.map(row => row.map(x => (x === o ? nw : x)));
         s.done = s.done.map(x => (x === o ? nw : x));
         for (const ch of s.chains) { if (ch.owner === o) ch.owner = nw; for (const it of ch.items) if (it.by === o) it.by = nw; }
         if (s.sug[o]) { s.sug[nw] = s.sug[o]; delete s.sug[o]; }
@@ -177,6 +223,8 @@ module.exports = {
         if (!d || !d.s) return;
         s = { ...s, ...d.s };
         s.drafts = s.drafts && typeof s.drafts === 'object' ? s.drafts : {};
+        // partida salva antes do plano sorteado: refaz o rodízio antigo (corrente i na rodada k = jogador i + k)
+        if (!Array.isArray(s.plan) || s.plan.length !== s.order.length) s.plan = s.order.map((_, k) => s.order.map((__, ci) => s.order[(ci + k) % s.order.length]));
         if (['write', 'draw', 'describe'].includes(s.phase) && !api.timerEnd) api.armTimer(stepMs(s.step));
       },
     };
