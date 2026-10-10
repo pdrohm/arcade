@@ -35,7 +35,8 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || url.pathname === '/stats' || url.pathname === '/service-worker.js') return;
+  // /ext/: jogos de fora (proxy). Os arquivos são do site do jogo e ele guarda os próprios downloads.
+  if (url.origin !== self.location.origin || url.pathname === '/stats' || url.pathname === '/service-worker.js' || url.pathname.startsWith('/ext/')) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(fetch(request).catch(() => caches.match('/')));

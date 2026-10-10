@@ -2,11 +2,12 @@
 // O núcleo cuida de: salas, jogadores, conexão, tempo, salvamento e a tela inicial (biblioteca).
 // Cada jogo vive em games/<id>/ e só cuida das próprias regras. O jogo nem sabe que existem salas.
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const { WebSocketServer } = require('ws');
+const { WebSocketServer, WebSocket } = require('ws');
 const QRCode = require('qrcode');
 const Avatar = require('./shared/avatar');   // boneco de cada pessoa: [olhos, boca, enfeite]
 
@@ -18,7 +19,7 @@ const SAVE_FILE = process.env.STATE_FILE || path.join(__dirname, 'state.json');
 
 // ---------- limites contra abuso (o link é público) ----------
 const MAX_ROOMS = Number(process.env.MAX_ROOMS) || 2000;          // teto de salas ao mesmo tempo
-const MAX_PLAYERS_PER_ROOM = Number(process.env.MAX_PLAYERS) || 12; // os jogos vão até 8; sobra folga
+const MAX_PLAYERS_PER_ROOM = Number(process.env.MAX_PLAYERS) || 12; // o Pife vai até 10; sobra folga
 const MAX_SOCKETS = Number(process.env.MAX_SOCKETS) || 3000;      // teto de conexões no processo
 const MAX_SOCKETS_PER_IP = Number(process.env.MAX_IP) || 40;      // uma casa (NAT) tem TV + vários celulares
 const MSG_RATE = Number(process.env.MSG_RATE) || 20;             // mensagens por segundo por conexão…
@@ -36,6 +37,8 @@ const COLORS = [
   { key: 'vermelho', name: 'Vermelho', hex: '#ef4444', dark: true },
   { key: 'azul',     name: 'Azul',     hex: '#3b82f6', dark: true },
   { key: 'branco',   name: 'Branco',   hex: '#f8fafc', dark: false },
+  { key: 'laranja',  name: 'Laranja',  hex: '#f97316', dark: true },
+  { key: 'cinza',    name: 'Cinza',    hex: '#94a3b8', dark: false },
 ];
 const colorInfo = c => COLORS.find(x => x.key === c);
 
@@ -57,7 +60,7 @@ function loadGames() {
     }
   }
 }
-const catalog = () => [...games.values()].map(g => ({ ...g.meta, hasTv: fs.existsSync(path.join(GAMES_DIR, g.dir, 'tv.js')) }));
+const catalog = () => [...games.values()].map(g => ({ ...g.meta, hasTv: !!g.ext || fs.existsSync(path.join(GAMES_DIR, g.dir, 'tv.js')) }));
 
 // ---------- salas ----------
 // Cada sala tem um código de 4 letras (sem 0/O/1/I para não confundir na TV).
@@ -542,6 +545,77 @@ function serve(res, fp) {
   fs.createReadStream(fp).pipe(res);
 }
 function notFound(res) { res.writeHead(404, secHeaders({ 'Content-Type': 'text/plain' })); res.end('404'); }
+
+// ---------- jogos de fora: proxy em /ext/<id>/ (ver shared/ext/game.js) ----------
+// O jogo de outro site abre pelo nosso endereço. Assim a TV põe o jogo num iframe da mesma origem e
+// shared/ext/inject.js entra na página dele para criar os controles virtuais dos celulares.
+// Só vai para o endereço fixo de cada jogo (nunca para um endereço que venha do pedido): não é um proxy aberto.
+const EXT_RE = /^\/ext\/([a-z0-9_-]+)(?=[/?]|$)/i;   // o id termina em / ou ? ("/ext/x@outro.site" não casa)
+const EXT_SEND = ['accept', 'accept-language', 'range', 'if-range', 'if-none-match', 'if-modified-since', 'content-type', 'content-length', 'user-agent'];
+const EXT_DROP = new Set(['connection', 'keep-alive', 'transfer-encoding', 'upgrade', 'proxy-connection', 'trailer', 'te', 'set-cookie', 'alt-svc',
+  'content-security-policy', 'content-security-policy-report-only', 'x-frame-options', 'strict-transport-security', 'report-to', 'nel']);
+const extGame = id => { const g = games.get(id); return g && g.ext ? g : null; };
+function extProxy(req, res, mod) {
+  const id = mod.meta.id, prefix = `/ext/${id}`;
+  const rest = req.url.slice(prefix.length);
+  if (!rest || rest[0] === '?') { res.writeHead(301, secHeaders({ Location: `${prefix}/${rest}` })); return res.end(); }
+  // O pedido só escolhe o caminho; o site é sempre o do jogo (confere depois de montar o endereço).
+  const base = new URL(mod.ext.upstream + '/');
+  if (rest[0] !== '/') return notFound(res);
+  const target = new URL(rest.replace(/^\/+/, '/'), base);
+  if (target.origin !== base.origin) return notFound(res);
+  const headers = { 'accept-encoding': 'identity' };   // sem compressão: o HTML é lido e mudado aqui
+  for (const h of EXT_SEND) if (req.headers[h]) headers[h] = req.headers[h];
+  const up = https.request(target, { method: req.method, headers }, upRes => {
+    const out = {};
+    for (const [k, v] of Object.entries(upRes.headers)) if (!EXT_DROP.has(k)) out[k] = v;
+    out['x-frame-options'] = 'SAMEORIGIN';                 // só a nossa TV abre o jogo num iframe
+    out['x-content-type-options'] = 'nosniff';
+    out['referrer-policy'] = 'no-referrer';
+    if (out.location) {                                    // redirecionamento do site: continua dentro de /ext/<id>/
+      const loc = new URL(out.location, target);
+      if (loc.origin === target.origin) out.location = prefix + loc.pathname + loc.search;
+    }
+    if (!/^text\/html/i.test(upRes.headers['content-type'] || '') || req.method === 'HEAD') {
+      res.writeHead(upRes.statusCode, out);
+      return upRes.pipe(res);
+    }
+    const parts = [];
+    upRes.on('data', d => parts.push(d));
+    upRes.on('end', () => {
+      // Endereços "/algo" no HTML passam a ser "/ext/<id>/algo"; o inject.js cuida dos que o JS monta.
+      let html = Buffer.concat(parts).toString('utf8').replace(/(\s(?:src|href|action)=["'])\/(?!\/)/gi, `$1${prefix}/`);
+      const tag = `<script src="/shared/ext/inject.js" data-prefix="${prefix}"></script>`;
+      html = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, m => m + tag) : tag + html;
+      delete out['content-length']; delete out.etag; delete out['last-modified'];
+      out['cache-control'] = 'no-cache';
+      res.writeHead(upRes.statusCode, out);
+      res.end(html);
+    });
+    upRes.on('error', () => res.destroy());
+  });
+  up.setTimeout(60000, () => up.destroy(new Error('timeout')));
+  up.on('error', () => { if (!res.headersSent) { res.writeHead(502, secHeaders({ 'Content-Type': 'text/plain; charset=utf-8' })); res.end('O site do jogo não respondeu.'); } else res.destroy(); });
+  req.pipe(up);
+}
+// WebSocket do jogo (ex.: o modo online) também vai para o site dele.
+function extSocket(ws, req, mod) {
+  const prefix = `/ext/${mod.meta.id}`;
+  const base = new URL(mod.ext.upstream + '/');
+  const rest = req.url.slice(prefix.length) || '/';
+  if (rest[0] !== '/') { try { ws.close(); } catch {} return; }
+  const t = new URL(rest.replace(/^\/+/, '/'), base);
+  if (t.origin !== base.origin) { try { ws.close(); } catch {} return; }
+  t.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
+  const up = new WebSocket(t.href, { headers: { origin: base.origin, 'user-agent': req.headers['user-agent'] || '' } });
+  const queue = [];
+  const close = () => { try { ws.close(); } catch {} try { up.close(); } catch {} };
+  up.on('open', () => { for (const [d, bin] of queue.splice(0)) up.send(d, { binary: bin }); });
+  up.on('message', (d, bin) => { if (ws.readyState === 1) ws.send(d, { binary: bin }); });
+  ws.on('message', (d, bin) => { if (up.readyState === 1) up.send(d, { binary: bin }); else if (queue.length < 100) queue.push([d, bin]); });
+  up.on('close', close); ws.on('close', close);
+  up.on('error', close); ws.on('error', close);
+}
 // página /stats (protegida por senha na URL): números de uso para ver do celular.
 function statsHtml() {
   const s = snapshot();
@@ -610,8 +684,11 @@ const server = http.createServer((req, res) => {
   if (gm) {
     const fp = path.join(GAMES_DIR, gm[1], `${gm[2]}.js`);
     if (games.has(gm[1]) && fs.existsSync(fp)) return serve(res, fp);
+    if (extGame(gm[1])) return serve(res, path.join(SHARED, 'ext', `${gm[2].toLowerCase()}.js`));   // jogo de fora: telas comuns
     return notFound(res);
   }
+  const xm = url.match(EXT_RE);
+  if (xm) { const mod = extGame(xm[1]); return mod ? extProxy(req, res, mod) : notFound(res); }
   // /ABCD -> celular na sala ABCD ; /tv/ABCD -> TV da sala ABCD
   const routes = { '/': 'index.html', '/index.html': 'index.html', '/tv': 'tv.html', '/tv.html': 'tv.html' };
   let rel = routes[url];
@@ -697,6 +774,14 @@ function allow(ws, isInput) {
 }
 wss.on('connection', (ws, req) => {
   const ip = ipOf(req);
+  const xm = String(req.url || '').match(EXT_RE);
+  if (xm) {                                          // WebSocket de um jogo de fora: só repassa
+    const mod = extGame(xm[1]);
+    if (!mod || wss.clients.size > MAX_SOCKETS || (ipCount.get(ip) || 0) >= MAX_SOCKETS_PER_IP) { try { ws.close(1013, 'busy'); } catch {} return; }
+    ipCount.set(ip, (ipCount.get(ip) || 0) + 1);
+    ws.on('close', () => { const n = (ipCount.get(ip) || 1) - 1; if (n <= 0) ipCount.delete(ip); else ipCount.set(ip, n); });
+    return extSocket(ws, req, mod);
+  }
   if (wss.clients.size > MAX_SOCKETS || (ipCount.get(ip) || 0) >= MAX_SOCKETS_PER_IP) { try { ws.close(1013, 'busy'); } catch {} return; }
   ipCount.set(ip, (ipCount.get(ip) || 0) + 1);
   let room = null;

@@ -87,6 +87,16 @@ A arte das cartas espanholas vem de [Baraja española completa.png](https://comm
 
 No Te Fode, o [regulamento da UFSC](https://caeca.ufsc.br/regulamentos/Fodinha.pdf) define 5 penalidades, limite de cartas por número de pessoas e retorno a 1 carta após o limite. O [texto complementar](https://faltadecriatividadeefogo.blogspot.com/2016/02/fodinha.html) define a vira, as manilhas e as cartas iguais que se anulam. A pontuação é só no jogo, sem ações ligadas a bebida.
 
+## Jogos de fora (jogo de navegador de outro site)
+
+`games/skate3` abre o Skate 3 (fan game em WebGPU) na TV e o celular vira um controle de Xbox. O servidor faz de proxy em `/ext/<id>/` (sempre para o site fixo do jogo) e `shared/ext/inject.js` cria controles virtuais que o jogo lê por `navigator.getGamepads()`. Para outro jogo, crie só `games/<id>/game.js`:
+
+```js
+module.exports = require('../../shared/ext/game')({ id: 'meujogo', name: 'Meu Jogo', upstream: 'https://site-do-jogo', pads: 2, needs: 'webgpu' });
+```
+
+`pads` é quantos celulares jogam juntos; quem sobra escolhe no celular quem fica com o controle. A TV precisa ser um computador com Chrome atual, aberto em https ou `localhost` (o WebGPU não liga em `http://192.168…`). O código do site do jogo roda no endereço do arcade: só use sites de confiança.
+
 ## Adicionar um jogo novo
 
 Crie `games/<id>/` com três arquivos. O servidor acha sozinho na próxima vez que subir.
