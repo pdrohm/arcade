@@ -193,7 +193,7 @@
       mount() {
         prev = null; lastChord = '';
         return `<style>${style}</style><div class="tfv-table" id="tfv-table">
-          <div class="tfv-brand">TE FODE</div><div class="tfv-round" id="tfv-round"></div>
+          <div class="tfv-brand">TE F0D3</div><div class="tfv-round" id="tfv-round"></div>
           <div class="tfv-vira" id="tfv-vira"></div>
           <div id="tfv-surpresa"></div>
           <div id="tfv-slots"></div>
@@ -216,7 +216,7 @@
           const bid = G.bids && G.bids[pid] !== undefined ? `${G.wins && G.wins[pid] || 0}/${G.bids[pid]}` : '';
           return `<div class="tfv-line ${out ? 'off' : ''} ${G.turn === pid ? 'now' : ''}">${c.avatar(p, 26)}<span class="nm">${esc(p.name)}</span>${bid ? `<span class="bd">${bid}</span>` : ''}<span class="lv">${out ? 'fora' : vidas(G.penalties && G.penalties[pid], max)}</span></div>`;
         }).join('');
-        const side = `<div class="tfv-side-title"><b>TE FODE</b><p>${G.phase === 'setup' ? `${players.length} pessoas na mesa` : `Rodada ${G.round} · ${G.handSize} ${G.handSize === 1 ? 'carta' : 'cartas'}`}</p></div>`
+        const side = `<div class="tfv-side-title"><b>TE F0D3</b><p>${G.phase === 'setup' ? `${players.length} pessoas na mesa` : `Rodada ${G.round} · ${G.handSize} ${G.handSize === 1 ? 'carta' : 'cartas'}`}</p></div>`
           + `<div class="tfv-side-box"><small>Vidas · ${max} erros e sai</small>${rows}</div>`
           + `<div class="tfv-side-box"><small>Como joga</small><p class="sub">Diga quantas vazas vai ganhar. Cada vaza a mais ou a menos custa uma vida. Cartas iguais se anulam. As 2 últimas pessoas vencem.</p></div>`
           + `<div class="event" style="margin-top:auto">${c.C.event ? c.hl(c.C.event.text) : ''}</div>`;
@@ -368,7 +368,7 @@
         const over = $('tfv-over');
         let h = '';
         if (G.phase === 'setup') {
-          h = `<div class="tfv-over"><div class="big-emoji">🂠</div><h2>Te Fode</h2><p class="sub">${players.length} de 4–7 pessoas na mesa. Toquem em "Começar" no celular.</p>
+          h = `<div class="tfv-over"><div class="big-emoji">🂠</div><h2>Te F0d3 <small>(f*dinha)</small></h2><p class="sub">${players.length} de 4–7 pessoas na mesa. Toquem em "Começar" no celular.</p>
             <div class="tfv-steps"><div><b>1. Palpite</b>Quantas vazas você leva? A soma nunca fecha com o número de cartas.</div><div><b>2. Jogue</b>A vira define a manilha. Cartas iguais se anulam.</div><div><b>3. Acerte</b>Cada vaza de diferença custa uma vida. Sem vidas, você sai.</div></div></div>`;
         } else if (G.phase === 'result' || G.phase === 'end') {
           const rows = (G.roundResults || []).slice().sort((a, b) => order.indexOf(a.pid) - order.indexOf(b.pid));
@@ -390,7 +390,7 @@
         if (k2 !== lastChord) {
           if (prev && (G.phase === 'result' || G.phase === 'end')) {
             const fora = (G.roundResults || []).filter(r => r.out);
-            if (fora.length) setTimeout(() => burst(`FODEU!<small>${fora.map(r => nome(r.pid)).join(' e ')} ${fora.length > 1 ? 'saíram' : 'saiu'} da mesa</small>`, '#fff', '#8a3340'), 350);
+            if (fora.length) setTimeout(() => burst(`F0D3U!<small>${fora.map(r => nome(r.pid)).join(' e ')} ${fora.length > 1 ? 'saíram' : 'saiu'} da mesa</small>`, '#fff', '#8a3340'), 350);
             c.chord(G.phase === 'end' ? [523, 659, 784, 1046] : [523, 659, 784]);
           }
           lastChord = k2;

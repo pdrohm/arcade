@@ -130,7 +130,7 @@
         const out = pid => G.phase !== 'setup' && (G.active || []).indexOf(pid) < 0;
         const score = `<div class="tf-score">${(G.order && G.order.length ? G.order : players.map(p => p.pid)).map(pid => `<span class="${pid === me ? 'mine' : ''} ${out(pid) ? 'out' : ''}">${name(pid)} ${out(pid) ? '☠' : hearts(G.penalties && G.penalties[pid], max)}</span>`).join('')}</div>`;
         const title = G.phase === 'setup' ? 'A mesa espera' : G.phase === 'end' ? 'Fim de jogo' : `Rodada ${G.round}`;
-        const head = `<div class="tf-panel"><div class="tf-top"><div><div class="tf-kicker">Te Fode · ${max} vidas</div><h2 class="tf-title">${title}</h2></div><span class="tf-tag">${G.phase === 'setup' ? `${players.length}/4–7` : `${G.handSize} ${G.handSize === 1 ? 'carta' : 'cartas'}`}</span></div>${score}</div>`;
+        const head = `<div class="tf-panel"><div class="tf-top"><div><div class="tf-kicker">Te F0d3 · ${max} vidas</div><h2 class="tf-title">${title}</h2></div><span class="tf-tag">${G.phase === 'setup' ? `${players.length}/4–7` : `${G.handSize} ${G.handSize === 1 ? 'carta' : 'cartas'}`}</span></div>${score}</div>`;
         if (G.phase === 'setup') {
           const ready = players.length >= 4 && players.length <= 7;
           return `<div class="tf-phone">${head}<div class="tf-panel"><p class="tf-headline">Palpite certo, nenhuma vida perdida.</p><p class="tf-caption">${esc(G.rules || 'Diga quantas vazas vai ganhar. Cada erro custa uma vida. Na rodada de uma carta, você só vê as cartas dos outros.')}</p></div><button type="button" class="tf-btn wide" data-a="begin" ${ready ? '' : 'disabled'}>Começar</button>${ready ? '' : '<p class="tf-caption" style="text-align:center">São necessárias 4 a 7 pessoas.</p>'}${event}</div>`;
@@ -139,7 +139,7 @@
           const winners = (G.winners || []).map(name).join(' e ');
           const iWon = (G.winners || []).indexOf(me) >= 0;
           const mineRow = (G.roundResults || []).find(r => r.pid === me);
-          const line = G.phase === 'end' ? `${winners || 'A mesa'} venceu!` : !mineRow ? `Rodada ${G.round} encerrada` : mineRow.out ? 'Fodeu! Você saiu.' : mineRow.added === 0 ? 'Na mosca! ✓' : `Errou por ${mineRow.added}`;
+          const line = G.phase === 'end' ? `${winners || 'A mesa'} venceu!` : !mineRow ? `Rodada ${G.round} encerrada` : mineRow.out ? 'F0d3u! Você saiu.' : mineRow.added === 0 ? 'Na mosca! ✓' : `Errou por ${mineRow.added}`;
           const big = G.phase === 'end' ? (iWon ? '🏆' : '🂠') : !mineRow ? '' : mineRow.out ? '☠' : mineRow.added === 0 ? '🎯' : '💔';
           const details = (G.roundResults || []).map(row => `<div class="tf-result-line ${row.pid === me ? 'me' : ''} ${row.out ? 'out' : ''}"><span>${name(row.pid)}${row.out ? ' ☠' : ''}</span><span>${row.won}/${row.bid} vazas</span><strong class="${row.added === 0 ? 'perfect' : ''}">${row.added === 0 ? '✓' : `−${row.added} ♥`}</strong></div>`).join('');
           return `<div class="tf-phone">${head}<div class="tf-panel">${big ? `<div class="tf-big">${big}</div>` : ''}<p class="tf-kicker">${G.phase === 'end' ? 'Resultado final' : 'Resultado da rodada'}</p><h2 class="tf-title">${line}</h2><p class="tf-caption" style="margin-top:6px">Vazas ganhas / palpite · vidas perdidas</p>${details}</div><button type="button" class="tf-btn wide" data-a="${G.phase === 'end' ? 'again' : 'next'}">${G.phase === 'end' ? 'Jogar de novo' : 'Próxima rodada'}</button>${event}</div>`;

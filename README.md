@@ -75,7 +75,7 @@ O que o núcleo já resolve para todos os jogos:
 | `games/uno` | UNO — mão no celular, mesa na TV, coringa, +2/+4, UNO! e "Pegou!", pontuação oficial |
 | `games/pife` | Pife (Cacheta) — 2–10 pessoas, mão privada no celular, compra do monte ou descarte, três jogos de três cartas e opção de partida com ou sem coringas |
 | `games/truco` | Truco Paulista, Mineiro e Gaudério — 2 pessoas ou 4 em duplas, mão privada no celular e mesa pública na TV. O Gaudério usa 40 cartas espanholas (Espadas, Bastos, Ouros e Copas), envido e flor |
-| `games/tefode` | Te Fode (Fodinha) — 4–7 pessoas, palpites de vazas, carta na testa nas rodadas de uma carta, cartas iguais que se anulam e eliminação por penalidades |
+| `games/tefode` | Te F0d3 (f*dinha) — 4–7 pessoas, palpites de vazas, carta na testa nas rodadas de uma carta, cartas iguais que se anulam e eliminação por penalidades |
 | `games/impostor` | Impostor — todo mundo recebe a mesma palavra, menos o(s) impostor(es); com ou sem dica; dicas, discussão, votação e chance final |
 | `games/palavrasecreta` | Palavra Secreta — estilo Mega Senha: em times, um vê a palavra e dá dicas em voz alta, o colega adivinha; ACERTOU/PASSAR no celular, cronômetro e placar na TV |
 | `games/ultimodepe` | Último de Pé — memória espacial e ação simultânea, 2–8. 🐧 Pinguins (dash com força no gelo, quem cai na água sai) ou 🤠 Tiroteio (todo mundo atira junto). O servidor resolve a rodada; celular em tela cheia |
@@ -85,7 +85,7 @@ No Truco, o Paulista usa mão de onze e sequência 1→3→6→9→12; o Mineiro
 
 A arte das cartas espanholas vem de [Baraja española completa.png](https://commons.wikimedia.org/wiki/File:Baraja_espa%C3%B1ola_completa.png), com crédito e licença em [public/cards/spanish/ATTRIBUTION.md](public/cards/spanish/ATTRIBUTION.md). No fim de cada vaza, a mesa segura as cartas por alguns segundos para mostrar o resultado.
 
-No Te Fode, o [regulamento da UFSC](https://caeca.ufsc.br/regulamentos/Fodinha.pdf) define 5 penalidades, limite de cartas por número de pessoas e retorno a 1 carta após o limite. O [texto complementar](https://faltadecriatividadeefogo.blogspot.com/2016/02/fodinha.html) define a vira, as manilhas e as cartas iguais que se anulam. A pontuação é só no jogo, sem ações ligadas a bebida.
+No Te F0d3, o [regulamento da UFSC](https://caeca.ufsc.br/regulamentos/Fodinha.pdf) define 5 penalidades, limite de cartas por número de pessoas e retorno a 1 carta após o limite. O [texto complementar](https://faltadecriatividadeefogo.blogspot.com/2016/02/fodinha.html) define a vira, as manilhas e as cartas iguais que se anulam. A pontuação é só no jogo, sem ações ligadas a bebida.
 
 ## Jogos de fora (jogo de navegador de outro site)
 

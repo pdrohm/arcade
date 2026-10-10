@@ -45,7 +45,7 @@ const manilhaOf = vira => vira ? FACES[(FACES.indexOf(vira.n) + 1) % FACES.lengt
 
 module.exports = {
   meta: {
-    id: 'tefode', name: 'TE FODE', emoji: '🂠',
+    id: 'tefode', name: 'TE F0D3 (f*dinha)', emoji: '🂠',
     tagline: 'Aposte quantas vazas vai ganhar. Errou, perde pontos de vida.',
     art: 'linear-gradient(135deg,#622f33,#321d29 55%,#ca9360)',
     minPlayers: 4, maxPlayers: 7,
@@ -116,7 +116,7 @@ module.exports = {
     function endGame() {
       s.phase = 'end'; s.turn = null;
       s.winners = [...s.active].sort((a, b) => (s.penalties[a] || 0) - (s.penalties[b] || 0)).slice(0, 2);
-      api.setEvent(`${s.winners.map(name).join(' e ')} venceram o Te Fode!`, null);
+      api.setEvent(`${s.winners.map(name).join(' e ')} venceram o Te F0d3!`, null);
     }
 
     function finishHand() {
@@ -165,7 +165,7 @@ module.exports = {
           turn: null, deck: [], hands: {}, vira: null, bids: {}, wins: {}, penalties: {},
           table: [], trick: 0, trickWinner: null, lastTrick: [], winners: [], reveal: null, roundResults: [], lastPlay: null };
         api.clearTimer();
-        api.setEvent('Entrem com 4 a 7 pessoas e comecem o Te Fode.', null);
+        api.setEvent('Entrem com 4 a 7 pessoas e comecem o Te F0d3.', null);
       },
       action(p, msg) {
         const pid = p.pid;
