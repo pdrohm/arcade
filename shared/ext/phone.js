@@ -15,7 +15,8 @@
   // O controle é sempre deitado, como um controle de verdade. Com o celular em pé, ele gira 90°
   // sozinho (a pessoa só vira o celular de lado). Em pé, os toques são convertidos de volta (local()).
   const CSS = `
-  body.ext-pad{overflow:hidden;overscroll-behavior:none}
+  body.ext-pad{overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  #xp,#xp *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent}
   #xp{--pc:#a855f7;position:fixed;top:0;left:0;width:100vw;height:100vh;height:100dvh;z-index:1000;color:#e8eaf2;
     background:radial-gradient(80% 120% at 0 100%,rgba(255,255,255,.05),transparent 60%),radial-gradient(80% 120% at 100% 100%,rgba(255,255,255,.05),transparent 60%),linear-gradient(180deg,#22242c 0,#121318 100%);
     display:grid;grid-template-rows:auto 1fr;gap:6px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
@@ -139,6 +140,12 @@
       });
       root.addEventListener('contextmenu', e => e.preventDefault(), opt);
       root.addEventListener('touchmove', e => e.preventDefault(), { signal: this.abort.signal, passive: false });
+      // Segurar um botão não pode abrir seleção de texto, lupa nem menu do sistema (iPhone/Android).
+      // Só os botões de menu ([data-a]) continuam com o toque normal, para o clique funcionar.
+      root.addEventListener('touchstart', e => { if (!e.target.closest('[data-a]')) e.preventDefault(); }, { signal: this.abort.signal, passive: false });
+      document.addEventListener('selectstart', e => e.preventDefault(), opt);
+      const unselect = () => { const sel = window.getSelection && window.getSelection(); if (sel && sel.rangeCount) sel.removeAllRanges(); };
+      document.addEventListener('selectionchange', unselect, opt);
       // Tela apagou ou trocou de app: solta tudo (o jogo não fica com o botão preso).
       document.addEventListener('visibilitychange', () => { if (document.hidden) this.reset(); }, opt);
       window.addEventListener('blur', () => this.reset(), opt);
