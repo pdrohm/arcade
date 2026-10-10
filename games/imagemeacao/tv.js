@@ -19,62 +19,94 @@
   const shown = {};
   let animating = false, lastTurn = null, lastRound = null;
 
+  // Visual "fliperama de papel" (shared/ui.css): tabuleiro em cartão branco com borda de tinta e sombra dura,
+  // casas quadradas com borda, peões quadrados na cor da equipe. Cor do jogo (categoria desenho): #b08cff.
+  // Tamanhos em rem (1rem = 1vw na TV). Chrome 47: sem var(), grid, gap nem inset; aspect-ratio só com reserva.
   const style = `
-    .ia-board { position:relative; width:100%; max-width:calc((100vh - 40px) * 10 / 7.1); border-radius:22px;
-      background:linear-gradient(160deg,#f6f1e4,#e9e2d0); box-shadow:0 30px 60px rgba(0,0,0,0.6), inset 0 0 0 6px rgba(255,255,255,0.53), inset 0 0 0 8px #c9bfa6; overflow:hidden; }
+    .ia-board { position:relative; width:100%; max-width:calc((100vh - 40px) * 10 / 7.1); background:#fff; border:.26rem solid #0f0f14; box-shadow:.7rem .7rem 0 #0f0f14; overflow:hidden; color:#0f0f14; }
     .ia-board { aspect-ratio:100 / ${BH}; } /* tv-ok */
     /* TV antiga (sem aspect-ratio): um espaçador dá a altura do tabuleiro (padding % = largura do tabuleiro). */
     .ia-board::before { content:''; display:block; padding-top:${BH}%; }
-    .ia-sq { position:absolute; border-radius:14%; box-shadow:inset 0 -4px 0 rgba(0,0,0,0.13), inset 0 2px 0 rgba(255,255,255,0.33), 0 2px 4px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center; font-weight:900; color:#1a1a1a; font-size:16px;
-      font-size:clamp(9px,1.05vw,16px); } /* tv-ok */
-    .ia-sq .n { position:absolute; right:9%; bottom:5%; font-size:11px; font-size:clamp(7px,.7vw,11px); font-weight:800; opacity:.45; } /* tv-ok */
-    .ia-sq.all::before { content:''; position:absolute; top:22%; left:22%; right:22%; bottom:22%; border-radius:50%; background:#fff; opacity:.9; }
-    .ia-sq.all::after { content:'⚡'; position:absolute; font-size:22px; font-size:clamp(10px,1.3vw,22px); } /* tv-ok */
-    .ia-sq.start, .ia-sq.finish { background:#fff; color:#1a1a1a; text-align:center; line-height:1.1; }
-    .ia-sq.finish { background:repeating-linear-gradient(45deg,#fff 0,#fff 8px,#ddd 8px,#ddd 16px); }
-    .ia-sq.active { animation:iaglow .9s infinite alternate; z-index:2; }
-    @keyframes iaglow { from { box-shadow:0 0 0 3px #fff, 0 0 12px 4px rgba(0,0,0,0.4); } to { box-shadow:0 0 0 5px #fff, 0 0 26px 8px rgba(0,0,0,0.53); } }
-    .ia-pawn { position:absolute; width:5.4%; border-radius:50%; border:3px solid #fff; box-shadow:0 5px 10px rgba(0,0,0,0.47), 0 0 0 2px rgba(0,0,0,0.27); transition:left .28s ease, top .28s ease; z-index:5; transform:translate(-50%,-50%); }
-    .ia-ghost { position:absolute; width:5.4%; border-radius:50%; border:3px dashed #fff; z-index:4; transform:translate(-50%,-50%); animation:iagh 1s infinite alternate; pointer-events:none; }
-    /* peão redondo na TV antiga: espaçador de 100% da largura de dentro (+ borda dos dois lados = largura total) */
+    .ia-sq { position:absolute; border:.18rem solid #0f0f14; display:flex; align-items:center; justify-content:center; font-weight:900; color:#0f0f14; font-size:.9rem; }
+    .ia-sq .n { position:absolute; right:6%; bottom:2%; font-family:'Pixelify Sans',monospace; font-size:.85rem; font-weight:700; line-height:1; }
+    .ia-sq.all::before { content:''; position:absolute; top:24%; left:24%; right:24%; bottom:24%; background:#fff; border:.13rem solid #0f0f14; }
+    .ia-sq.all::after { content:'⚡'; position:absolute; font-size:1.25rem; line-height:1; }
+    .ia-sq.start { background:#ffce1f; font-family:'JetBrains Mono',monospace; font-size:.8rem; letter-spacing:.04em; text-align:center; line-height:1.1; }
+    .ia-sq.finish { background:#fff; background-image:linear-gradient(45deg,#0f0f14 25%,transparent 25%,transparent 75%,#0f0f14 75%), linear-gradient(45deg,#0f0f14 25%,transparent 25%,transparent 75%,#0f0f14 75%); background-size:1.2rem 1.2rem; background-position:0 0, .6rem .6rem; }
+    .ia-sq.finish b { background:#ffce1f; border:.13rem solid #0f0f14; padding:.15rem .4rem; font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; font-size:.95rem; line-height:1; }
+    .ia-sq.active { animation:iaglow .7s infinite alternate; z-index:2; }
+    @keyframes iaglow { from { box-shadow:0 0 0 .25rem #ffce1f, 0 0 0 .45rem #0f0f14; } to { box-shadow:0 0 0 .5rem #ffce1f, 0 0 0 .7rem #0f0f14; } }
+    .ia-pawn { position:absolute; width:5.2%; border:.22rem solid #0f0f14; box-shadow:.25rem .25rem 0 #0f0f14; transition:left .28s ease, top .28s ease; z-index:5; transform:translate(-50%,-50%); }
+    .ia-ghost { position:absolute; width:5.2%; border:.22rem dashed #0f0f14; z-index:4; transform:translate(-50%,-50%); animation:iagh .8s infinite alternate; pointer-events:none; }
+    /* peão quadrado na TV antiga: espaçador de 100% da largura de dentro */
     .ia-pawn::before, .ia-ghost::before { content:''; display:block; padding-top:100%; }
     .ia-pawn, .ia-ghost { aspect-ratio:1; } /* tv-ok */
     @supports (aspect-ratio:1) { .ia-board::before, .ia-pawn::before, .ia-ghost::before { display:none; } }
-    @keyframes iagh { from { opacity:.45; } to { opacity:.9; } }
-    .ia-center { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2%; text-align:center; color:#1a1a1a; }
-    /* era gap:2% (2% da altura de dentro do miolo = 0,874% da largura de dentro); a barra de tempo já tem 8px de margem */
+    @keyframes iagh { from { opacity:.45; } to { opacity:1; } }
+    .ia-center { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2%; text-align:center; color:#0f0f14; }
     .ia-center > * + * { margin-top:.874%; }
     .ia-center > .tbar { margin-top:calc(8px + .874%); }
-    .ia-logo { font-size:40px; font-size:clamp(20px,2.6vw,40px); font-weight:900; line-height:1; } .ia-logo span { color:#f97316; } /* tv-ok */
-    .ia-cat { border-radius:12px; padding:.5em 1.4em; font-weight:900; font-size:28px; font-size:clamp(14px,1.8vw,28px); box-shadow:0 4px 10px rgba(0,0,0,0.2); } /* tv-ok */
-    .ia-hint { color:#6b6252; font-size:18px; font-size:clamp(12px,1.2vw,18px); font-weight:700; } /* tv-ok */
-    .ia-timer { font-size:120px; font-size:clamp(50px,7vw,120px); font-weight:900; line-height:1; font-variant-numeric:tabular-nums; color:#1a1a1a; } /* tv-ok */
-    .ia-timer.low { color:#ef4444; animation:pulse .5s infinite alternate; }
-    .ia-dice { width:100px; height:100px; border-radius:18%; background:#fff; display:flex; flex-wrap:wrap; align-content:flex-start; padding:14%; box-shadow:0 6px 14px rgba(0,0,0,0.27); }
-    .ia-dice { width:clamp(50px,6.5vw,100px); height:clamp(50px,6.5vw,100px); } /* tv-ok */
-    /* 3 colunas × 3 linhas com 6% de vão (era grid + gap:6%) */
-    .ia-dice i { width:29.3333%; height:29.3333%; margin:0 6% 6% 0; border-radius:50%; background:#111; visibility:hidden; }
+    .ia-logo { font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:3rem; line-height:.9; }
+    .ia-logo span { display:inline-block; background:#b08cff; border:.2rem solid #0f0f14; box-shadow:.35rem .35rem 0 #0f0f14; padding:.1rem .6rem; margin-top:.5rem; }
+    .ia-k { font-family:'JetBrains Mono',monospace; font-weight:700; text-transform:uppercase; letter-spacing:.06em; font-size:.95rem; color:#0f0f14; }
+    .ia-k.mut { color:#55555e; }
+    .ia-team { font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:2rem; line-height:1; }
+    .ia-sw { display:inline-block; width:2.2rem; height:2.2rem; border:.2rem solid #0f0f14; box-shadow:.2rem .2rem 0 #0f0f14; flex:none; }
+    .ia-cat { border:.2rem solid #0f0f14; box-shadow:.35rem .35rem 0 #0f0f14; padding:.45rem 1.2rem; font-family:'Archivo',sans-serif; font-weight:900; font-stretch:115%; text-transform:uppercase; font-size:1.6rem; line-height:1; color:#0f0f14; }
+    .ia-all { background:#0f0f14; color:#ffce1f; padding:.4rem 1rem; font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:1.2rem; line-height:1; }
+    .ia-timer { font-family:'Pixelify Sans',monospace; font-size:6rem; font-weight:700; line-height:1; color:#0f0f14; }
+    .ia-timer.low { color:#d02a20; animation:pulse .5s infinite alternate; }
+    .ia-dice { width:5.6rem; height:5.6rem; background:#fff; border:.22rem solid #0f0f14; box-shadow:.35rem .35rem 0 #0f0f14; display:flex; flex-wrap:wrap; align-content:flex-start; padding:12%; }
+    /* 3 colunas × 3 linhas com 6% de vão */
+    .ia-dice i { width:29.3333%; height:29.3333%; margin:0 6% 6% 0; background:#0f0f14; visibility:hidden; }
     .ia-dice i:nth-child(3n) { margin-right:0; } .ia-dice i:nth-child(n+7) { margin-bottom:0; }
     .ia-dice.shake { animation:iashake .12s infinite; }
     @keyframes iashake { 0%{transform:rotate(-12deg)} 100%{transform:rotate(12deg)} }
     .ia-row { display:flex; align-items:center; } .ia-row > * + * { margin-left:4%; }
-    .ia-win { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.8); z-index:20; border-radius:22px; }
-    .ia-win > * + * { margin-top:10px; }
+    .ia-win { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f1f0ea; background-image:radial-gradient(rgba(15,15,20,.16) 2px, transparent 2.1px); background-size:16px 16px; z-index:20; text-align:center; color:#0f0f14; }
+    .ia-win > * + * { margin-top:1.4rem; }
+    .ia-win h2 { font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:5.5rem; line-height:.9; }
+    .ia-win .who { display:inline-block; border:.3rem solid #0f0f14; box-shadow:.8rem .8rem 0 #0f0f14; padding:1rem 2.4rem; font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:4rem; line-height:1; }
     /* quadro de desenho: cobre o tabuleiro enquanto a equipe desenha (quem adivinha está no sofá; precisa ver grande) */
-    .ia-easel { position:absolute; top:0; left:0; right:0; bottom:0; z-index:8; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(236,229,211,0.82); border-radius:22px; }
-    .ia-easel-top { display:flex; align-items:center; justify-content:center; color:#1a1a1a; font-weight:900; margin-bottom:.5vw; }
+    .ia-easel { position:absolute; top:0; left:0; right:0; bottom:0; z-index:8; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f1f0ea; background-color:rgba(241,240,234,0.94); }
+    .ia-easel-top { display:flex; align-items:center; justify-content:center; color:#0f0f14; font-weight:900; margin-bottom:.9vw; }
     .ia-easel-top > * + * { margin-left:1.2vw; }
-    .ia-easel .ia-timer { font-size:64px; font-size:clamp(30px,3.6vw,64px); } /* tv-ok */
-    .ia-easel .ia-cat { font-size:22px; font-size:clamp(12px,1.4vw,22px); } /* tv-ok */
+    .ia-easel .ia-timer { font-size:3.4rem; }
+    .ia-easel .ia-cat { font-size:1.3rem; }
     .ia-easel .tbar { width:14vw; margin:0; }
     .ia-easel-row { display:flex; align-items:flex-start; justify-content:center; }
     .ia-easel-row > * + * { margin-left:1.4vw; }
     .ia-card { display:flex; flex-direction:column; align-items:center; }
-    .ia-card canvas { display:block; background:#fff; border-radius:1vw; box-shadow:0 20px 50px rgba(0,0,0,0.45), 0 0 0 .35vw #fff, 0 0 0 .6vw rgba(0,0,0,0.18); }
-    .ia-card-lb { margin-top:.6vw; font-weight:900; color:#1a1a1a; display:flex; align-items:center; font-size:22px; font-size:clamp(12px,1.3vw,22px); } /* tv-ok */
-    .ia-card-lb .dot { width:1.2vw; height:1.2vw; margin-right:.5vw; }
-    .ia-card-lb small { font-weight:700; opacity:.7; margin-left:.6vw; }
-    .ia-mime { font-size:60px; font-size:clamp(30px,3.6vw,60px); line-height:1; } /* tv-ok */
+    .ia-card canvas { display:block; background:#fff; border:.26rem solid #0f0f14; box-shadow:.6rem .6rem 0 #0f0f14; }
+    .ia-card-lb { margin-top:1vw; font-family:'Archivo',sans-serif; font-weight:900; font-stretch:115%; text-transform:uppercase; color:#0f0f14; display:flex; align-items:center; font-size:1.3rem; line-height:1; }
+    .ia-card-lb .ia-sw { width:1.4vw; height:1.4vw; margin-right:.6vw; box-shadow:none; border-width:.16rem; }
+    .ia-card-lb small { font-family:'JetBrains Mono',monospace; font-weight:700; letter-spacing:.04em; text-transform:none; font-size:1.05rem; margin-left:.8vw; color:#55555e; }
+    .ia-mime { font-size:3.4rem; line-height:1; }
+    /* painel do lado (px, como o resto do painel em shared/ui.css) */
+    .ia-head { background-color:#b08cff; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; padding:14px 16px; color:#0f0f14; }
+    .ia-head .top { display:flex; align-items:center; }
+    .ia-head .g { width:52px; height:52px; flex:none; background:#fff; border:3px solid #0f0f14; display:flex; align-items:center; justify-content:center; font-family:'Pixelify Sans',monospace; font-size:30px; font-weight:700; margin-right:14px; }
+    .ia-head b { display:block; font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:24px; line-height:.95; }
+    .ia-head small { display:block; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; letter-spacing:.08em; text-transform:uppercase; margin-top:5px; }
+    .ia-now { display:flex; align-items:center; margin-top:12px; background:#fff; border:3px solid #0f0f14; padding:8px 10px; }
+    .ia-now .sw { width:30px; height:30px; border:3px solid #0f0f14; flex:none; }
+    .ia-now b { font-size:24px; margin-left:10px; }
+    .ia-mode { margin-left:auto; border:3px solid #0f0f14; padding:4px 10px; font-weight:900; font-stretch:115%; text-transform:uppercase; font-size:15px; }
+    .ia-lbl { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#55555e; margin-bottom:10px; }
+    .ia-tm { border:3px solid #0f0f14; background:#fff; padding:8px 10px; }
+    .ia-tm + .ia-tm { margin-top:8px; }
+    .ia-tm.cur { background:#fff4c2; box-shadow:4px 4px 0 #0f0f14; }
+    .ia-tm .hd { display:flex; align-items:center; font-size:18px; }
+    .ia-tm .hd .sw { width:20px; height:20px; border:2px solid #0f0f14; flex:none; margin-right:10px; }
+    .ia-tm .hd b { flex:1; font-weight:900; text-transform:uppercase; font-stretch:115%; }
+    .ia-tm .hd span { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:#55555e; }
+    .ia-tm .ps { display:flex; flex-wrap:wrap; margin-top:6px; }
+    .ia-p { display:inline-flex; align-items:center; white-space:nowrap; border:2px solid #0f0f14; background:#fff; color:#55555e; font-weight:800; font-size:14px; padding:1px 7px 1px 2px; margin:0 6px 6px 0; }
+    .ia-p .avatar { margin-right:5px; }
+    .ia-p.now { background:#ffce1f; color:#0f0f14; }
+    .ia-leg { display:flex; align-items:center; font-size:14px; font-weight:700; }
+    .ia-leg + .ia-leg { margin-top:7px; }
+    .ia-leg i { width:22px; height:22px; border:2px solid #0f0f14; display:flex; align-items:center; justify-content:center; margin-right:10px; flex:none; font-style:normal; font-size:12px; }
   `;
 
   // ---------- quadro de desenho ----------
@@ -173,19 +205,18 @@
         for (let i = 0; i < pts.length - 1; i++) {
           const p1 = pts[i], x1 = p1[0], y1 = p1[1], p2 = pts[i + 1], x2 = p2[0], y2 = p2[1];
           const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
-          arrows += `<path d="M-0.55 -0.7 L0.35 0 L-0.55 0.7" transform="translate(${mx} ${my}) rotate(${ang})" fill="none" stroke="#6b5f48" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/>`;
+          arrows += `<path d="M-0.55 -0.7 L0.35 0 L-0.55 0.7" transform="translate(${mx} ${my}) rotate(${ang})" fill="none" stroke="#0f0f14" stroke-width="0.34" stroke-linecap="square" stroke-linejoin="miter"/>`;
         }
         const line = pts.map(p => p.join(',')).join(' ');
         const svg = `<svg style="position:absolute;top:0;left:0;width:100%;height:100%" viewBox="0 0 100 ${BH}" preserveAspectRatio="none">
-          <polyline points="${line}" fill="none" stroke="#b9ad90" stroke-width="${CW * 0.62}" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/>
-          <polyline points="${line}" fill="none" stroke="#d3c8ab" stroke-width="${CW * 0.5}" stroke-linejoin="round" stroke-linecap="round"/>
-          <polyline points="${line}" fill="none" stroke="#fffdf5" stroke-width="0.22" stroke-dasharray="1.2 1" stroke-linejoin="round" opacity=".8"/>${arrows}</svg>`;
+          <polyline points="${line}" fill="none" stroke="#0f0f14" stroke-width="${CW * 0.56}" stroke-linejoin="miter" stroke-linecap="square"/>
+          <polyline points="${line}" fill="none" stroke="#e4e2d9" stroke-width="${CW * 0.44}" stroke-linejoin="miter" stroke-linecap="square"/>${arrows}</svg>`;
         const squares = G.board.map(sq => {
           const rc = PATH[sq.i], row = rc.row, col = rc.col;
           const k = sq.cat ? G.categories[sq.cat] : null;
           const cls = ['ia-sq', sq.allPlay ? 'all' : '', sq.start ? 'start' : '', sq.finish ? 'finish' : ''].join(' ');
           const st = `left:${cx(col) - CW / 2}%;top:${pctY(cy(row) - CW / 2)};width:${CW}%;height:${pctY(CW)};${k && !sq.start && !sq.finish ? `background:${k.color}` : ''}`;
-          const label = sq.start ? 'INÍCIO ▶' : sq.finish ? '🏁<br>FIM' : '';
+          const label = sq.start ? 'INÍCIO<br>▶' : sq.finish ? '<b>FIM</b>' : '';
           return `<div class="${cls}" id="ia-sq${sq.i}" style="${st}">${label}${sq.start || sq.finish ? '' : `<span class="n">${sq.i}</span>`}</div>`;
         }).join('');
         const cl = cx(2) - CW / 2, ct = cy(2) - CW / 2, cr = cx(7) + CW / 2, cb = cy(4) + CW / 2;
@@ -198,24 +229,23 @@
         const t = G.teams[G.turn];
         const ti = k => G.teamList.find(x => x.key === k);
         const drawerName = tt => { const pid = tt && G.drawers[tt.key]; const p = pid && c.C.players.find(x => x.pid === pid); return p ? p.name : null; };
-        let side = `<div class="box"><p class="sub mut">${G.phase === 'setup' ? 'Escolhendo as equipes' : 'Rodada ' + G.round}</p>
-          ${t && G.phase !== 'setup' ? `<div style="display:flex;align-items:center;margin-top:8px"><span class="dot" style="background:${ti(t.key).hex};width:34px;height:34px"></span><b style="font-size:26px;color:${ti(t.key).hex};margin-left:12px">${ti(t.key).name}</b>
-            ${G.mode ? `<span style="margin-left:auto;background:${G.mode === 'mimica' ? '#2563eb' : '#16a34a'};color:#fff;border-radius:10px;padding:4px 12px;font-weight:900;font-size:16px">${G.mode === 'mimica' ? '🎭 Mímica' : '🎨 Desenho'}</span>` : ''}</div>` : ''}</div>`;
+        const modeTag = G.mode ? `<span class="ia-mode" style="background:${G.mode === 'mimica' ? '#3db4f2' : '#35d07f'}">${G.mode === 'mimica' ? 'Mímica' : 'Desenho'}</span>` : '';
+        let side = `<div class="ia-head"><div class="top"><span class="g">✎</span><div><b>Imagem<br>e Ação</b><small>${G.phase === 'setup' ? 'Escolhendo as equipes' : 'Rodada ' + G.round}</small></div></div>
+          ${t && G.phase !== 'setup' ? `<div class="ia-now"><span class="sw" style="background:${ti(t.key).hex}"></span><b class="disp">${ti(t.key).name}</b>${modeTag}</div>` : ''}</div>`;
 
-        side += `<div class="box">${G.teams.length ? `<div class="players">${G.teams.map((tt, i) => `
-          <div class="pl" style="border-color:${i === G.turn && G.phase !== 'setup' ? '#fff' : 'transparent'}">
-            <span class="dot" style="background:${ti(tt.key).hex}"></span>
-            <b>${ti(tt.key).name}</b><span>casa ${tt.pos} · ${tt.players.length} 📱</span></div>
-          <div style="display:flex;flex-wrap:wrap;padding:0 0 2px 14px">${tt.players.map((pid, k) => {
+        side += `<div class="box">${G.teams.length ? `<div class="ia-lbl">Equipes</div>${G.teams.map((tt, i) => `
+          <div class="ia-tm ${i === G.turn && G.phase !== 'setup' ? 'cur' : ''}"><div class="hd"><span class="sw" style="background:${ti(tt.key).hex}"></span>
+            <b>${ti(tt.key).name}</b><span>casa ${tt.pos} · ${tt.players.length} ${tt.players.length === 1 ? 'pessoa' : 'pessoas'}</span></div>
+          <div class="ps">${tt.players.map((pid, k) => {
             const p = c.C.players.find(x => x.pid === pid);
             const now = G.drawers[tt.key] === pid && G.phase !== 'setup';
-            return p ? `<span class="nm" style="${now ? 'background:#fbbf24;color:#111' : 'background:rgba(255,255,255,0.07);color:#cbd5e1'};font-size:14px;margin:0 6px 6px 0;display:inline-flex;align-items:center;padding-left:4px"><span style="margin-right:6px">${c.avatar(p, 30)}</span>${k + 1}. ${esc(p.name)}${now ? ' ✏️' : ''}${p.on === false ? ' 📵' : ''}</span>` : '';
-          }).join('')}</div>`).join('')}</div>` : '<p class="sub center">Nenhuma equipe ainda. Escolham no celular!</p>'}</div>`;
+            return p ? `<span class="ia-p ${now ? 'now' : ''}">${c.avatar(p, 26)}${k + 1}. ${esc(p.name)}${now ? ' ✎' : ''}${p.on === false ? ' · fora' : ''}</span>` : '';
+          }).join('')}</div></div>`).join('')}` : '<p class="sub center">Nenhuma equipe ainda. Escolham no celular!</p>'}</div>`;
 
         side += `<div class="event">${c.C.event ? hl(c.C.event.text) : ''}</div>`;
-        side += `<div class="box" style="margin-top:auto"><p class="sub mut" style="margin-bottom:8px">Categorias</p>
-          <div style="display:flex;flex-direction:column">${Object.keys(G.categories).map(kk => G.categories[kk]).map((k, i) => `<div style="display:flex;align-items:center;font-size:14px;font-weight:700${i ? ';margin-top:7px' : ''}"><i style="width:22px;height:22px;border-radius:6px;background:${k.color};display:inline-block;margin-right:10px"></i>${k.name}</div>`).join('')}
-          <div style="display:flex;align-items:center;font-size:14px;font-weight:700;margin-top:7px"><i style="width:22px;height:22px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;margin-right:10px">⚡</i>Todos jogam</div></div></div>`;
+        side += `<div class="box" style="margin-top:auto"><div class="ia-lbl">Categorias</div>
+          ${Object.keys(G.categories).map(kk => G.categories[kk]).map(k => `<div class="ia-leg"><i style="background:${k.color}"></i>${k.name}</div>`).join('')}
+          <div class="ia-leg"><i style="background:#fff">⚡</i>Todos jogam</div></div>`;
         return { side };
       },
 
@@ -233,25 +263,25 @@
         // centro do tabuleiro
         let ch = '';
         if (G.phase === 'setup') {
-          ch = `<div class="ia-logo">Imagem e <span>Ação</span></div><div class="ia-hint">Escolham as equipes no celular</div><div class="ia-hint">Precisa de 2 equipes ou mais</div>`;
+          ch = `<div class="ia-logo">Imagem e<br><span>Ação</span></div><div class="ia-k" style="margin-top:1.4rem">Escolham as equipes no celular ▸</div><div class="ia-k mut">Precisa de 2 equipes ou mais</div>`;
         } else if (t) {
           const k = ti(t.key);
-          ch = `<div class="ia-row"><span class="dot" style="background:${k.hex};width:2vw;height:2vw"></span>
-            <div style="text-align:left"><div class="ia-hint">Vez da equipe</div><div style="font-size:28px;font-size:clamp(14px,1.8vw,28px) /* tv-ok */;font-weight:900">${k.name}</div></div>
+          ch = `<div class="ia-row"><span class="ia-sw" style="background:${k.hex}"></span>
+            <div style="text-align:left"><div class="ia-k mut">Vez da equipe</div><div class="ia-team">${k.name}</div></div>
             <div style="margin-left:calc(4% + 1.5vw)">${dice(G.dice, G.phase === 'rolling')}</div></div>`;
           const dn = drawerName(t);
           const verbo = G.mode === 'mimica' ? 'faz mímica' : G.mode === 'desenho' ? 'desenha' : 'faz a carta';
-          if (dn) ch += `<div class="ia-hint">✏️ ${esc(dn)} ${G.phase === 'roll' ? 'joga o dado e faz a carta' : verbo}</div>`;
-          if (G.phase === 'roll') ch += `<div class="ia-hint">Jogue o dado no celular 🎲</div>`;
+          if (dn) ch += `<div class="ia-k">✎ ${esc(dn)} ${G.phase === 'roll' ? 'joga o dado e faz a carta' : verbo}</div>`;
+          if (G.phase === 'roll') ch += `<div class="ia-k mut">Jogue o dado no celular ▸</div>`;
           if (G.card) {
             const cat = G.categories[G.card.cat];
-            if (G.phase === 'allplay') ch += `<div style="background:#1a1a1a;color:#fff;border-radius:12px;padding:.3em 1em;font-weight:900;font-size:20px;font-size:clamp(12px,1.3vw,20px) /* tv-ok */">⚡ TODOS JOGAM</div>`;
+            if (G.phase === 'allplay') ch += `<div class="ia-all">⚡ Todos jogam</div>`;
             if (G.mode === 'mimica') ch += `<div class="ia-mime">🎭</div>`;
-            ch += `<div class="ia-cat" style="background:${cat.color};color:${cat.text}">${cat.name}</div>`;
-            if (G.target !== null) ch += `<div class="ia-hint">Casa ${t.pos} → ${G.target} se acertar</div>`;
+            ch += `<div class="ia-cat" style="background:${cat.color}">${cat.name}</div>`;
+            if (G.target !== null) ch += `<div class="ia-k">Casa ${t.pos} → ${G.target} se acertar</div>`;
             const r = c.remaining();
             if (r !== null) ch += `<div class="ia-timer ${r <= 10 ? 'low' : ''}" id="timer">${Math.ceil(r)}</div><div class="tbar" style="width:70%"><i id="tbar" style="width:${r / (G.roundMs / 1000) * 100}%"></i></div>`;
-            else ch += G.timeUp ? `<div class="ia-timer low">⏰</div><div class="ia-hint">Tempo esgotado!</div>` : `<div class="ia-hint">Esperando escolher: desenho ou mímica…</div>`;
+            else ch += G.timeUp ? `<div class="ia-timer low">0:00</div><div class="ia-k">Tempo esgotado!</div>` : `<div class="ia-k mut">Esperando escolher: desenho ou mímica…</div>`;
           }
         }
 
@@ -272,22 +302,22 @@
               const card = document.createElement('div'); card.className = 'ia-card';
               card.appendChild(boards[key].cv);
               const lb = document.createElement('div'); lb.className = 'ia-card-lb'; lb.id = 'ia-lb-' + key;
-              lb.innerHTML = `<span class="dot" style="background:${kk.hex}"></span>${kk.name}`;
+              lb.innerHTML = `<span class="ia-sw" style="background:${kk.hex}"></span>${kk.name}`;
               card.appendChild(lb);
               row.appendChild(card);
             }
             if (!fitBound) { fitBound = true; window.addEventListener('resize', fitEasel); }
           }
           const cat = G.categories[G.card.cat], r = c.remaining();
-          let th = G.phase === 'allplay' ? `<div style="background:#1a1a1a;color:#fff;border-radius:12px;padding:.3em 1em;font-size:18px;font-size:clamp(11px,1.1vw,18px) /* tv-ok */">⚡ TODOS JOGAM</div>` : '';
-          th += `<div class="ia-cat" style="background:${cat.color};color:${cat.text}">${cat.name}</div>`;
-          if (G.target !== null) th += `<div class="ia-hint">Casa ${t.pos} → ${G.target}</div>`;
-          if (r !== null) th += `<div class="ia-timer ${r <= 10 ? 'low' : ''}" id="timer">⏱ ${c.fmt(r)}</div><div class="tbar"><i id="tbar" style="width:${r / (G.roundMs / 1000) * 100}%"></i></div>`;
-          else th += G.timeUp ? `<div class="ia-timer low">⏰</div><div class="ia-hint">Tempo esgotado!</div>` : '';
+          let th = G.phase === 'allplay' ? `<div class="ia-all">⚡ Todos jogam</div>` : '';
+          th += `<div class="ia-cat" style="background:${cat.color}">${cat.name}</div>`;
+          if (G.target !== null) th += `<div class="ia-k">Casa ${t.pos} → ${G.target}</div>`;
+          if (r !== null) th += `<div class="ia-timer ${r <= 10 ? 'low' : ''}" id="timer">${c.fmt(r)}</div><div class="tbar"><i id="tbar" style="width:${r / (G.roundMs / 1000) * 100}%"></i></div>`;
+          else th += G.timeUp ? `<div class="ia-timer low">0:00</div><div class="ia-k">Tempo esgotado!</div>` : '';
           document.getElementById('ia-easel-top').innerHTML = th;
           for (const key of keys) {
             const lb = document.getElementById('ia-lb-' + key), tt = G.teams.find(x => x.key === key), dn2 = drawerName(tt);
-            if (lb) lb.innerHTML = `<span class="dot" style="background:${ti(key).hex}"></span>${ti(key).name}${dn2 ? `<small>✏️ ${esc(dn2)}</small>` : ''}`;
+            if (lb) lb.innerHTML = `<span class="ia-sw" style="background:${ti(key).hex}"></span>${ti(key).name}${dn2 ? `<small>✎ ${esc(dn2)}</small>` : ''}`;
           }
           fitEasel();
         } else {
@@ -303,7 +333,7 @@
           if (!ghost) { ghost = document.createElement('div'); ghost.id = 'ia-ghost'; ghost.className = 'ia-ghost'; board.appendChild(ghost); }
           const rc = PATH[G.target], row = rc.row, col = rc.col;
           ghost.style.left = cx(col) + '%'; ghost.style.top = pctY(cy(row));
-          ghost.style.background = ti(t.key).hex + '55'; ghost.style.borderColor = ti(t.key).hex;
+          ghost.style.background = ti(t.key).hex + '66';
         } else if (ghost) ghost.remove();
 
         // peões
@@ -337,7 +367,7 @@
         let win = document.getElementById('ia-win');
         if (G.phase === 'win') {
           if (!win) { win = document.createElement('div'); win.id = 'ia-win'; win.className = 'ia-win'; board.appendChild(win); }
-          win.innerHTML = `<div style="font-size:110px">🏆</div><h2 style="font-size:52px;color:${ti(G.winner).hex}">Equipe ${ti(G.winner).name} venceu!</h2><p class="sub">Toque em "Jogar de novo" no celular</p>`;
+          win.innerHTML = `<div class="ia-k">Chegou no fim do tabuleiro</div><div class="who" style="background:${ti(G.winner).hex}">Equipe ${ti(G.winner).name}</div><h2>Venceu!</h2><div class="ia-k mut">Toque em "Jogar de novo" no celular ▸</div>`;
         } else if (win) win.remove();
 
         // aviso de troca de vez
@@ -349,8 +379,8 @@
             const k = ti(t.key), dn = drawerName(t);
             const dpid = t && G.drawers[t.key], dp = dpid && c.C.players.find(x => x.pid === dpid);
             c.turnover(`<div class="round">Rodada ${G.round}</div>
-              <div><small>🎨 AGORA É A VEZ DA EQUIPE</small><div class="who2" style="background:${k.hex};color:#111">${k.name}</div></div>
-              ${dn ? `<div><small>✏️ QUEM FAZ A CARTA</small><div class="who2 sm" style="background:#fff;color:#111;display:inline-flex;align-items:center">${dp ? `<span style="margin-right:12px;display:inline-block">${c.avatar(dp, 56)}</span>` : ''}${esc(dn)}</div></div>` : ''}`, 3200);
+              <div><small>AGORA É A VEZ DA EQUIPE</small><div class="who2" style="background:${k.hex};color:#0f0f14">${k.name}</div></div>
+              ${dn ? `<div><small>QUEM FAZ A CARTA</small><div class="who2 sm" style="background:#fff;color:#0f0f14;display:inline-flex;align-items:center">${dp ? `<span style="margin-right:12px;display:inline-block">${c.avatar(dp, 56)}</span>` : ''}${esc(dn)}</div></div>` : ''}`, 3200);
             c.chord([523, 659, 784]);
           }
         } else { lastTurn = G.turn; lastRound = G.round; }

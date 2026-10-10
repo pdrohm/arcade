@@ -53,7 +53,7 @@ function florValue(hand) {
 
 module.exports = {
   meta: {
-    id: 'truco', name: 'TRUCO', emoji: '🂡',
+    id: 'truco', name: 'TRUCO', category: 'cartas', glyph: '4♣', emoji: '🂡',
     tagline: 'Paulista, Mineiro ou Gaudério. Sua mão no celular, a mesa na TV.',
     art: 'linear-gradient(135deg,#153f2b,#0b2119 58%,#bb8347)',
     minPlayers: 2, maxPlayers: 4,

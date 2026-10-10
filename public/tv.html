@@ -6,6 +6,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <title>Arcade da casa — TV</title>
 <link rel="stylesheet" href="/shared/ui.css">
+<link rel="stylesheet" href="/shared/tv-lobby.css">
 <script>
 // Browser de TV não tem console: qualquer erro de script aparece num canto da tela.
 window.addEventListener('error', function (e) {
@@ -49,9 +50,10 @@ window.addEventListener('error', function (e) {
     const key = c.room + '|' + nets.map(x => x.url).join('|');
     if (key !== qrKey) {
       qrKey = key;
-      el.innerHTML = `<div class="tvqr-k">Mais gente? Escaneie</div>
-        <div class="tvqr-qrs">${nets.map(x => `<div class="tvqr-qr">${x.qr}${nets.length > 1 ? `<div class="tvqr-label">${esc(x.label)}</div>` : ''}</div>`).join('')}</div>
-        <div class="tvqr-hint">ou digite o código <b>${esc(c.room || '')}</b></div>`;
+      const label = s => String(s || '').replace(/^[^A-Za-z0-9À-ɏ]+/, '');   // tira o emoji do começo ("📶 Aqui no Wi-Fi")
+      el.innerHTML = `<div class="tvqr-k">Mais gente?<br>Escaneie</div>
+        <div class="tvqr-qrs${nets.length > 1 ? ' two' : ''}">${nets.map(x => `<div class="tvqr-qr"><div class="tvqr-img">${x.qr}</div>${nets.length > 1 ? `<div class="tvqr-label">${esc(label(x.label))}</div>` : ''}</div>`).join('')}</div>
+        <div class="tvqr-hint">ou o código <b>${esc(c.room || '')}</b></div>`;
     }
     el.className = 'on';
   }

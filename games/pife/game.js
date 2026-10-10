@@ -65,7 +65,7 @@ function validWin(hand, discardId, groups, jokers) {
 
 module.exports = {
   meta: {
-    id: 'pife', name: 'PIFE', emoji: '🃏',
+    id: 'pife', name: 'PIFE', category: 'cartas', glyph: 'J♠', emoji: '🃏',
     tagline: 'Monte três jogos de três cartas e bata primeiro.',
     art: 'linear-gradient(135deg,#123b35 0%,#195b4b 55%,#d9aa58 100%)',
     minPlayers: 2, maxPlayers: 10,
@@ -149,6 +149,18 @@ module.exports = {
         }
         if (msg.t === 'next' && s.phase === 'round') { newRound(); return; }
         if (msg.t === 'again' && s.phase === 'end') { inst.start(); return; }
+        // Arrumar a mão (arrastar cartas no celular): vale a qualquer hora da rodada, até fora da vez.
+        // Só aceita uma nova ordem que tenha exatamente as mesmas cartas da mão (por id).
+        if (msg.t === 'reorder' && s.phase === 'play') {
+          const cards = s.hands[p.pid];
+          const ids = msg.ids;
+          if (!cards || !Array.isArray(ids) || ids.length !== cards.length) return;
+          const byId = new Map(cards.map(c => [c.id, c]));
+          const next = ids.map(id => byId.get(Number(id)));
+          if (next.some(c => !c) || new Set(next).size !== cards.length) return;
+          s.hands[p.pid] = next;
+          return;
+        }
         if (s.phase !== 'play' || s.turn !== p.pid) return;
         if (msg.t === 'draw' && s.step === 'draw') {
           const from = msg.from;

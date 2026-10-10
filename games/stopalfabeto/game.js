@@ -17,7 +17,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
 
 module.exports = {
   meta: {
-    id: 'stopalfabeto', name: 'Stop Alfabeto', emoji: '🔤',
+    id: 'stopalfabeto', name: 'Stop Alfabeto', category: 'palavras', glyph: 'A–Z', emoji: '🔤',
     tagline: 'Uma categoria, o alfabeto inteiro e 5 segundos para pensar.',
     art: 'linear-gradient(135deg,#f59e0b 0%,#d946ef 55%,#312e81 100%)',
     minPlayers: 2, maxPlayers: 8,

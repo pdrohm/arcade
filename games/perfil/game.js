@@ -50,7 +50,7 @@ module.exports = {
   meta: {
     id: 'perfil',
     name: 'Perfil',
-    emoji: '🕵️',
+    category: 'palavras', glyph: '◉', emoji: '🕵️',
     tagline: '20 dicas, 1 palpite. Quem descobrir primeiro anda mais.',
     art: 'linear-gradient(135deg,#f59e0b 0%,#b45309 55%,#3b1e00 100%)',
     minPlayers: 2, maxPlayers: 8,

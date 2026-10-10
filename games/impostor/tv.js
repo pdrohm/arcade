@@ -1,41 +1,67 @@
 // Impostor — tela da TV. A palavra secreta só aparece no resultado.
 'use strict';
 (() => {
+  // Visual "fliperama de papel" (shared/ui.css): papel, tinta, bordas grossas, sombra dura. Cor da festa: #ff7ab8.
+  // TV de 2016 (Chrome 47): nada de var(), gap em flex, grid nem inset. Tamanhos em rem (1rem = 1% da largura).
   const style = `
-    .imp-stage { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
-    .imp-stage > * + * { margin-top:20px; }   /* no lugar de gap:20px (a TV não tem gap) */
-    .imp-tag { font-size:22px; font-size:clamp(15px,1.5vw,22px); font-weight:800; letter-spacing:3px; text-transform:uppercase; color:#9aa6c0; } /* tv-ok: valor fixo antes */
-    .imp-big { font-size:70px; font-size:clamp(28px,4.2vw,70px); font-weight:900; line-height:1.05; } /* tv-ok: valor fixo antes */
-    .imp-mid { font-size:38px; font-size:clamp(20px,2.4vw,38px); font-weight:800; } /* tv-ok: valor fixo antes */
-    .imp-ring { display:flex; flex-wrap:wrap; justify-content:center; align-items:flex-start; margin-left:-7px; margin-right:-7px; margin-bottom:-14px; }
-    .imp-ring > * { margin:0 7px 14px; }   /* no lugar de gap:14px */
-    .imp-p { min-width:150px; max-width:230px; padding:14px 16px; border-radius:18px; background:#182036; border:3px solid transparent; display:flex; flex-direction:column; align-items:center; animation:imppop .3s; }
-    .imp-p > * + * { margin-top:8px; }   /* no lugar de gap:8px */
-    .imp-p.now { border-color:#facc15; box-shadow:0 0 40px rgba(250,204,21,0.33); transform:scale(1.05); }
-    .imp-p.ok { border-color:#22c55e; }
-    .imp-p.dead { opacity:.35; }
-    .imp-p .who { font-size:24px; font-size:clamp(16px,1.6vw,24px); } /* tv-ok: valor fixo antes */
-    .imp-p .cl { display:flex; flex-direction:column; }
-    .imp-p .cl > * + * { margin-top:4px; }   /* no lugar de gap:4px */
-    .imp-p .cl b { font-size:30px; font-size:clamp(17px,1.9vw,30px); font-weight:900; word-break:break-word; } /* tv-ok: valor fixo antes */
-    .imp-p .cl small { font-size:14px; color:#9aa6c0; }
-    .imp-p .st { font-size:22px; }
+    .imp-stage { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#0f0f14; }
+    .imp-stage > * + * { margin-top:1.4rem; }
+    .imp-tag { display:inline-block; background:#0f0f14; color:#f1f0ea; padding:.5rem 1rem; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:1.1rem; letter-spacing:.08em; text-transform:uppercase; line-height:1.1; }
+    .imp-tag .pix { color:#ffce1f; font-size:1.4rem; }
+    .imp-hint { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:1.15rem; letter-spacing:.06em; text-transform:uppercase; }
+    .imp-hint .pix { font-size:1.6rem; }
+    .imp-big { font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:3.6rem; line-height:.95; letter-spacing:-.01em; max-width:92%; }
+    .imp-big .nm { font-stretch:112%; padding:.1rem .8rem; border-width:.25rem; box-shadow:.35rem .35rem 0 #0f0f14; }
+    .imp-mid { font-size:1.9rem; font-weight:900; font-stretch:112%; line-height:1.3; }
+    .imp-logo { display:inline-block; background:#ff7ab8; border:.3rem solid #0f0f14; box-shadow:.7rem .7rem 0 #0f0f14; padding:1.4rem 2.6rem 1.2rem; background-image:radial-gradient(rgba(15,15,20,.18) 2px, transparent 2.1px); background-size:16px 16px; }
+    .imp-logo .imp-big { font-size:7rem; line-height:.85; max-width:none; }
+    .imp-ring { display:flex; flex-wrap:wrap; justify-content:center; align-items:flex-start; margin-left:-.45rem; margin-right:-.45rem; margin-bottom:-.9rem; }
+    .imp-ring > * { margin:0 .45rem .9rem; }
+    .imp-p { width:11.5rem; padding:.9rem .7rem; background:#fff; border:.22rem solid #0f0f14; box-shadow:.35rem .35rem 0 #0f0f14; display:flex; flex-direction:column; align-items:center; animation:imppop .3s; }
+    .imp-p > * + * { margin-top:.45rem; }
+    .imp-p.now { background:#ffce1f; box-shadow:.55rem .55rem 0 #0f0f14; -webkit-transform:translate(-.2rem,-.2rem); transform:translate(-.2rem,-.2rem); }
+    .imp-p.ok { background:#35d07f; }
+    .imp-p.dead { background:#e4e2d9; box-shadow:none; opacity:.55; }
+    .imp-p .who .nm { font-size:1.25rem; }
+    .imp-p .cl { display:flex; flex-direction:column; min-height:2rem; justify-content:center; }
+    .imp-p .cl > * + * { margin-top:.2rem; }
+    .imp-p .cl b { font-size:1.7rem; font-weight:900; font-stretch:112%; line-height:1.05; word-break:break-word; }
+    .imp-p .cl small { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:.85rem; letter-spacing:.06em; text-transform:uppercase; color:#55555e; }
+    .imp-p.now .cl small { color:#0f0f14; }
+    .imp-p .st { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:.85rem; letter-spacing:.06em; text-transform:uppercase; background:#0f0f14; color:#f1f0ea; padding:.25rem .5rem; }
+    .imp-p .st.off { background:transparent; color:#55555e; border:.12rem dashed #55555e; }
     @keyframes imppop { from { transform:translateY(12px); opacity:0; } }
-    .imp-clock { font-size:190px; font-size:clamp(70px,11vw,190px); font-weight:900; -webkit-font-feature-settings:"tnum"; font-feature-settings:"tnum"; font-variant-numeric:tabular-nums; line-height:1; } /* tv-ok: valor fixo antes; tnum é o tabular-nums da TV */
-    .imp-clock.low { color:#ef4444; animation:imppulse .5s infinite alternate; }
-    @keyframes imppulse { to { transform:scale(1.05); } }
-    .imp-word { display:inline-block; padding:14px 40px; border-radius:22px; background:#0ea5e9; color:#04121f; font-size:80px; font-size:clamp(30px,5vw,80px); font-weight:900; animation:impword .5s; } /* tv-ok: valor fixo antes */
+    .imp-clock { display:inline-block; background:#fff; border:.3rem solid #0f0f14; box-shadow:.6rem .6rem 0 #0f0f14; padding:.6rem 2.4rem .3rem; font-family:'Pixelify Sans',monospace; font-size:8.5rem; font-weight:700; line-height:1; }
+    .imp-clock.low { background:#f0443a; animation:imppulse .5s infinite alternate; }
+    @keyframes imppulse { to { transform:scale(1.04); } }
+    .imp-word { display:inline-block; padding:.6rem 1.8rem; background:#ffce1f; color:#0f0f14; border:.25rem solid #0f0f14; box-shadow:.45rem .45rem 0 #0f0f14; font-family:'Archivo',sans-serif; font-stretch:125%; text-transform:uppercase; font-size:3.4rem; font-weight:900; line-height:1; vertical-align:middle; animation:impword .5s; }
     @keyframes impword { 0% { transform:scale(.5) rotate(-4deg); opacity:0; } 70% { transform:scale(1.1); } 100% { transform:scale(1); } }
-    .imp-dots { font-size:80px; font-size:clamp(30px,5vw,80px); font-weight:900; letter-spacing:14px; color:#9aa6c0; } /* tv-ok: valor fixo antes */
-    .imp-rank { width:100%; max-width:860px; display:flex; flex-direction:column; }
-    .imp-rank > * + * { margin-top:10px; }   /* no lugar de gap:10px */
-    .imp-row { display:flex; align-items:center; padding:12px 20px; border-radius:16px; background:#182036; font-size:30px; font-size:clamp(18px,2.1vw,30px); } /* tv-ok: valor fixo antes */
-    .imp-row > * + * { margin-left:16px; }   /* no lugar de gap:16px */
-    .imp-row .g { flex:1; text-align:left; }
-    .imp-row .p { font-weight:900; }
-    .imp-chip { padding:10px 18px; border-radius:12px; background:#182036; border:1px solid #2a3350; font-size:22px; font-size:clamp(15px,1.5vw,22px); font-weight:800; } /* tv-ok: valor fixo antes */
-    .imp-chips { display:flex; flex-wrap:wrap; justify-content:center; margin-left:-5px; margin-right:-5px; margin-bottom:-10px; }
-    .imp-chips > * { margin:0 5px 10px; }   /* no lugar de gap:10px */
+    .imp-dots { font-family:'Pixelify Sans',monospace; font-size:5rem; font-weight:700; letter-spacing:1rem; color:#0f0f14; }
+    .imp-verdict .imp-big { max-width:none; }
+    .imp-verdict { display:inline-block; max-width:64rem; border:.3rem solid #0f0f14; box-shadow:.6rem .6rem 0 #0f0f14; padding:1rem 2rem; }
+    .imp-verdict.yes { background:#35d07f; } .imp-verdict.no { background:#f0443a; }
+    .imp-rank { width:100%; max-width:52rem; display:flex; flex-direction:column; }
+    .imp-rank > * + * { margin-top:.6rem; }
+    .imp-row { display:flex; align-items:center; padding:.55rem 1.1rem; background:#fff; border:.2rem solid #0f0f14; font-size:1.6rem; font-weight:800; }
+    .imp-row > * + * { margin-left:1rem; }
+    .imp-row.first { background:#ffce1f; box-shadow:.4rem .4rem 0 #0f0f14; }
+    .imp-row .i { font-family:'Pixelify Sans',monospace; font-weight:700; font-size:2rem; min-width:3rem; text-align:left; }
+    .imp-row .g { flex:1; text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:1.1rem; }
+    .imp-row .g span { background:#35d07f; border:.12rem solid #0f0f14; padding:.15rem .45rem; }
+    .imp-row .p { font-family:'Pixelify Sans',monospace; font-weight:700; font-size:2.4rem; min-width:3.2rem; text-align:right; }
+    .imp-chip { padding:.55rem 1.1rem; background:#fff; border:.2rem solid #0f0f14; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:1.15rem; letter-spacing:.04em; text-transform:uppercase; }
+    .imp-chip.off { background:#e4e2d9; color:#55555e; border-style:dashed; }
+    .imp-chips { display:flex; flex-wrap:wrap; justify-content:center; max-width:66rem; margin-left:-.3rem; margin-right:-.3rem; margin-bottom:-.6rem; }
+    .imp-chips > * { margin:0 .3rem .6rem; }
+    .imp-head { background:#ff7ab8; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; padding:14px 16px; background-image:radial-gradient(rgba(15,15,20,.16) 1.2px, transparent 1.3px); background-size:9px 9px; }
+    .imp-head .k { display:inline-block; background:#0f0f14; color:#f1f0ea; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; letter-spacing:.08em; padding:4px 8px; }
+    .imp-head h2 { font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:38px; line-height:.95; margin-top:10px; }
+    .imp-head .r { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px; letter-spacing:.06em; margin-top:8px; text-transform:uppercase; }
+    .imp-head .r .pix { font-size:22px; }
+    .imp-side-t { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:#55555e; margin-bottom:10px; }
+    .pl .imp-pts { font-family:'Pixelify Sans',monospace; font-weight:700; font-size:22px; color:#0f0f14; }
+    .pl .imp-mk { display:inline-block; margin-left:6px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:10px; letter-spacing:.06em; padding:3px 5px; vertical-align:middle; background:#0f0f14; color:#f1f0ea; }
+    .pl .imp-mk.imp { background:#f0443a; color:#0f0f14; border:2px solid #0f0f14; padding:1px 4px; }
   `;
   let cur = null, lastK = '', lastPhase = '', step = 0, timers = [];
   const kill = () => { timers.forEach(clearTimeout); timers = []; };
@@ -47,77 +73,83 @@
     const p = ply(c, pid); if (!p) return '';
     const G = c.G, cl = G.clues[pid] || [];
     const cls = ['imp-p', G.speaker === pid ? 'now' : '', G.out.includes(pid) ? 'dead' : '', extra && extra.ok ? 'ok' : ''].join(' ');
-    return `<div class="${cls}">${c.avatar(p, 52)}<span class="who">${c.nm(p)}</span>
-      ${cl.length ? `<div class="cl">${cl.map((x, i) => `<b>${c.esc(x)}</b>${i === 0 && cl.length > 1 ? '' : ''}`).join('')}</div>` : `<div class="cl"><small>${G.speaker === pid ? 'falando agora…' : '—'}</small></div>`}
-      ${extra && extra.st ? `<div class="st">${extra.st}</div>` : ''}</div>`;
+    return `<div class="${cls}">${c.avatar(p, 56)}<span class="who">${c.nm(p)}</span>
+      ${cl.length ? `<div class="cl">${cl.map(x => `<b>${c.esc(x)}</b>`).join('')}</div>` : `<div class="cl"><small>${G.speaker === pid ? 'falando agora…' : '—'}</small></div>`}
+      ${extra && extra.st ? `<div class="st ${extra.off ? 'off' : ''}">${extra.st}</div>` : ''}</div>`;
   }
+  const pix = n => `<span class="pix">${n}</span>`;
+  const catTxt = (c, G) => G.cat ? ' · ' + c.esc(G.cat.name) : '';
+  const nomes = (c, G) => (G.impostors || []).map(p => c.nm(ply(c, p))).join(' ');
 
   function stageHtml(c) {
     const G = c.G, esc = c.esc; if (!G) return '';
-    const cat = G.cat ? `${G.cat.emoji} ${esc(G.cat.name)}` : '';
+    const cat = catTxt(c, G);
+    const rodada = `Rodada ${pix(G.round)} de ${pix(G.rounds)}${cat}`;
     if (G.phase === 'setup') {
       const cfg = G.cfg;
-      return `<div class="imp-stage"><div style="font-size:140px;font-size:clamp(60px,9vw,140px) /* tv-ok */">🕵️‍♂️</div><div class="imp-big">Impostor</div>
-        <div class="imp-tag">ajustem as regras no celular</div>
-        <div class="imp-chips"><div class="imp-chip">${cfg.impostorsReal} impostor${cfg.impostorsReal > 1 ? 'es' : ''}</div>
+      return `<div class="imp-stage"><div class="imp-logo"><div class="imp-big">Impostor</div></div>
+        <div class="imp-tag" style="margin-top:2.2rem">Ajustem as regras no celular</div>
+        <div class="imp-chips"><div class="imp-chip">${pix(cfg.impostorsReal)} impostor${cfg.impostorsReal > 1 ? 'es' : ''}</div>
           <div class="imp-chip">${cfg.hint ? 'com dica' : 'sem dica'}</div>
           <div class="imp-chip">${cfg.white ? 'Mister White ligado' : 'sem Mister White'}</div>
-          <div class="imp-chip">${cfg.discussSec}s de discussão</div>
-          <div class="imp-chip">${cfg.rounds} palavras</div>
-          <div class="imp-chip">${cfg.laps} volta${cfg.laps > 1 ? 's' : ''} de dicas</div></div>
-        <div class="imp-chips">${G.cats.map(k => `<div class="imp-chip" style="opacity:${cfg.cats.includes(k.id) ? 1 : .25}">${k.emoji} ${esc(k.name)}</div>`).join('')}</div></div>`;
+          <div class="imp-chip">${pix(cfg.discussSec + 's')} de discussão</div>
+          <div class="imp-chip">${pix(cfg.rounds)} palavras</div>
+          <div class="imp-chip">${pix(cfg.laps)} volta${cfg.laps > 1 ? 's' : ''} de dicas</div></div>
+        <div class="imp-hint">Categorias</div>
+        <div class="imp-chips">${G.cats.map(k => `<div class="imp-chip ${cfg.cats.includes(k.id) ? '' : 'off'}">${k.emoji} ${esc(k.name)}</div>`).join('')}</div></div>`;
     }
     if (G.phase === 'reveal') {
-      return `<div class="imp-stage"><div class="imp-tag">Rodada ${G.round} de ${G.rounds}${cat ? ' · ' + cat : ''}</div>
-        <div class="imp-big">👀 Vejam a palavra no celular</div>
-        <div class="imp-tag">ninguém mostra a tela para ninguém</div>
-        <div class="imp-ring">${c.C.players.map(p => `<div class="imp-p ${G.seen.includes(p.pid) ? 'ok' : ''}">${c.avatar(p, 52)}<span class="who">${c.nm(p)}</span><div class="st">${G.seen.includes(p.pid) ? '✅ já vi' : '⏳'}</div></div>`).join('')}</div></div>`;
+      return `<div class="imp-stage"><div class="imp-tag">${rodada}</div>
+        <div class="imp-big">Vejam a palavra<br>no celular</div>
+        <div class="imp-hint">Ninguém mostra a tela para ninguém ▸ ${pix(G.seen.length)}/${pix(c.C.players.length)}</div>
+        <div class="imp-ring">${c.C.players.map(p => { const ok = G.seen.includes(p.pid); return `<div class="imp-p ${ok ? 'ok' : ''}">${c.avatar(p, 56)}<span class="who">${c.nm(p)}</span><div class="st ${ok ? '' : 'off'}">${ok ? 'já viu' : 'olhando…'}</div></div>`; }).join('')}</div></div>`;
     }
     if (G.phase === 'clues') {
       const sp = ply(c, G.speaker);
-      return `<div class="imp-stage"><div class="imp-tag">Rodada ${G.round} de ${G.rounds}${cat ? ' · ' + cat : ''} · dica ${Math.floor(G.turn / Math.max(1, G.order.length)) + 1} de ${G.laps}</div>
-        <div class="imp-big">${sp ? `${c.nm(sp)} fala uma palavra` : 'Dicas dadas'}</div>
+      return `<div class="imp-stage"><div class="imp-tag">${rodada} · dica ${pix(Math.floor(G.turn / Math.max(1, G.order.length)) + 1)} de ${pix(G.laps)}</div>
+        <div class="imp-big">${sp ? `${c.nm(sp)} fala<br>uma palavra` : 'Dicas dadas'}</div>
         <div class="imp-ring">${G.order.map(pid => card(c, pid)).join('')}</div></div>`;
     }
     if (G.phase === 'discuss') {
       const r = c.remaining();
-      return `<div class="imp-stage"><div class="imp-tag">${G.revote ? 'empate · discussão relâmpago' : 'discussão'}${cat ? ' · ' + cat : ''}</div>
-        <div class="imp-clock ${r !== null && r <= 15 ? 'low' : ''}" id="timer">⏱ ${r === null ? '0:00' : c.fmt(r)}</div>
+      return `<div class="imp-stage"><div class="imp-tag">${G.revote ? 'Empate · discussão relâmpago' : 'Discussão'}${cat}</div>
+        <div class="imp-clock ${r !== null && r <= 15 ? 'low' : ''}" id="timer">${r === null ? '0:00' : c.fmt(r)}</div>
         <div class="imp-ring">${G.order.filter(p => !G.out.includes(p)).map(pid => card(c, pid)).join('')}</div>
-        <div class="imp-tag">${G.endVotes.length} de ${G.need} querem votar agora</div></div>`;
+        <div class="imp-hint">${pix(G.endVotes.length)} de ${pix(G.need)} querem votar agora</div></div>`;
     }
     if (G.phase === 'vote') {
-      return `<div class="imp-stage"><div class="imp-tag">votação${cat ? ' · ' + cat : ''}</div><div class="imp-big">🗳️ Quem é o impostor?</div>
-        <div class="imp-ring">${G.order.map(pid => card(c, pid, { st: G.out.includes(pid) ? '💀' : (G.voted.includes(pid) ? '✅ votou' : '🤔'), ok: G.voted.includes(pid) })).join('')}</div>
-        <div class="imp-tag">${G.voted.length} de ${G.nAlive} votaram · o voto é secreto</div></div>`;
+      return `<div class="imp-stage"><div class="imp-tag">Votação${cat}</div><div class="imp-big">Quem é o impostor?</div>
+        <div class="imp-ring">${G.order.map(pid => { const out = G.out.includes(pid), ok = G.voted.includes(pid); return card(c, pid, { st: out ? 'fora' : (ok ? 'votou' : 'pensando…'), ok, off: !out && !ok }); }).join('')}</div>
+        <div class="imp-hint">${pix(G.voted.length)} de ${pix(G.nAlive)} votaram · o voto é secreto</div></div>`;
     }
     if (G.phase === 'result') {
       const R = G.result || {};
       const alvo = ply(c, R.out);
-      if (R.aborted) return `<div class="imp-stage"><div style="font-size:90px">🚪</div><div class="imp-big">Rodada encerrada</div><div class="imp-mid">A palavra era <span class="imp-word">${esc(G.word || '')}</span></div></div>`;
-      if (R.tie) return `<div class="imp-stage"><div style="font-size:90px">🤝</div><div class="imp-big">Empate na votação!</div>
+      if (R.aborted) return `<div class="imp-stage"><div class="imp-tag">Fim da rodada</div><div class="imp-big">Rodada encerrada</div><div class="imp-mid">A palavra era <span class="imp-word">${esc(G.word || '')}</span></div></div>`;
+      if (R.tie) return `<div class="imp-stage"><div class="imp-tag">Votação fechada</div><div class="imp-verdict" style="background:#ffce1f"><div class="imp-big">Empate!</div></div>
         <div class="imp-mid">${R.over ? 'Empatou de novo: o impostor escapou.' : 'Ninguém foi eliminado. Mais 30 segundos.'}</div>
-        ${R.over ? `<div class="imp-mid">A palavra era <span class="imp-word">${esc(G.word || '')}</span> · impostor: ${(G.impostors || []).map(p => c.nm(ply(c, p))).join(' ')}</div>` : ''}</div>`;
-      if (step === 0) return `<div class="imp-stage"><div class="imp-tag">votação fechada</div><div class="imp-big">O mais votado foi…</div><div class="imp-dots">• • •</div></div>`;
-      if (step === 1) return `<div class="imp-stage"><div class="imp-tag">o mais votado foi</div><div>${c.avatar(alvo, 140)}</div><div class="imp-big" style="font-size:110px;font-size:clamp(40px,7vw,110px) /* tv-ok */">${c.nm(alvo)}</div><div class="imp-dots">• • •</div></div>`;
-      return `<div class="imp-stage"><div>${c.avatar(alvo, 120)}</div><div class="imp-big" style="font-size:80px;font-size:clamp(34px,5vw,80px) /* tv-ok */">${c.nm(alvo)} ${R.wasImp ? 'ERA o impostor! 🕵️‍♂️' : 'NÃO era o impostor. 😬'}</div>
+        ${R.over ? `<div class="imp-mid">A palavra era <span class="imp-word">${esc(G.word || '')}</span></div><div class="imp-mid">Impostor: ${nomes(c, G)}</div>` : ''}</div>`;
+      if (step === 0) return `<div class="imp-stage"><div class="imp-tag">Votação fechada</div><div class="imp-big">O mais votado foi…</div><div class="imp-dots">...</div></div>`;
+      if (step === 1) return `<div class="imp-stage"><div class="imp-tag">O mais votado foi</div><div>${c.avatar(alvo, 150)}</div><div class="imp-big" style="font-size:5.5rem">${c.nm(alvo)}</div><div class="imp-dots">...</div></div>`;
+      return `<div class="imp-stage"><div>${c.avatar(alvo, 130)}</div>
+        <div class="imp-verdict ${R.wasImp ? 'yes' : 'no'}"><div class="imp-big" style="font-size:3.6rem">${c.nm(alvo)} ${R.wasImp ? 'era o impostor!' : 'não era o impostor'}</div></div>
         ${G.word ? `<div class="imp-mid">A palavra era <span class="imp-word">${esc(G.word)}</span></div>` : ''}
-        ${G.whiteWord ? `<div class="imp-tag">o impostor tinha "${esc(G.whiteWord)}"</div>` : ''}
-        <div class="imp-mid">${R.winner === 'inocentes' ? '✅ Os inocentes venceram a rodada!' : R.winner === 'impostores' ? `😈 ${(G.impostors || []).map(p => c.nm(ply(c, p))).join(' ')} venceu!` : 'A caçada continua…'}</div></div>`;
+        ${G.whiteWord ? `<div class="imp-hint">o impostor tinha "${esc(G.whiteWord)}"</div>` : ''}
+        <div class="imp-mid">${R.winner === 'inocentes' ? 'Os inocentes venceram a rodada!' : R.winner === 'impostores' ? `${nomes(c, G)} venceu!` : 'A caçada continua…'}</div></div>`;
     }
     if (G.phase === 'guess') {
-      return `<div class="imp-stage"><div style="font-size:90px">🎯</div><div class="imp-big">Chance final do impostor</div>
-        <div class="imp-mid">${(G.impostors || []).map(p => c.nm(ply(c, p))).join(' ')} está digitando um chute…</div>
-        <div class="imp-tag">acertar a palavra vale +1 ponto</div></div>`;
+      return `<div class="imp-stage"><div class="imp-tag">Chance final</div><div class="imp-big">O impostor<br>vai chutar</div>
+        <div class="imp-mid">${nomes(c, G)} está digitando um chute…</div>
+        <div class="imp-hint">Acertar a palavra vale ${pix('+1')} ponto</div></div>`;
     }
     const ordem = [...c.C.players].sort((a, b) => (G.scores[b.pid] || 0) - (G.scores[a.pid] || 0));
     const R = G.result || {};
     return `<div class="imp-stage">
-      ${G.phase === 'end' ? `<div style="font-size:100px">🏆</div><div class="imp-big">${c.nm(ordem[0])} venceu!</div>`
-        : `<div class="imp-big">Palavra: <span class="imp-word">${esc(G.word || '')}</span></div>
-           <div class="imp-mid">${R.winner === 'inocentes' ? '✅ Inocentes venceram' : R.winner === 'impostores' ? '😈 Impostor venceu' : 'Sem vencedor'}${G.guess && G.guess.text ? ` · chute: "${esc(G.guess.text)}" ${G.guess.ok ? '✅' : '❌'}` : ''}</div>`}
-      <div class="imp-rank">${ordem.map((p, i) => `<div class="imp-row"><span style="min-width:44px">${i + 1}º</span>${c.avatar(p, 40)}${c.nm(p)}<span class="g">${(G.gain || {})[p.pid] ? `+${G.gain[p.pid]}` : ''}</span><span class="p">${G.scores[p.pid] || 0}</span></div>`).join('')}</div>
-      <div class="imp-tag">${G.phase === 'end' ? 'toque em "Jogar de novo" no celular' : 'toque em "Próxima palavra" no celular'}</div></div>`;
+      ${G.phase === 'end' ? `<div class="imp-tag">Fim de jogo</div><div class="imp-big">${c.nm(ordem[0])} venceu!</div>`
+        : `<div class="imp-tag">Palavra ${pix(G.round)} de ${pix(G.rounds)}</div><div class="imp-mid">A palavra era <span class="imp-word">${esc(G.word || '')}</span></div>
+           <div class="imp-mid">${R.winner === 'inocentes' ? 'Inocentes venceram' : R.winner === 'impostores' ? 'Impostor venceu' : 'Sem vencedor'}${G.guess && G.guess.text ? ` · chute: "${esc(G.guess.text)}" ${G.guess.ok ? '(acertou)' : '(errou)'}` : ''}</div>`}
+      <div class="imp-rank">${ordem.map((p, i) => `<div class="imp-row ${i === 0 ? 'first' : ''}"><span class="i">${i + 1}º</span>${c.avatar(p, 44)}${c.nm(p)}<span class="g">${(G.gain || {})[p.pid] ? `<span>+${G.gain[p.pid]}</span>` : ''}</span><span class="p">${G.scores[p.pid] || 0}</span></div>`).join('')}</div>
+      <div class="imp-hint">${G.phase === 'end' ? 'Toque em "Jogar de novo" no celular' : 'Toque em "Próxima palavra" no celular'}</div></div>`;
   }
 
   function paint() { const el = document.getElementById('imp-st'); if (el && cur) el.innerHTML = stageHtml(cur); }
@@ -128,14 +160,13 @@
       html(c) {
         const G = c.G; if (!G) return {};
         const suspense = G.phase === 'result';    // o painel não entrega o resultado antes do palco
-        const side = `<div class="box center"><div style="font-size:28px;font-weight:900">🕵️‍♂️ Impostor</div>
-            <p class="sub mut">${G.phase === 'setup' ? 'ajustando as regras' : `Palavra ${G.round} de ${G.rounds}`}${G.cat ? ` · ${G.cat.emoji} ${c.esc(G.cat.name)}` : ''}</p></div>
-          ${G.phase === 'discuss' ? '' : ''}
-          <div class="box"><p class="sub mut" style="margin-bottom:8px">Placar</p>${c.playersHtml({
-            info: p => `${(G.scores[p.pid] || 0) - (suspense ? (G.gain || {})[p.pid] || 0 : 0)} pts`,
-            tag: p => suspense ? '' : (G.out.includes(p.pid) ? ' 💀' : '') + ((G.impostors || []).includes(p.pid) ? ' 🕵️' : ''),
+        const side = `<div class="imp-head"><span class="k">FESTA</span><h2>Impostor</h2>
+            <div class="r">${G.phase === 'setup' ? 'ajustando as regras' : `Palavra ${pix(G.round)} de ${pix(G.rounds)}`}${catTxt(c, G)}</div></div>
+          <div class="box"><p class="imp-side-t">Placar</p>${c.playersHtml({
+            info: p => `<span class="imp-pts">${(G.scores[p.pid] || 0) - (suspense ? (G.gain || {})[p.pid] || 0 : 0)}</span>`,
+            tag: p => suspense ? '' : (G.out.includes(p.pid) ? '<span class="imp-mk">FORA</span>' : '') + ((G.impostors || []).includes(p.pid) ? '<span class="imp-mk imp">IMPOSTOR</span>' : ''),
           })}</div>
-          <div class="event">${suspense ? '🥁 revelando…' : (c.C.event ? c.hl(c.C.event.text) : '')}</div>`;
+          <div class="event">${suspense ? 'revelando…' : (c.C.event ? c.hl(c.C.event.text) : '')}</div>`;
         return { side };
       },
       after(c) {

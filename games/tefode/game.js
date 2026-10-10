@@ -45,7 +45,7 @@ const manilhaOf = vira => vira ? FACES[(FACES.indexOf(vira.n) + 1) % FACES.lengt
 
 module.exports = {
   meta: {
-    id: 'tefode', name: 'TE F0D3 (f*dinha)', emoji: '🂠',
+    id: 'tefode', name: 'TE F0D3 (f*dinha)', category: 'cartas', glyph: 'A♥', emoji: '🂠',
     tagline: 'Aposte quantas vazas vai ganhar. Errou, perde pontos de vida.',
     art: 'linear-gradient(135deg,#622f33,#321d29 55%,#ca9360)',
     minPlayers: 4, maxPlayers: 7,

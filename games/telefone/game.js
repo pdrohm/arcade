@@ -60,7 +60,7 @@ module.exports = {
   meta: {
     id: 'telefone',
     name: 'Telefone Sem Fio',
-    emoji: '✏️',
+    category: 'desenho', glyph: '☎', emoji: '✏️',
     tagline: 'Escreva, desenhe, descreva. No fim, ninguém sabe o que virou.',
     art: 'linear-gradient(135deg,#22d3ee 0%,#0e7490 55%,#083344 100%)',
     minPlayers: 3, maxPlayers: 8,

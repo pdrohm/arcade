@@ -16,98 +16,101 @@
   let styled = false, lastTurn = '', picked = null;
   const vibrate = p => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (err) { /* opcional */ } };
   const css = `
-    .tr-phone { --tr-cream:#f5f0df; --tr-gold:#e8c87a; color:var(--tr-cream); display:flex; flex-direction:column; gap:12px; }
-    .tr-panel { background:linear-gradient(145deg,#154c3e,#10382f); border:1px solid #52745b; border-radius:18px; padding:16px; box-shadow:0 8px 26px rgba(0,0,0,.18); }
+    .tr-phone { color:#0f0f14; display:flex; flex-direction:column; gap:14px; }
+    .tr-panel { background:#fff; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; padding:14px; }
+    .tr-panel.tr-head { background-color:#f0443a; background-image:radial-gradient(rgba(15,15,20,.16) 1.2px, transparent 1.3px); background-size:9px 9px; }
     .tr-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
-    .tr-kicker { text-transform:uppercase; letter-spacing:.16em; color:var(--tr-gold); font-size:11px; font-weight:900; }
-    .tr-title { font-size:28px; line-height:1.08; margin:5px 0 0; font-weight:900; }
-    .tr-score { display:flex; align-items:center; margin-top:16px; border-radius:12px; background:rgba(0,0,0,.2); overflow:hidden; }
-    .tr-score-side { flex:1; text-align:center; padding:9px 5px; min-width:0; }
-    .tr-score-side + .tr-score-side { border-left:1px solid rgba(255,255,255,.17); }
-    .tr-score-side small { display:block; color:#d7decf; font-size:11px; text-transform:uppercase; letter-spacing:.09em; }
-    .tr-score-side b { display:block; font-size:29px; line-height:1.05; }
-    .tr-score-side.mine b { color:var(--tr-gold); }
-    .tr-score-mid { font-size:12px; color:#d7decf; }
-    .tr-strip { display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-top:13px; }
-    .tr-pill { display:inline-flex; align-items:center; border:1px solid rgba(232,200,122,.45); border-radius:99px; padding:5px 9px; font-size:12px; font-weight:800; background:rgba(0,0,0,.17); }
-    .tr-turn { font-size:17px; font-weight:900; margin:13px 0 2px; }
-    .tr-turn.mine { color:var(--tr-gold); }
-    .tr-caption { font-size:13px; color:#d7decf; line-height:1.35; }
-    .tr-section-title { font-size:11px; font-weight:900; letter-spacing:.15em; text-transform:uppercase; color:#d7decf; margin:0 0 10px; }
+    .tr-kicker { font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.08em; color:#0f0f14; font-size:12px; font-weight:700; }
+    .tr-title { font-size:30px; line-height:.95; margin:6px 0 0; font-weight:900; font-stretch:125%; text-transform:uppercase; letter-spacing:-.01em; }
+    .tr-score { display:flex; align-items:stretch; margin-top:14px; }
+    .tr-score-side { flex:1; text-align:center; padding:8px 5px; min-width:0; background:#fff; border:3px solid #0f0f14; }
+    .tr-score-side small { display:block; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .tr-score-side b { display:block; font-family:'Pixelify Sans',monospace; font-size:34px; font-weight:700; line-height:1.05; }
+    .tr-score-side.mine { background:#ffce1f; }
+    .tr-score-mid { display:flex; align-items:center; padding:0 8px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px; }
+    .tr-strip { display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-top:12px; }
+    .tr-pill { display:inline-flex; align-items:center; border:2px solid #0f0f14; padding:4px 8px; background:#fff; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap; }
+    .tr-turn { display:inline-block; font-size:20px; font-weight:900; font-stretch:125%; text-transform:uppercase; line-height:1.05; margin:8px 0 2px; }
+    .tr-turn.mine { background:#ffce1f; border:3px solid #0f0f14; padding:4px 8px; }
+    .tr-caption { font-size:14px; color:#3a3a42; line-height:1.4; }
+    .tr-section-title { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#55555e; margin:0 0 10px; }
     .tr-table { display:flex; justify-content:center; flex-wrap:wrap; gap:10px; min-height:95px; align-items:center; }
-    .tr-played { display:flex; flex-direction:column; align-items:center; gap:4px; min-width:58px; }
-    .tr-played small { font-size:11px; font-weight:800; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .tr-played.winner .tr-card { box-shadow:0 0 0 3px #f1d27d,0 7px 18px rgba(0,0,0,.34); transform:translateY(-5px); }
-    .tr-played.dim { opacity:.58; }
-    .tr-reveal { position:relative; overflow:hidden; text-align:center; border:2px solid #e8c87a; border-radius:18px; background:linear-gradient(150deg,#285d45,#163d30); padding:15px 16px 17px; box-shadow:0 8px 24px rgba(0,0,0,.22); }
-    .tr-reveal.tie { border-color:#a9b6a7; }
-    .tr-reveal .result-small { display:block; color:#e8c87a; font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; }
-    .tr-reveal .result-main { display:block; margin-top:4px; color:#fff9e9; font-size:22px; line-height:1.1; font-weight:900; }
-    .tr-reveal .result-detail { display:block; margin-top:5px; color:#e3e9db; font-size:13px; }
-    .tr-reveal .result-time { position:absolute; bottom:0; left:0; right:0; height:4px; background:rgba(255,255,255,.15); }
-    .tr-reveal .result-time:after { content:''; display:block; height:100%; background:#e8c87a; transform-origin:left; animation:tr-reveal-time var(--reveal-left) linear forwards; }
+    .tr-played { display:flex; flex-direction:column; align-items:center; gap:5px; min-width:58px; }
+    .tr-played small { font-size:12px; font-weight:800; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tr-played.winner .tr-card { box-shadow:0 0 0 3px #ffce1f,5px 5px 0 3px #0f0f14; transform:translateY(-5px); }
+    .tr-played.dim { opacity:.5; }
+    .tr-reveal { position:relative; overflow:hidden; text-align:center; border:3px solid #0f0f14; background:#ffce1f; padding:14px 16px 18px; box-shadow:5px 5px 0 #0f0f14; }
+    .tr-reveal.tie { background:#e4e2d9; }
+    .tr-reveal .result-small { display:block; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    .tr-reveal .result-main { display:block; margin-top:6px; font-size:22px; line-height:1.05; font-weight:900; font-stretch:125%; text-transform:uppercase; }
+    .tr-reveal .result-detail { display:block; margin-top:6px; font-size:14px; font-weight:700; }
+    .tr-reveal .result-time { position:absolute; bottom:0; left:0; right:0; height:7px; background:#fff; border-top:2px solid #0f0f14; }
+    .tr-reveal .result-time:after { content:''; display:block; height:100%; background:#0f0f14; transform-origin:left; animation:tr-reveal-time var(--reveal-left) linear forwards; }
     @keyframes tr-reveal-time { to { transform:scaleX(0); } }
     @keyframes tr-reveal-enter { from { opacity:0; transform:translateY(10px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
     @media (prefers-reduced-motion:no-preference) { .tr-reveal { animation:tr-reveal-enter .38s ease-out both; } .tr-played.winner .tr-card { animation:tr-reveal-enter .4s ease-out both; } }
-    .tr-empty { font-size:14px; color:#d7decf; text-align:center; }
-    .tr-card { position:relative; flex:none; width:74px; height:108px; border-radius:9px; background:#fffaf0; color:#192b25; border:2px solid #d4c9a9; box-shadow:0 5px 0 #b8ab8a,0 8px 16px rgba(0,0,0,.3); display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; }
-    .tr-card.red { color:#b83336; } .tr-card.spanish { background:#faf8f2; border:2px solid #e7dcc4; border-radius:9px; box-shadow:0 4px 0 #aa9978,0 9px 18px rgba(0,0,0,.32); }
+    .tr-empty { font-size:14px; color:#55555e; text-align:center; }
+    .tr-card { position:relative; flex:none; width:74px; height:108px; border-radius:6px; background:#fff; color:#0f0f14; border:2.5px solid #0f0f14; box-shadow:3px 3px 0 #0f0f14; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; padding:0; }
+    .tr-card.red { color:#d02a20; } .tr-card.spanish { background:#fff; }
     .tr-card.spanish .tr-art { display:block; width:100%; height:100%; object-fit:fill; pointer-events:none; }
-    .tr-card.spanish .tr-value { position:absolute; top:4px; left:4px; min-width:25px; height:27px; padding:0 3px; display:flex; align-items:center; justify-content:center; border-radius:5px; border:1px solid #726448; background:rgba(255,251,236,.97); color:#241f19; font-size:17px; line-height:1; font-weight:900; box-shadow:0 1px 3px rgba(0,0,0,.22); }
-    .tr-card.spanish .tr-face { position:absolute; right:3px; bottom:5px; padding:2px 4px; border-radius:3px; background:rgba(255,251,236,.96); color:#241f19; font-size:9px; letter-spacing:.04em; font-weight:900; text-transform:uppercase; }
-    .tr-card.back { background:#faf8f2 url('/cards/spanish/back.webp') center / 100% 100% no-repeat; border:3px solid #f4e2b9; }
+    .tr-card.spanish .tr-value { position:absolute; top:4px; left:4px; min-width:25px; height:27px; padding:0 3px; display:flex; align-items:center; justify-content:center; border:2px solid #0f0f14; background:#fff; color:#0f0f14; font-family:'Pixelify Sans',monospace; font-size:17px; line-height:1; font-weight:700; }
+    .tr-card.spanish .tr-face { position:absolute; right:3px; bottom:5px; padding:2px 4px; background:#0f0f14; color:#fff; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.03em; font-weight:700; text-transform:uppercase; }
+    .tr-card.back { background:#fff url('/cards/spanish/back.webp') center / 100% 100% no-repeat; }
     .tr-card .corner { position:absolute; top:5px; left:6px; font-size:13px; font-weight:900; line-height:1; text-align:center; }
     .tr-card .center { font-size:35px; line-height:1; }
-    .tr-card .name { font-size:8px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; margin-top:5px; }
+    .tr-card .name { font-family:'JetBrains Mono',monospace; font-size:8px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; margin-top:5px; }
     .tr-card .number { font-size:19px; font-weight:900; line-height:1; }
     .tr-card .mirror { position:absolute; right:6px; bottom:5px; transform:rotate(180deg); font-size:13px; font-weight:900; }
-    .tr-hand { display:flex; justify-content:center; align-items:flex-end; gap:8px; padding:18px 0 9px; }
-    .tr-hand .tr-card { width:calc((100vw - 78px)/3); max-width:103px; height:148px; cursor:pointer; touch-action:manipulation; }
+    .tr-hand { display:flex; justify-content:center; align-items:flex-end; gap:10px; padding:18px 0 9px; }
+    .tr-hand .tr-card { width:calc((100vw - 90px)/3); max-width:103px; height:148px; cursor:pointer; touch-action:manipulation; box-shadow:4px 4px 0 #0f0f14; }
     .tr-hand .tr-card.spanish { height:auto; aspect-ratio:208 / 320; }
     .tr-hand .tr-card .center { font-size:46px; }
     .tr-hand .tr-card .number { font-size:27px; }
-    .tr-hand button.tr-card { font:inherit; }
-    .tr-hand .tr-card:disabled { opacity:.78; cursor:default; }
+    .tr-hand button.tr-card { font:inherit; color:#0f0f14; }
+    .tr-hand button.tr-card.red { color:#d02a20; }
+    .tr-hand .tr-card:disabled { opacity:.6; cursor:default; box-shadow:none; }
     .tr-hand .tr-card:not(:disabled):active { transform:translateY(-8px); }
-    .tr-hand .tr-card:focus-visible, .tr-action:focus-visible, .tr-choice:focus-visible { outline:3px solid #fbd969; outline-offset:3px; }
-    .tr-help { text-align:center; color:#d7decf; font-size:13px; margin:6px 0 0; }
-    .tr-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
-    .tr-action { min-height:48px; border:1px solid #9e8347; border-radius:12px; background:#e8c87a; color:#192b25; font-size:15px; font-weight:900; padding:10px; cursor:pointer; }
-    .tr-action.secondary { background:#214f42; color:#fff7dd; border-color:#638475; }
-    .tr-action.danger { background:#a93c34; color:#fff; border-color:#d37b70; }
+    .tr-hand .tr-card:focus-visible, .tr-action:focus-visible, .tr-choice:focus-visible { outline:3px solid #3db4f2; outline-offset:3px; }
+    .tr-help { text-align:center; color:#55555e; font-size:13px; margin:8px 0 0; }
+    .tr-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .tr-action { min-height:52px; border:3px solid #0f0f14; border-radius:0; background:#ffce1f; color:#0f0f14; box-shadow:4px 4px 0 #0f0f14; font-family:inherit; font-size:16px; font-weight:900; font-stretch:115%; text-transform:uppercase; letter-spacing:-.01em; padding:10px; cursor:pointer; transition:transform .06s, box-shadow .06s; }
+    .tr-action.secondary { background:#fff; }
+    .tr-action.ok { background:#35d07f; }
+    .tr-action.danger { background:#f0443a; }
     .tr-action.wide { grid-column:1 / -1; }
-    .tr-action:active,.tr-choice:active { transform:scale(.98); }
-    .tr-action:disabled { opacity:.5; cursor:default; }
-    .tr-choices { display:grid; gap:9px; }
-    .tr-choice { display:flex; justify-content:space-between; align-items:center; width:100%; border:1px solid #6a8775; border-radius:14px; background:#194a3c; color:#fff8df; padding:13px 15px; font-weight:900; font-size:17px; cursor:pointer; text-align:left; }
-    .tr-choice.selected { background:#e8c87a; color:#192b25; border-color:#e8c87a; }
-    .tr-event { text-align:center; font-size:13px; color:#d7decf; padding:2px 8px 8px; }
-    .tr-card .top { position:absolute; top:4px; right:4px; padding:2px 5px; border-radius:6px; background:#192b25; color:#f1d27d; font-size:9px; font-weight:900; letter-spacing:.05em; text-transform:uppercase; }
+    .tr-action:active,.tr-choice:active { transform:translate(3px,3px); box-shadow:1px 1px 0 #0f0f14; }
+    .tr-action:disabled { opacity:.4; box-shadow:none; cursor:default; }
+    .tr-choices { display:grid; gap:10px; }
+    .tr-choice { display:flex; justify-content:space-between; align-items:center; width:100%; border:3px solid #0f0f14; border-radius:0; background:#fff; color:#0f0f14; box-shadow:4px 4px 0 #0f0f14; padding:13px 15px; font-family:inherit; font-weight:900; font-stretch:115%; text-transform:uppercase; font-size:17px; cursor:pointer; text-align:left; transition:transform .06s, box-shadow .06s; }
+    .tr-choice.selected { background:#ffce1f; }
+    .tr-event { text-align:center; font-size:14px; color:#0f0f14; padding:2px 8px 8px; }
+    .tr-card .top { position:absolute; top:4px; right:4px; padding:2px 4px; background:#0f0f14; color:#ffce1f; font-family:'JetBrains Mono',monospace; font-size:8px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; }
     .tr-hand .tr-card { transition:transform .18s, box-shadow .18s; }
-    .tr-hand .tr-card.picked { transform:translateY(-16px); box-shadow:0 0 0 3px #f1d27d,0 14px 22px rgba(0,0,0,.4); }
+    .tr-hand .tr-card.picked { transform:translateY(-14px); box-shadow:0 0 0 4px #ffce1f,6px 6px 0 4px #0f0f14; }
     .tr-hand .tr-card.out { transform:translateY(-120px) scale(.6); opacity:0; transition:transform .3s ease-in, opacity .3s; }
     .tr-order { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
-    .tr-order span { border-radius:99px; padding:5px 9px; font-size:12px; font-weight:800; background:rgba(0,0,0,.2); border:2px solid transparent; }
-    .tr-order span.now { border-color:#fff; }
-    .tr-order span.me { background:rgba(232,200,122,.22); }
-    .tr-order span.done { opacity:.5; }
-    .tr-board { position:relative; height:272px; }
-    .tr-board .spot { position:absolute; display:flex; flex-direction:column; align-items:center; gap:3px; transform:translate(-50%,-50%); }
-    .tr-board .spot small { font-size:11px; font-weight:800; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tr-order span { padding:4px 8px; font-size:13px; font-weight:800; background:#fff; border:2px solid #0f0f14; }
+    .tr-order span.tr-now { background:#ffce1f; box-shadow:3px 3px 0 #0f0f14; }
+    .tr-order span.me { text-decoration:underline; text-decoration-thickness:2px; }
+    .tr-order span.done { opacity:.45; }
+    .tr-board { position:relative; height:272px; border:3px solid #0f0f14; background-color:#f0443a; background-image:radial-gradient(rgba(15,15,20,.16) 1.2px, transparent 1.3px); background-size:9px 9px; }
+    .tr-board .spot { position:absolute; display:flex; flex-direction:column; align-items:center; gap:4px; transform:translate(-50%,-50%); }
+    .tr-board .spot small { padding:1px 5px; background:#fff; border:2px solid #0f0f14; font-size:11px; font-weight:800; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .tr-board .spot .tr-card { width:58px; height:86px; }
     .tr-board .spot .tr-card .center { font-size:26px; } .tr-board .spot .tr-card .number,.tr-board .spot .tr-card .name,.tr-board .spot .tr-card .mirror { display:none; }
-    .tr-board .slot { width:58px; height:86px; border-radius:9px; border:2px dashed rgba(232,200,122,.25); }
-    .tr-board .spot.now .slot { border-color:#fff; }
-    .tr-board .spot.winner .tr-card { box-shadow:0 0 0 3px #f1d27d,0 7px 18px rgba(0,0,0,.34); }
-    .tr-board .spot.dim { opacity:.55; }
-    .tr-hist { display:flex; align-items:center; gap:8px; padding:7px 0; border-top:1px solid rgba(255,255,255,.1); font-size:12px; }
+    .tr-board .slot { width:58px; height:86px; border-radius:6px; border:2.5px dashed rgba(15,15,20,.45); }
+    .tr-board .spot.tr-now .slot { border-style:solid; border-color:#0f0f14; background:#ffce1f; }
+    .tr-board .spot.tr-now small { background:#ffce1f; }
+    .tr-board .spot.winner .tr-card { box-shadow:0 0 0 3px #ffce1f,4px 4px 0 3px #0f0f14; }
+    .tr-board .spot.dim { opacity:.5; }
+    .tr-hist { display:flex; align-items:center; gap:8px; padding:7px 0; border-top:2px solid #e4e2d9; font-size:12px; }
     .tr-hist:first-of-type { border-top:0; }
-    .tr-hist em { font-style:normal; font-weight:900; color:#d7decf; width:52px; flex:none; }
-    .tr-hist .tr-card { width:34px; height:50px; border-radius:5px; box-shadow:none; }
+    .tr-hist em { font-style:normal; font-family:'JetBrains Mono',monospace; font-weight:700; text-transform:uppercase; color:#55555e; width:56px; flex:none; }
+    .tr-hist .tr-card { width:34px; height:50px; border-width:2px; border-radius:4px; box-shadow:2px 2px 0 #0f0f14; }
     .tr-hist .tr-card .center { font-size:16px; } .tr-hist .tr-card .number,.tr-hist .tr-card .name,.tr-hist .tr-card .mirror,.tr-hist .tr-card .tr-face { display:none; }
-    .tr-hist .tr-card .corner { font-size:9px; top:2px; left:3px; } .tr-hist .tr-card.spanish .tr-value { font-size:10px; min-width:14px; height:15px; top:1px; left:1px; }
-    .tr-hist b { margin-left:auto; }
-    @media (max-width:360px) { .tr-card { width:62px; height:95px; } .tr-title { font-size:24px; } .tr-action { font-size:14px; } }
+    .tr-hist .tr-card .corner { font-size:9px; top:2px; left:3px; } .tr-hist .tr-card.spanish .tr-value { font-size:10px; min-width:14px; height:15px; top:1px; left:1px; border-width:1px; }
+    .tr-hist b { margin-left:auto; padding:2px 6px; border:2px solid #0f0f14; font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; }
+    @media (max-width:360px) { .tr-card { width:62px; height:95px; } .tr-title { font-size:26px; } .tr-action { font-size:14px; } }
     @media (prefers-reduced-motion:reduce) { .tr-hand .tr-card,.tr-action,.tr-choice,.tr-reveal,.tr-reveal .result-time:after,.tr-played.winner .tr-card { animation:none; transition:none; } }
   `;
   const ensure = () => { if (styled) return; const el = document.createElement('style'); el.textContent = css; document.head.appendChild(el); styled = true; };
@@ -149,13 +152,13 @@
         const teamNames = team => players.filter(p => G.teams[p.pid] === team).map(p => esc(p.name)).join(' + ') || `Dupla ${team + 1}`;
         const event = c.C.event ? `<div class="tr-event">${c.hl(c.C.event.text)}</div>` : '';
         const score = `<div class="tr-score"><div class="tr-score-side ${myTeam === 0 ? 'mine' : ''}"><small>${teamNames(0)}</small><b>${G.scores[0]}</b></div><div class="tr-score-mid">×</div><div class="tr-score-side ${myTeam === 1 ? 'mine' : ''}"><small>${teamNames(1)}</small><b>${G.scores[1]}</b></div></div>`;
-        const header = `<div class="tr-panel"><div class="tr-top"><div><div class="tr-kicker">Truco ${variants[G.cfg.variant] || ''}</div><h2 class="tr-title">${G.phase === 'setup' ? 'Escolha a regra' : G.phase === 'end' ? 'Fim de jogo' : `Mão ${G.round}`}</h2></div><span class="tr-pill">até ${G.target}</span></div>${score}</div>`;
+        const header = `<div class="tr-panel tr-head"><div class="tr-top"><div><div class="tr-kicker">Truco ${variants[G.cfg.variant] || ''}</div><h2 class="tr-title">${G.phase === 'setup' ? 'Escolha a regra' : G.phase === 'end' ? 'Fim de jogo' : `Mão ${G.round}`}</h2></div><span class="tr-pill">até ${G.target}</span></div>${score}</div>`;
         if (G.phase === 'setup') {
           const ready = players.length === 2 || players.length === 4;
           const seats = G.seats && G.seats.length === players.length ? G.seats : players.map(p => p.pid);
           const preview = seats.length === 4 ? `<b>Dupla 1:</b> ${name(seats[0])} + ${name(seats[2])}<br><b>Dupla 2:</b> ${name(seats[1])} + ${name(seats[3])}` : seats.length === 2 ? `${name(seats[0])} × ${name(seats[1])}` : 'Entrem com 2 ou 4 pessoas.';
           const targets = G.cfg.variant === 'gaucho' ? `<div class="tr-panel"><p class="tr-section-title">Joga até</p><div class="tr-actions">${[12, 24].map(t => `<button type="button" class="tr-action ${G.target === t ? '' : 'secondary'}" data-a="target" data-v="${t}">${t} pontos</button>`).join('')}</div></div>` : '';
-          return `<div class="tr-phone">${header}<div class="tr-panel"><p class="tr-section-title">Região</p><div class="tr-choices">${Object.keys(variants).map(v => `<button type="button" class="tr-choice ${G.cfg.variant === v ? 'selected' : ''}" data-a="variant" data-v="${v}"><span>${variants[v]}</span><span>${G.cfg.variant === v ? '✓' : '→'}</span></button>`).join('')}</div></div>${targets}<div class="tr-panel"><p class="tr-section-title">${players.length === 4 ? 'Duplas' : 'Lugares'}</p><p class="tr-caption">${preview}</p>${players.length >= 2 ? '<div class="tr-actions" style="margin-top:12px"><button type="button" class="tr-action secondary wide" data-a="shuffle">🎲 Sortear lugares</button></div>' : ''}<p class="tr-caption" style="margin-top:9px">${esc(G.rules || 'Cada pessoa usa o celular para ver sua mão. A TV mostra a mesa e o placar.')}</p></div><div class="tr-actions"><button type="button" class="tr-action wide" data-a="begin" ${ready ? '' : 'disabled'}>Começar partida</button></div>${event}</div>`;
+          return `<div class="tr-phone">${header}<div class="tr-panel"><p class="tr-section-title">Região</p><div class="tr-choices">${Object.keys(variants).map(v => `<button type="button" class="tr-choice ${G.cfg.variant === v ? 'selected' : ''}" data-a="variant" data-v="${v}"><span>${variants[v]}</span><span>${G.cfg.variant === v ? '✓' : '→'}</span></button>`).join('')}</div></div>${targets}<div class="tr-panel"><p class="tr-section-title">${players.length === 4 ? 'Duplas' : 'Lugares'}</p><p class="tr-caption">${preview}</p>${players.length >= 2 ? '<div class="tr-actions" style="margin-top:12px"><button type="button" class="tr-action secondary wide" data-a="shuffle">Sortear lugares</button></div>' : ''}<p class="tr-caption" style="margin-top:9px">${esc(G.rules || 'Cada pessoa usa o celular para ver sua mão. A TV mostra a mesa e o placar.')}</p></div><div class="tr-actions"><button type="button" class="tr-action wide" data-a="begin" ${ready ? '' : 'disabled'}>Começar partida</button></div>${event}</div>`;
         }
         if (G.phase === 'round' || G.phase === 'end') {
           const team = G.phase === 'end' ? G.winner : G.roundWinner;
@@ -166,7 +169,7 @@
           const title = `Mão de ${special.threshold || (G.cfg.variant === 'mineiro' ? 10 : 11)}`;
           const own = (G.hand || []).map(x => card(x, G)).join('');
           const partner = (G.partnerHand || []).map(x => card(x, G)).join('');
-          return `<div class="tr-phone">${header}<div class="tr-panel"><p class="tr-kicker">${title}</p><h2 class="tr-title">${ourChoice ? 'Sua dupla decide' : 'A outra dupla decide'}</h2><p class="tr-caption" style="margin-top:10px">${ourChoice ? `Jogar vale ${special.stake || 3} pontos. Correr entrega ${special.runPoints || 1} ${special.runPoints === 1 ? 'ponto' : 'pontos'}.` : 'Aguarde a decisão no celular deles.'}</p></div>${ourChoice ? `<div class="tr-panel"><p class="tr-section-title">Sua mão</p><div class="tr-hand">${own}</div>${partner ? `<p class="tr-section-title" style="margin-top:12px">Mão do parceiro</p><div class="tr-hand">${partner}</div>` : ''}</div><div class="tr-actions">${action('eleven_play', 'Jogar a mão', 'wide')}${action('eleven_run', 'Correr', 'danger wide')}</div>` : ''}${event}</div>`;
+          return `<div class="tr-phone">${header}<div class="tr-panel"><p class="tr-kicker">${title}</p><h2 class="tr-title">${ourChoice ? 'Sua dupla decide' : 'A outra dupla decide'}</h2><p class="tr-caption" style="margin-top:10px">${ourChoice ? `Jogar vale ${special.stake || 3} pontos. Correr entrega ${special.runPoints || 1} ${special.runPoints === 1 ? 'ponto' : 'pontos'}.` : 'Aguarde a decisão no celular deles.'}</p></div>${ourChoice ? `<div class="tr-panel"><p class="tr-section-title">Sua mão</p><div class="tr-hand">${own}</div>${partner ? `<p class="tr-section-title" style="margin-top:12px">Mão do parceiro</p><div class="tr-hand">${partner}</div>` : ''}</div><div class="tr-actions">${action('eleven_play', 'Jogar a mão', 'ok wide')}${action('eleven_run', 'Correr', 'danger wide')}</div>` : ''}${event}</div>`;
         }
         const mine = G.turn === me;
         const bid = G.bid;
@@ -188,16 +191,16 @@
         const best = reveal && reveal.best ? reveal.best : [];
         const board = myAt < 0 ? '' : `<div class="tr-board">${G.order.map((pid, i) => {
           const at = spots[(i - myAt + n) % n] || [50, 50], x = onTable[pid];
-          const cls = reveal && x && reveal.winner !== null ? best.indexOf(pid) >= 0 ? 'winner' : 'dim' : G.turn === pid && G.phase === 'play' && !bid ? 'now' : '';
-          return `<div class="spot ${cls}" style="left:${at[0]}%;top:${at[1]}%">${x ? card(x, G) : '<div class="slot"></div>'}<small>${pid === me ? 'Você' : name(pid)}${n === 4 && pid !== me && G.teams[pid] === myTeam ? ' 🤝' : ''}</small></div>`;
+          const cls = reveal && x && reveal.winner !== null ? best.indexOf(pid) >= 0 ? 'winner' : 'dim' : G.turn === pid && G.phase === 'play' && !bid ? 'tr-now' : '';
+          return `<div class="spot ${cls}" style="left:${at[0]}%;top:${at[1]}%">${x ? card(x, G) : '<div class="slot"></div>'}<small>${pid === me ? 'Você' : name(pid)}${n === 4 && pid !== me && G.teams[pid] === myTeam ? ' · parceiro' : ''}</small></div>`;
         }).join('')}</div>`;
         const leadAt = G.order.indexOf(G.trickLead || G.turn);
         const orderStrip = G.phase === 'play' && leadAt >= 0 ? `<div class="tr-order">${G.order.map((pid, i) => G.order[(leadAt + i) % n]).map((pid, i) =>
-          `<span class="${pid === G.turn && !bid ? 'now' : ''} ${pid === me ? 'me' : ''} ${onTable[pid] ? 'done' : ''}">${i + 1}º ${pid === me ? 'Você' : name(pid)}${onTable[pid] ? ' ✓' : ''}</span>`).join('')}</div>` : '';
+          `<span class="${pid === G.turn && !bid ? 'tr-now' : ''} ${pid === me ? 'me' : ''} ${onTable[pid] ? 'done' : ''}">${i + 1}º ${pid === me ? 'Você' : name(pid)}${onTable[pid] ? ' ✓' : ''}</span>`).join('')}</div>` : '';
         const hist = (G.history || []).map((h, i) => `<div class="tr-hist"><em>Vaza ${i + 1}</em>${h.plays.map(x => card(x.card, G)).join('')}<b>${h.winner === null ? 'empate' : h.winner === myTeam ? (n === 2 ? 'você' : 'sua dupla') : 'outra'}</b></div>`).join('');
         const envido = G.myFlor !== null && G.myFlor !== undefined ? `<span class="tr-pill">Flor: ${G.myFlor}</span>` : G.myEnvido !== null && G.myEnvido !== undefined ? `<span class="tr-pill">Seu envido: ${G.myEnvido}</span>` : '';
         let actions = '';
-        if (bidMine) actions = `${action('accept', 'Aceitar', '')}${action('reject', 'Correr', 'danger')}${(bid.options || []).map(o => `<button type="button" class="tr-action secondary wide" data-a="raise" data-v="${esc(o)}">${raiseName(o)}</button>`).join('')}`;
+        if (bidMine) actions = `${action('accept', 'Aceitar', 'ok')}${action('reject', 'Correr', 'danger')}${(bid.options || []).map(o => `<button type="button" class="tr-action secondary wide" data-a="raise" data-v="${esc(o)}">${raiseName(o)}</button>`).join('')}`;
         else if (!bid && !G.iron) actions = (G.availableCalls || []).map(o => `<button type="button" class="tr-action secondary" data-a="call" data-v="${esc(o)}">${callName(o)}</button>`).join('');
         const bidText = bid ? `${calls[bid.level] || calls[bid.kind] || 'Pedido'} · ${bidMine ? 'aceite, corra ou aumente' : 'aguarde a resposta'}` : '';
         const handHtml = G.iron ? `<div class="tr-hand">${Array(Math.min(3, G.counts && G.counts[me] || 0) + 1).join('<div class="tr-card back" role="img" aria-label="Carta virada para baixo"></div>')}</div>${mine ? action('card', 'Jogar próxima carta', 'wide') : ''}` : `<div class="tr-hand">${(G.hand || []).map(x => card(x, G, `data-a="card" data-id="${esc(x.id)}" ${x.ok && !bid ? '' : 'disabled'}`)).join('')}</div>`;

@@ -1,7 +1,7 @@
 // UNO — tela do celular. A mão só existe aqui: o servidor manda as cartas só para o dono delas.
 'use strict';
 (() => {
-  const HEX = { r: '#ef4444', y: '#facc15', g: '#22c55e', b: '#3b82f6', w: '#111827' };
+  const HEX = { r: '#ef4444', y: '#facc15', g: '#22c55e', b: '#3b82f6', w: '#0f0f14' };
   const NOME = { r: 'Vermelho', y: 'Amarelo', g: 'Verde', b: 'Azul' };
   const ARCO = 'conic-gradient(from 215deg,#ef4444 0 25%,#facc15 0 50%,#22c55e 0 75%,#3b82f6 0)';
   const SIM = { '+2': '+2', '+4': '+4', rev: '⇄', skip: '⊘', wild: '★' };
@@ -9,30 +9,53 @@
   let styled = false, lastTurn = '';
 
   const style = `
-    .un-hand { display:flex; gap:8px; overflow-x:auto; padding:14px 6px 18px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; }
-    .un-hand::-webkit-scrollbar { height:6px; } .un-hand::-webkit-scrollbar-thumb { background:#2a3350; border-radius:9px; }
-    .uc { position:relative; flex:none; width:var(--w,84px); aspect-ratio:2/3; border-radius:12%; scroll-snap-align:center;
-      box-shadow:0 6px 14px #0008, inset 0 0 0 5px #fff; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-    .uc .o { position:absolute; left:9%; top:11%; width:82%; height:78%; border-radius:50%; background:#ffffff2e; transform:rotate(-22deg); }
-    .uc .o.rb { background:${ARCO}; opacity:.9; }
-    .uc .v { position:relative; font-weight:900; font-size:calc(var(--w,84px) * .56); line-height:1; color:#fff; text-shadow:2px 3px 0 #0006; letter-spacing:-2px; }
-    .uc .tl, .uc .br { position:absolute; font-weight:900; font-size:calc(var(--w,84px) * .2); color:#ffffffdd; }
+    .un-hand { display:flex; gap:10px; overflow-x:auto; padding:18px 8px 16px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; }
+    .un-hand::-webkit-scrollbar { height:6px; } .un-hand::-webkit-scrollbar-thumb { background:#0f0f14; }
+    .uc { position:relative; flex:none; width:var(--w,84px); aspect-ratio:2/3; border-radius:8px; scroll-snap-align:center; border:3px solid #0f0f14;
+      box-shadow:4px 4px 0 #0f0f14; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .uc .o { position:absolute; left:11%; top:13%; width:78%; height:74%; border-radius:50%; background:rgba(255,255,255,.28); border:2px solid #0f0f14; transform:rotate(-22deg); }
+    .uc .o.rb { background:${ARCO}; }
+    .uc .v { position:relative; font-family:'Archivo',sans-serif; font-weight:900; font-stretch:115%; font-size:calc(var(--w,84px) * .52); line-height:1; color:#fff;
+      -webkit-text-stroke:2px #0f0f14; paint-order:stroke fill; text-shadow:3px 3px 0 #0f0f14; letter-spacing:-1px; }
+    .uc .tl, .uc .br { position:absolute; font-weight:900; font-size:calc(var(--w,84px) * .18); line-height:1; color:#0f0f14; }
+    .uc.w .tl, .uc.w .br { color:#fff; }
     .uc .tl { left:8%; top:5%; } .uc .br { right:8%; bottom:5%; transform:rotate(180deg); }
-    .un-hand .uc { opacity:.4; filter:grayscale(.55); transition:transform .12s, opacity .12s; }
-    .un-hand .uc.ok { opacity:1; filter:none; transform:translateY(-8px); box-shadow:0 10px 20px #000a, inset 0 0 0 5px #fff, 0 0 0 3px #fff; }
-    .un-hand .uc.ok:active { transform:translateY(-16px) scale(1.04); }
+    .un-hand .uc { opacity:.45; filter:grayscale(.35); box-shadow:none; transition:transform .12s, opacity .12s, box-shadow .12s; }
+    .un-hand .uc.ok { opacity:1; filter:none; transform:translateY(-8px); box-shadow:5px 5px 0 #0f0f14; cursor:pointer; }
+    .un-hand .uc.ok:active { transform:translate(3px,-5px); box-shadow:2px 2px 0 #0f0f14; }
     .un-hand .uc.novo { animation:unnew .5s; } @keyframes unnew { from { transform:translateY(30px) scale(.7); opacity:0; } }
-    .un-mesa { display:flex; align-items:center; justify-content:center; gap:16px; }
-    .un-mesa .lab { font-size:15px; font-weight:800; }
-    .un-cores { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-    .un-cor { aspect-ratio:1.5; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:900; color:#111; box-shadow:0 6px 16px #0006; }
-    .un-cor:active { transform:scale(.97); }
-    .un-o { padding:12px 16px; border-radius:12px; background:#2a3350; font-weight:900; font-size:18px; text-align:center; }
-    .un-o.sel { background:#f59e0b; color:#111; }
-    .un-opt { display:flex; flex-wrap:wrap; gap:8px; }
-    .un-uno { background:#facc15; color:#111; font-size:30px; letter-spacing:4px; }
-    .un-bar { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+    .un-mesa { display:flex; align-items:center; justify-content:center; gap:18px; }
+    .un-mesa .lab { display:inline-flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+    .un-mesa .lab i { width:18px; height:18px; border:2px solid #0f0f14; display:inline-block; }
+    .un-mesa .vez { font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:24px; line-height:1; margin-top:8px; }
+    .un-mesa .info { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#3a3a42; margin-top:8px; }
+    .un-mesa .info .pix { font-size:15px; color:#0f0f14; }
+    .un-pend { display:block; margin-top:12px; background:#0f0f14; color:#ffce1f; padding:8px 10px; text-align:center; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.04em; }
+    .un-pend b { font-family:'Pixelify Sans',monospace; font-size:20px; }
+    .un-cores { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+    .un-cor { aspect-ratio:1.4; display:flex; align-items:center; justify-content:center; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; color:#0f0f14; cursor:pointer;
+      font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:20px; transition:transform .06s, box-shadow .06s; }
+    .un-cor:active { transform:translate(4px,4px); box-shadow:1px 1px 0 #0f0f14; }
+    .un-o { padding:12px 14px; border:3px solid #0f0f14; background:#fff; box-shadow:3px 3px 0 #0f0f14; font-weight:900; font-size:17px; text-align:center; cursor:pointer;
+      transition:transform .06s, box-shadow .06s; }
+    .un-o:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #0f0f14; }
+    .un-o.sel { background:#ffce1f; }
+    .un-o.pix { font-size:19px; }
+    .un-opt { display:flex; flex-wrap:wrap; gap:10px; }
+    .un-lab { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px; }
+    .un-note { color:#55555e; font-size:14px; line-height:1.4; margin-top:10px; }
+    .un-head { background-color:#f0443a; }
+    .un-head .k { display:inline-block; background:#0f0f14; color:#f1f0ea; padding:5px 9px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+    .un-head h2 { font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:28px; line-height:.95; margin-top:10px; }
+    .un-head h2 .nm { font-size:24px; }
+    .un-head p { font-size:15px; font-weight:600; margin-top:8px; }
+    .un-uno { background:#0f0f14; color:#ffce1f; font-size:32px; letter-spacing:4px; }
+    .un-bar { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; }
     .un-bar .nm { font-size:14px; }
+    .un-bar .nm.un-cur { box-shadow:3px 3px 0 #0f0f14; outline:3px solid #ffce1f; outline-offset:-6px; }
+    .un-bar .nm b { font-family:'Pixelify Sans',monospace; }
+    .un-bar .nm em { font-style:normal; margin-left:2px; padding:0 4px; background:#0f0f14; color:#ffce1f; font-size:11px; font-family:'JetBrains Mono',monospace; }
+    .un-wait { font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:22px; line-height:1; }
     /* em pé: tudo empilhado, na ordem mesa → mão → botões → quem está na mesa */
     .un-game, .un-acts, .un-foot { display:flex; flex-direction:column; gap:12px; }
     .un-game > .un-handwrap { order:2; } .un-game > .un-acts { order:3; } .un-game > .un-foot { order:4; }
@@ -60,7 +83,7 @@
       .un-mesabox .timer { font-size:22px; } .un-mesabox .tbar { margin-top:4px; height:6px; }
       .un-mesabox .pend { flex-basis:100%; text-align:center; }
       .un-mesabox .pend { font-size:14px; margin-top:4px; }
-      .un-acts .btn { padding:12px 10px; font-size:17px; border-radius:12px; }
+      .un-acts .btn { padding:12px 10px; font-size:17px; }
       .un-acts .btn.big { padding:14px 10px; font-size:19px; }
       .un-acts .un-uno { font-size:24px; letter-spacing:3px; }
       .un-acts .sub { font-size:14px; }
@@ -73,8 +96,8 @@
   const ensure = () => { if (styled) return; const el = document.createElement('style'); el.textContent = style; document.head.appendChild(el); styled = true; };
 
   const cardHtml = (card, cls, w, attrs) => {
-    const bg = card.c === 'w' ? '#111827' : HEX[card.c];
-    return `<div class="uc ${cls || ''}" style="--w:${w};background:${bg}" ${attrs || ''}><i class="o ${card.c === 'w' ? 'rb' : ''}"></i>
+    const bg = card.c === 'w' ? '#0f0f14' : HEX[card.c];
+    return `<div class="uc ${card.c === 'w' ? 'w ' : ''}${cls || ''}" style="--w:${w};background:${bg}" ${attrs || ''}><i class="o ${card.c === 'w' ? 'rb' : ''}"></i>
       <span class="tl">${face(card)}</span><span class="v">${face(card)}</span><span class="br">${face(card)}</span></div>`;
   };
 
@@ -92,55 +115,55 @@
 
       html(c) {
         ensure();
-        const G = c.G, esc = c.esc, nm = p => p ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle">${c.avatar(p, 26)}${c.nm(p)}</span>` : ''; if (!G || !c.you) return '';
+        const G = c.G, esc = c.esc, nm = p => p ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle">${c.avatar(p, 26)}<span class="nm" style="background:${c.ci(p.color).hex};color:#0f0f14">${c.esc(p.name)}</span></span>` : ''; if (!G || !c.you) return '';
         const ply = pid => c.C.players.find(p => p.pid === pid);
         const eu = c.you.pid;
         const minhaVez = G.turn === eu;
 
-        const placar = () => `<div class="box"><p class="sub mut" style="margin-bottom:8px">Placar</p>${c.playersHtml({
-          info: p => `${G.scores[p.pid] || 0} pts${G.roundScores[p.pid] ? ` (+${G.roundScores[p.pid]})` : ''}`,
+        const placar = () => `<div class="box"><p class="un-lab">Placar</p>${c.playersHtml({
+          info: p => `<b class="pix" style="color:#0f0f14;font-size:18px">${G.scores[p.pid] || 0}</b> pts${G.roundScores[p.pid] ? ` <b class="pix" style="background:#35d07f;color:#0f0f14;border:2px solid #0f0f14;padding:0 4px">+${G.roundScores[p.pid]}</b>` : ''}`,
         })}</div>`;
 
         // ---------- menu de regras ----------
         if (G.phase === 'setup') {
-          const sw = (a, on, txt) => `<div class="un-o ${on ? 'sel' : ''}" data-a="${a}" style="flex:1">${on ? '✅' : '❌'} ${txt}</div>`;
-          const opt = (a, vals, cur, fmt) => `<div class="un-opt">${vals.map(v => `<div class="un-o ${v === cur ? 'sel' : ''}" data-a="${a}" data-v="${v}">${fmt(v)}</div>`).join('')}</div>`;
-          return `<div class="box center"><h2 style="font-size:26px">⚙️ Regras do UNO</h2><p class="sub mut" style="margin-top:6px">Qualquer um pode mudar. Vale para todos.</p></div>
-            <div class="box"><p class="sub" style="margin-bottom:8px">Acumular +2 e +4</p><div class="un-opt">${sw('cfgStack', G.cfg.stack, G.cfg.stack ? 'Empilha' : 'Não empilha')}</div>
-              <p class="sub mut" style="margin-top:8px;font-size:15px">Com "empilha", quem levaria +2 pode jogar outro +2 e passar a conta adiante.</p></div>
-            <div class="box"><p class="sub" style="margin-bottom:8px">Regra "7 e 0"</p><div class="un-opt">${sw('cfgSeven', G.cfg.sevenzero, G.cfg.sevenzero ? 'Ligada' : 'Desligada')}</div>
-              <p class="sub mut" style="margin-top:8px;font-size:15px">7 troca sua mão com alguém. 0 gira as mãos de todo mundo.</p></div>
-            <div class="box"><p class="sub" style="margin-bottom:8px">Pontuação</p>${opt('cfgTarget', G.alvos, G.cfg.target, v => v ? `até ${v}` : '1 rodada')}</div>
-            <div class="box"><p class="sub" style="margin-bottom:8px">Tempo por vez</p>${opt('cfgTime', G.tempos, G.cfg.turnSec, v => v ? v + 's' : 'sem tempo')}</div>
-            <button class="btn big ok" data-a="begin">▶ Começar o UNO</button>
+          const sw = (a, on, txt) => `<div class="un-o ${on ? 'sel' : ''}" data-a="${a}" style="flex:1">${on ? '✓' : '✕'} ${txt}</div>`;
+          const opt = (a, vals, cur, fmt) => `<div class="un-opt">${vals.map(v => `<div class="un-o pix ${v === cur ? 'sel' : ''}" data-a="${a}" data-v="${v}">${fmt(v)}</div>`).join('')}</div>`;
+          return `<div class="box un-head dots"><span class="k">Antes de começar</span><h2>Regras do UNO</h2><p>Qualquer um pode mudar. Vale para todos.</p></div>
+            <div class="box"><p class="un-lab">Acumular +2 e +4</p><div class="un-opt">${sw('cfgStack', G.cfg.stack, G.cfg.stack ? 'Empilha' : 'Não empilha')}</div>
+              <p class="un-note">Com "empilha", quem levaria +2 pode jogar outro +2 e passar a conta adiante.</p></div>
+            <div class="box"><p class="un-lab">Regra "7 e 0"</p><div class="un-opt">${sw('cfgSeven', G.cfg.sevenzero, G.cfg.sevenzero ? 'Ligada' : 'Desligada')}</div>
+              <p class="un-note">7 troca sua mão com alguém. 0 gira as mãos de todo mundo.</p></div>
+            <div class="box"><p class="un-lab">Pontuação</p>${opt('cfgTarget', G.alvos, G.cfg.target, v => v ? `até ${v}` : '1 rodada')}</div>
+            <div class="box"><p class="un-lab">Tempo por vez</p>${opt('cfgTime', G.tempos, G.cfg.turnSec, v => v ? v + 's' : 'sem tempo')}</div>
+            <button class="btn big warn" data-a="begin">▶ Começar o UNO</button>
             <p class="sub center">${c.C.event ? c.hl(c.C.event.text) : ''}</p>`;
         }
 
         // ---------- fim de rodada / fim de jogo ----------
         if (G.phase === 'round' || G.phase === 'end') {
           const w = ply(G.phase === 'end' ? G.winner : G.roundWinner);
-          return `<div class="box center"><div class="big-emoji">${G.phase === 'end' ? '🏆' : '🏁'}</div>
-            <h2 style="font-size:28px;margin-top:8px">${w ? nm(w) : ''} ${G.phase === 'end' ? 'venceu!' : 'bateu a rodada!'}</h2></div>
+          return `<div class="box un-head dots"><span class="k">${G.phase === 'end' ? 'Fim de jogo' : 'Fim da rodada ' + G.round}</span>
+            <h2>${w ? (w.pid === eu ? 'Você' : `<span class="nm" style="background:${c.ci(w.color).hex};color:#0f0f14">${esc(w.name)}</span>`) : ''} ${G.phase === 'end' ? 'venceu!' : 'bateu!'}</h2></div>
             ${placar()}
-            ${G.phase === 'end' ? '<button class="btn big ok" data-a="again">🔄 Jogar de novo</button>' : '<button class="btn big warn" data-a="next">Próxima rodada ➡️</button>'}`;
+            ${G.phase === 'end' ? '<button class="btn big warn" data-a="again">Jogar de novo</button>' : '<button class="btn big warn" data-a="next">Próxima rodada ▸</button>'}`;
         }
 
         // ---------- escolha de cor do coringa ----------
         if (G.phase === 'color') {
           if (G.wildBy === eu) {
-            return `<div class="box center hi"><h2 style="font-size:26px">🌈 Escolha a cor</h2><p class="sub mut" style="margin-top:6px">A mesa vira essa cor.</p></div>
+            return `<div class="box un-head dots"><span class="k">Coringa</span><h2>Escolha a cor</h2><p>A mesa vira essa cor.</p></div>
               <div class="un-cores">${['r', 'y', 'g', 'b'].map(k => `<div class="un-cor" style="background:${HEX[k]}" data-a="unoCor" data-c="${k}">${NOME[k]}</div>`).join('')}</div>`;
           }
-          return `<div class="un-game"><div class="box center un-mesabox"><div class="big-emoji">🌈</div><p class="sub" style="margin-top:8px">${nm(ply(G.wildBy))} está escolhendo a cor…</p></div><div class="un-handwrap">${maoHtml()}</div></div>`;
+          return `<div class="un-game"><div class="box center un-mesabox"><p class="un-lab">Coringa na mesa</p><p class="sub">${nm(ply(G.wildBy))} está escolhendo a cor…</p></div><div class="un-handwrap">${maoHtml()}</div></div>`;
         }
 
         // ---------- troca de mão (regra 7) ----------
         if (G.phase === 'swap') {
           if (G.swapBy === eu) {
-            return `<div class="box center hi"><h2 style="font-size:26px">🔁 Trocar de mão</h2><p class="sub mut" style="margin-top:6px">Escolha com quem você troca as cartas.</p></div>
-              <div style="display:flex;flex-direction:column;gap:10px">${G.order.filter(o => o.pid !== eu).map(o => { const p = ply(o.pid); return p ? `<button class="btn" data-a="unoTrocar" data-pid="${o.pid}" style="display:flex;align-items:center;gap:12px;justify-content:flex-start">${c.avatar(p, 30)}${esc(p.name)} <span class="sub mut">${o.n} cartas</span></button>` : ''; }).join('')}</div>`;
+            return `<div class="box un-head dots"><span class="k">Regra do 7</span><h2>Trocar de mão</h2><p>Escolha com quem você troca as cartas.</p></div>
+              <div style="display:flex;flex-direction:column;gap:10px">${G.order.filter(o => o.pid !== eu).map(o => { const p = ply(o.pid); return p ? `<button class="btn" data-a="unoTrocar" data-pid="${o.pid}" style="display:flex;align-items:center;gap:12px;justify-content:flex-start">${c.avatar(p, 30)}${esc(p.name)} <span class="mono" style="margin-left:auto;font-size:13px;color:#55555e"><b class="pix" style="font-size:18px;color:#0f0f14">${o.n}</b> cartas</span></button>` : ''; }).join('')}</div>`;
           }
-          return `<div class="un-game"><div class="box center un-mesabox"><div class="big-emoji">🔁</div><p class="sub" style="margin-top:8px">${nm(ply(G.swapBy))} está trocando de mão…</p></div><div class="un-handwrap">${maoHtml()}</div></div>`;
+          return `<div class="un-game"><div class="box center un-mesabox"><p class="un-lab">Regra do 7</p><p class="sub">${nm(ply(G.swapBy))} está trocando de mão…</p></div><div class="un-handwrap">${maoHtml()}</div></div>`;
         }
 
         // ---------- jogo ----------
@@ -148,38 +171,38 @@
           if (!G.hand.length) return '';
           return `<div class="box" style="padding:0 4px"><div class="un-hand">${G.hand.map(card =>
             cardHtml(card, card.ok ? 'ok' : '', '84px', card.ok ? `data-a="carta" data-i="${card.i}"` : '')).join('')}</div>
-            <p class="sub center mut dica" style="padding:0 10px 12px;font-size:15px">${G.hand.length} cartas · ${G.hand.filter(x => x.ok).length ? 'as acesas dá para jogar' : minhaVez ? 'nenhuma serve: compre' : 'espere sua vez'}</p></div>`;
+            <p class="mono center dica" style="padding:0 10px 12px;font-size:12px;text-transform:uppercase;color:#55555e"><b class="pix" style="font-size:16px;color:#0f0f14">${G.hand.length}</b> cartas · ${G.hand.filter(x => x.ok).length ? 'as acesas dá para jogar' : minhaVez ? 'nenhuma serve: compre' : 'espere sua vez'}</p></div>`;
         }
 
         const daVez = ply(G.turn);
         const topo = G.top ? cardHtml(G.top, '', '76px') : '';
         // mesa: carta do topo, cor, de quem é a vez e o cronômetro
         const mesa = `<div class="box un-mesabox ${minhaVez ? 'hi' : ''}"><div class="un-mesa">${topo}
-          <div><p class="lab" style="color:${HEX[G.color]}">Cor: ${NOME[G.color] || '—'}</p>
-          <p class="sub vez" style="font-size:20px;font-weight:800;margin-top:4px">${minhaVez ? '👉 Sua vez!' : `Vez de ${daVez ? esc(daVez.name) : '…'}`}</p>
-          <p class="sub mut info" style="font-size:15px;margin-top:4px">${G.dir > 0 ? '↻ horário' : '↺ anti-horário'} · 🎴 ${G.deckN}</p></div></div>
-          ${G.pending ? `<p class="sub center pend" style="margin-top:10px;color:#facc15;font-weight:900">⚠️ Acumulado: +${G.pending} para quem não responder</p>` : ''}
+          <div><p class="lab"><i style="background:${HEX[G.color] || '#fff'}"></i>Cor: ${NOME[G.color] || '—'}</p>
+          <p class="vez">${minhaVez ? 'Sua vez!' : `Vez de ${daVez ? esc(daVez.name) : '…'}`}</p>
+          <p class="info">${G.dir > 0 ? '↻ horário' : '↺ anti-horário'} · monte <b class="pix">${G.deckN}</b></p></div></div>
+          ${G.pending ? `<p class="un-pend pend">Acumulado <b>+${G.pending}</b> para quem não responder</p>` : ''}
           ${minhaVez && G.cfg.turnSec ? `<div class="tmr" style="margin-top:10px">${c.timerHtml('', G.turnMs)}</div>` : ''}</div>`;
 
         // botões: comprar / jogar a comprada / passar / UNO! / Pegou!
         let acts = '';
         if (minhaVez) {
           if (G.drawn) {
-            acts += `<p class="sub center">Você comprou esta carta. Dá para jogar!</p>
+            acts += `<p class="sub center" style="font-weight:700">Você comprou esta carta. Dá para jogar!</p>
               <button class="btn big ok" data-a="jogarComprada" data-i="${G.drawn}">▶ Jogar a comprada</button>
               <button class="btn ghost" data-a="passar">Passar a vez</button>`;
           } else {
-            acts += `<button class="btn big blue" data-a="comprar">🎴 Comprar ${G.pending ? `as ${G.pending} acumuladas` : '1 carta'}</button>`;
+            acts += `<button class="btn big blue" data-a="comprar">Comprar ${G.pending ? `as ${G.pending} acumuladas` : '1 carta'}</button>`;
           }
         }
         if (G.canUno) acts += `<button class="btn big un-uno" data-a="uno">UNO!</button>`;
-        if (G.risk && G.risk !== eu) acts += `<button class="btn big no" data-a="pegou">✋ Pegou ${esc((ply(G.risk) || {}).name || '')}! (+2)</button>`;
+        if (G.risk && G.risk !== eu) acts += `<button class="btn big no" data-a="pegou">Pegou ${esc((ply(G.risk) || {}).name || '')}! (+2)</button>`;
 
         // rodapé: quem está na mesa e o último aviso
-        const foot = `<div class="box"><p class="sub mut lab2" style="margin-bottom:8px">Na mesa</p><div class="un-bar">${G.order.map(o => {
+        const foot = `<div class="box"><p class="un-lab lab2">Na mesa</p><div class="un-bar">${G.order.map(o => {
           const p = ply(o.pid); if (!p) return '';
           const eh = G.turn === o.pid;
-          return `<span class="nm" style="${c.nmStyle(p)};${eh ? 'box-shadow:0 0 0 3px #fff' : ''};display:inline-flex;align-items:center;gap:6px;padding-left:4px">${c.avatar(p, 22)}${esc(p.name)} ${o.n}${o.n === 1 ? (o.said ? ' 🔔' : ' ⚠️') : ''}</span>`;
+          return `<span class="nm ${eh ? 'un-cur' : ''}" style="background:${c.ci(p.color).hex};color:#0f0f14;display:inline-flex;align-items:center;gap:6px;padding-left:4px">${c.avatar(p, 22)}${esc(p.name)} <b>${o.n}</b>${o.n === 1 ? (o.said ? '<em>UNO</em>' : '<em>!</em>') : ''}</span>`;
         }).join('')}</div></div>
         <p class="sub center evento">${c.C.event ? c.hl(c.C.event.text) : ''}</p>`;
 
@@ -195,7 +218,7 @@
         if (minha && lastTurn !== tag && G.phase === 'play') {
           lastTurn = tag;
           const jog = G.hand.filter(x => x.ok).length;
-          c.turnover(`<div class="round">Rodada ${G.round}</div><div class="mine">👉 SUA VEZ</div>
+          c.turnover(`<div class="round">Rodada ${G.round}</div><div class="mine">SUA VEZ</div>
             <div class="who2" style="background:${HEX[G.color]};color:#111">${NOME[G.color] || ''}</div>
             <small>${jog ? `${jog} carta${jog > 1 ? 's' : ''} para jogar` : 'nada serve: compre uma'}</small>`, 1500, [60, 40, 60]);
           c.chord([659, 880]);

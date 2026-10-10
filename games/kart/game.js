@@ -7,7 +7,7 @@ const KARTS = ['Faísca', 'Cometa', 'Tijolinho'];
 const INPUT_TTL = 350;
 module.exports = {
   meta: {
-    id: 'kart', name: 'KART', emoji: '🏎️',
+    id: 'kart', name: 'KART', category: 'acao', glyph: '»', emoji: '🏎️',
     tagline: 'Acelere, pule, derrape e dispute. Seu celular é o controle.',
     art: 'linear-gradient(180deg,#58c8f5 0,#9fdcfb 48%,#7fd35b 48.5%,#4aa848 100%)',
     minPlayers: 1, maxPlayers: 4, spectators: true,   // até 4 pilotos; quem sobra assiste e entra na próxima largada

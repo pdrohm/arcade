@@ -12,79 +12,89 @@
   const has = (lista, x) => (lista || []).indexOf(x) >= 0;
 
   // Cadeiras numa elipse (em % da mesa), do topo, no sentido horário. A carta jogada fica no meio do caminho até o centro.
-  const MEIO = { x: 50, y: 44 };
+  const MEIO = { x: 50, y: 42 };
   const cadeira = (i, n) => {
     const ang = (-90 + i * 360 / Math.max(1, n)) * Math.PI / 180;
-    return { x: MEIO.x + 41 * Math.cos(ang), y: MEIO.y + 33 * Math.sin(ang) };
+    return { x: MEIO.x + 41 * Math.cos(ang), y: MEIO.y + 32 * Math.sin(ang) };
   };
   const vaga = p => ({ x: MEIO.x + (p.x - MEIO.x) * .52, y: MEIO.y + (p.y - MEIO.y) * .5 });
 
+  // Visual "fliperama de papel": mesa vermelha (cor da categoria cartas) com pontinhos, borda de tinta e sombra dura.
+  const MONO = "font-family:'JetBrains Mono',monospace; font-weight:700; letter-spacing:.06em; text-transform:uppercase;";
+  const PIX = "font-family:'Pixelify Sans',monospace; font-weight:700;";
+  const DISP = 'font-weight:900; font-stretch:125%; text-transform:uppercase; letter-spacing:-.01em;';
   const style = `
-    .tfv-table { position:absolute; top:0; left:0; right:0; bottom:0; overflow:hidden; border-radius:2vw; color:#fff9ec;
-      background:radial-gradient(ellipse at 50% 44%,#2b4f80 0%,#1a3359 58%,#0f1e3b 100%);
-      box-shadow:inset 0 0 0 1.1vw #142343, inset 0 0 0 1.3vw #cc7f62, inset 0 0 6vw rgba(0,0,0,.55); }
-    .tfv-table:before { content:''; position:absolute; top:22%; left:24%; width:52%; height:46%; border:.15vw solid rgba(255,190,126,.2); border-radius:50%; }
-    .tfv-brand { position:absolute; top:3%; left:3%; color:#ffbc7d; font-size:1.35vw; font-weight:900; letter-spacing:.18em; }
-    .tfv-round { position:absolute; top:3%; right:3%; color:#ffbc7d; font-size:1.15vw; font-weight:900; letter-spacing:.08em; text-transform:uppercase; text-align:right; }
-    .tfv-round small { display:block; color:#d9dfed; font-size:.9vw; letter-spacing:.02em; text-transform:none; margin-top:.2vw; }
+    .tfv-table { position:absolute; top:0; left:0; right:.6vw; bottom:.6vw; overflow:hidden; color:#0f0f14;
+      background-color:#f0443a; background-image:radial-gradient(rgba(15,15,20,.16) .1vw, transparent .11vw); background-size:.6vw .6vw;
+      border:.25vw solid #0f0f14; box-shadow:.6vw .6vw 0 #0f0f14; }
+    .tfv-table:before { content:''; position:absolute; top:22%; left:24%; width:52%; height:46%; border:.2vw dashed rgba(15,15,20,.35); border-radius:50%; }
+    .tfv-brand { position:absolute; top:3%; left:3%; padding:.5vw 1vw; background:#0f0f14; color:#f1f0ea; font-size:2.2vw; line-height:1; ${DISP} }
+    .tfv-round { position:absolute; top:3%; right:3%; padding:.5vw 1vw; background:#fff; border:.2vw solid #0f0f14; box-shadow:.3vw .3vw 0 #0f0f14; font-size:1vw; text-align:right; ${MONO} }
+    .tfv-round small { display:block; margin-top:.25vw; color:#55555e; font-size:.8vw; }
 
     /* ---- carta ---- */
-    .tfc { position:relative; width:4.6vw; height:6.6vw; border:.2vw solid #ddd2bd; border-radius:.6vw; background:#fff9ed; color:#172947;
-      box-shadow:0 .35vw 0 #a7a29d, 0 .6vw 1.2vw rgba(0,0,0,.4); }
-    .tfc.red { color:#bb403e; }
-    .tfc .n { position:absolute; top:.25vw; left:.35vw; font-size:1vw; font-weight:900; line-height:1; text-align:center; }
+    .tfc { position:relative; width:4.6vw; height:6.6vw; border:.2vw solid #0f0f14; border-radius:.35vw; background:#fff; color:#0f0f14;
+      box-shadow:.35vw .35vw 0 #0f0f14; }
+    .tfc.red { color:#d02a20; }
+    .tfc .n { position:absolute; top:.25vw; left:.35vw; font-size:1.05vw; line-height:1; text-align:center; ${PIX} }
     .tfc .s { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:2.7vw; line-height:1; }
-    .tfc .lab { position:absolute; left:.1vw; right:.1vw; bottom:.3vw; font-size:.52vw; font-weight:900; text-transform:uppercase; letter-spacing:.06em; text-align:center; }
-    .tfc .mn { position:absolute; top:-.7vw; right:-.7vw; padding:.15vw .45vw; border-radius:99px; background:#ffcf72; color:#3a2410; font-size:.7vw; font-weight:900; box-shadow:0 .15vw .4vw rgba(0,0,0,.4); }
-    .tfc.back { background:repeating-linear-gradient(45deg,#cf624a,#cf624a .3vw,#8b3850 .3vw,#8b3850 .6vw); border-color:#f2dbc1; }
-    .tfc.sm { width:2vw; height:2.9vw; border-width:.12vw; border-radius:.3vw; box-shadow:0 .15vw .4vw rgba(0,0,0,.5); }
+    .tfc .lab { position:absolute; left:.1vw; right:.1vw; bottom:.3vw; font-size:.5vw; text-align:center; ${MONO} }
+    .tfc .mn { position:absolute; top:-.8vw; right:-.8vw; padding:.15vw .4vw; background:#ffce1f; color:#0f0f14; border:.12vw solid #0f0f14; font-size:.6vw; ${MONO} }
+    .tfc.back { background-color:#0f0f14; background-image:repeating-linear-gradient(45deg,#0f0f14,#0f0f14 .3vw,#23232b .3vw,#23232b .6vw); }
+    .tfc.back:after { content:''; position:absolute; top:8%; left:10%; width:80%; height:84%; box-sizing:border-box; border:.12vw solid #ffce1f; }
+    .tfc.sm { width:2vw; height:2.9vw; border-width:.12vw; border-radius:.2vw; box-shadow:.15vw .15vw 0 #0f0f14; }
 
     /* ---- centro: vira e manilha ---- */
-    .tfv-vira { position:absolute; left:50%; top:44%; width:12vw; margin-left:-6vw; margin-top:-4.6vw; text-align:center; }
+    .tfv-vira { position:absolute; left:50%; top:42%; width:16vw; margin-left:-8vw; margin-top:-4.2vw; text-align:center; }
     .tfv-vira .tfc { margin:0 auto; width:3.6vw; height:5.2vw; transform:rotate(-6deg); }
     .tfv-vira .tfc .s { font-size:2.1vw; } .tfv-vira .tfc .lab { display:none; }
-    .tfv-vira p { margin-top:.5vw; font-size:.85vw; font-weight:900; color:#ffdcaf; letter-spacing:.08em; text-transform:uppercase; }
-    .tfv-vira b { display:inline-block; margin-top:.25vw; padding:.2vw .8vw; border-radius:99px; background:#ffcf72; color:#3a2410; font-size:1.05vw; font-weight:900; }
-    .tfv-surpresa { position:absolute; left:50%; top:62%; transform:translateX(-50%); padding:.4vw 1.2vw; border-radius:99px; background:rgba(0,0,0,.35); color:#ffdcaf; font-size:.95vw; font-weight:800; white-space:nowrap; }
+    .tfv-vira p { display:inline-block; vertical-align:middle; margin-top:.8vw; padding:.3vw .5vw; background:#0f0f14; color:#f1f0ea; font-size:.8vw; ${MONO} }
+    .tfv-vira b { display:inline-block; vertical-align:middle; white-space:nowrap; margin:.8vw 0 0 .3vw; padding:.2vw .45vw; background:#ffce1f; border:.18vw solid #0f0f14; box-shadow:.25vw .25vw 0 #0f0f14; font-size:.95vw; line-height:1.1; ${DISP} }
+    .tfv-surpresa { position:absolute; left:3%; top:12.5%; width:17vw; padding:.4vw .7vw; line-height:1.4; background:#fff; border:.18vw solid #0f0f14; box-shadow:.25vw .25vw 0 #0f0f14; font-size:.75vw; ${MONO} }
 
     /* ---- cartas jogadas: uma vaga na frente de cada cadeira ---- */
     .tfv-slot { position:absolute; width:4.6vw; height:6.6vw; margin-left:-2.3vw; margin-top:-3.3vw; transition:opacity .3s, transform .3s; }
     .tfv-slot.wait { opacity:0; }
-    .tfv-slot .ord { position:absolute; left:-.7vw; top:-.7vw; width:1.5vw; height:1.5vw; border-radius:50%; background:#0f1e3b; border:.12vw solid #ffbc7d; color:#ffbc7d; font-size:.75vw; font-weight:900; line-height:1.3vw; text-align:center; z-index:2; }
-    .tfv-slot.win .tfc { border-color:#ffcf72; box-shadow:0 0 0 .35vw rgba(255,207,114,.45), 0 0 2.4vw rgba(255,207,114,.7); }
+    .tfv-slot .ord { position:absolute; left:-.75vw; top:-.75vw; width:1.5vw; height:1.5vw; background:#0f0f14; color:#ffce1f; font-size:.85vw; line-height:1.5vw; text-align:center; z-index:2; ${PIX} }
+    .tfv-slot.win .tfc { background:#ffce1f; box-shadow:.5vw .5vw 0 #0f0f14; }
     .tfv-slot.win { transform:translateY(-.6vw) scale(1.12); z-index:3; }
-    .tfv-slot.lose { opacity:.55; }
-    .tfv-slot .stamp { position:absolute; left:50%; top:50%; padding:.2vw .5vw; border-radius:.3vw; border:.15vw solid #ff6b5a; color:#ff6b5a; background:rgba(255,249,236,.92);
-      font-size:.85vw; font-weight:900; letter-spacing:.06em; transform:translate(-50%,-50%) rotate(-18deg); white-space:nowrap; animation:tfvstamp .45s cubic-bezier(.2,1.4,.4,1) both; }
-    .tfv-slot .crown { position:absolute; left:50%; top:-2.1vw; margin-left:-1vw; width:2vw; text-align:center; font-size:1.6vw; line-height:1; animation:tfvpop .5s cubic-bezier(.2,1.4,.4,1) both; }
+    .tfv-slot.lose { opacity:.6; }
+    .tfv-slot .stamp { position:absolute; left:50%; top:50%; padding:.2vw .5vw; border:.15vw solid #0f0f14; color:#f1f0ea; background:#0f0f14;
+      font-size:.8vw; transform:translate(-50%,-50%) rotate(-18deg); white-space:nowrap; animation:tfvstamp .45s cubic-bezier(.2,1.4,.4,1) both; ${MONO} }
+    .tfv-slot .crown { position:absolute; left:50%; top:-2.2vw; width:6vw; margin-left:-3vw; text-align:center; animation:tfvpop .5s cubic-bezier(.2,1.4,.4,1) both; }
+    .tfv-slot .crown b { display:inline-block; padding:.2vw .5vw; background:#0f0f14; color:#ffce1f; font-size:.8vw; ${MONO} }
     @keyframes tfvstamp { from { opacity:0; transform:translate(-50%,-50%) rotate(-18deg) scale(2.2); } to { opacity:1; transform:translate(-50%,-50%) rotate(-18deg) scale(1); } }
     @keyframes tfvpop { 0% { opacity:0; transform:scale(.3); } 60% { opacity:1; transform:scale(1.25); } 100% { transform:scale(1); } }
 
     /* ---- cadeiras ---- */
     .tfv-seat { position:absolute; width:11vw; margin-left:-5.5vw; margin-top:-4.6vw; text-align:center; transition:opacity .4s; }
-    .tfv-seat.off { opacity:.38; }
-    .tfv-av { position:relative; width:4.2vw; height:4.2vw; margin:0 auto; border-radius:50%; transition:transform .3s; }
+    .tfv-seat.off { opacity:.5; }
+    .tfv-av { position:relative; width:4.2vw; height:4.2vw; margin:0 auto; padding:.3vw; box-sizing:border-box; background:#fff; border:.2vw solid #0f0f14; box-shadow:.35vw .35vw 0 #0f0f14; transition:transform .3s; }
     .tfv-av > i { display:block; line-height:0; }
-    .tfv-av > b { position:absolute; left:-.4vw; top:-.4vw; right:-.4vw; bottom:-.4vw; border-radius:50%; border:.3vw solid #ffbc7d; opacity:0; transition:opacity .3s; }
-    .tfv-seat.now .tfv-av { transform:scale(1.14); }
-    .tfv-seat.now .tfv-av > b { opacity:1; animation:tfvring 1.1s ease-in-out infinite alternate; }
-    .tfv-seat.won .tfv-av > b { opacity:1; border-color:#ffcf72; }
-    @keyframes tfvring { from { box-shadow:0 0 0 0 rgba(255,188,125,.7); } to { box-shadow:0 0 0 .8vw rgba(255,188,125,0); } }
-    .tfv-ord { position:absolute; left:1.4vw; top:-.3vw; min-width:1.7vw; height:1.7vw; padding:0 .3vw; border-radius:99px; background:#0f1e3b; border:.12vw solid #ffbc7d; color:#ffbc7d; font-size:.85vw; font-weight:900; line-height:1.5vw; z-index:2; }
-    .tfv-seat.now .tfv-ord { background:#ffbc7d; color:#24304b; }
-    .tfv-dealer { position:absolute; right:1.4vw; top:-.3vw; width:1.7vw; height:1.7vw; border-radius:50%; background:#fff9ec; color:#24304b; font-size:.85vw; font-weight:900; line-height:1.7vw; z-index:2; box-shadow:0 .15vw .4vw rgba(0,0,0,.4); }
-    .tfv-name { margin-top:.5vw; font-size:1.15vw; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 .1vw .5vw rgba(0,0,0,.7); }
-    .tfv-lives { margin-top:.1vw; font-size:.95vw; letter-spacing:.1vw; color:#ff6b7d; line-height:1.1; }
-    .tfv-lives i { font-style:normal; opacity:.22; color:#d9dfed; }
-    .tfv-chip { display:inline-block; margin-top:.3vw; padding:.15vw .8vw; border-radius:99px; background:rgba(0,0,0,.45); color:#d9dfed; font-size:.9vw; font-weight:800; white-space:nowrap; }
-    .tfv-chip b { color:#fff; font-size:1.15vw; }
-    .tfv-chip.hit { background:#2f6d4a; color:#d9f5e2; }
-    .tfv-chip.over { background:#8a3340; color:#ffe1e1; }
+    .tfv-av > i .avatar { width:100% !important; height:100% !important; }
+    .tfv-av > b { display:none; }
+    .tfv-seat.now .tfv-av { background:#ffce1f; box-shadow:.6vw .6vw 0 #0f0f14; transform:scale(1.12); animation:tfvbob .8s ease-in-out infinite alternate; }
+    .tfv-seat.won .tfv-av { background:#ffce1f; }
+    @keyframes tfvbob { from { transform:scale(1.12) translateY(0); } to { transform:scale(1.12) translateY(-.3vw); } }
+    .tfv-ord { position:absolute; left:1.5vw; top:-.4vw; min-width:1.7vw; height:1.7vw; padding:0 .3vw; background:#0f0f14; color:#f1f0ea; font-size:.95vw; line-height:1.7vw; z-index:2; ${PIX} }
+    .tfv-seat.now .tfv-ord { background:#ffce1f; color:#0f0f14; border:.12vw solid #0f0f14; line-height:1.45vw; }
+    .tfv-dealer { position:absolute; right:1.5vw; top:-.4vw; width:1.7vw; height:1.7vw; box-sizing:border-box; background:#fff; border:.15vw solid #0f0f14; color:#0f0f14; font-size:.9vw; line-height:1.4vw; z-index:2; ${DISP} }
+    .tfv-name { margin-top:.7vw; white-space:nowrap; }
+    .tfv-name .nm { max-width:10.5vw; overflow:hidden; text-overflow:ellipsis; vertical-align:top; font-size:1.1vw; padding:.12vw .55vw; border-width:.15vw; }
+    .tfv-name em { display:block; margin-top:.2vw; font-style:normal; font-size:.7vw; ${MONO} }
+    .tfv-lives { margin-top:.35vw; line-height:0; }
+    .tfv-pips i { display:inline-block; width:.8vw; height:.8vw; margin:0 .08vw; background:#fff; border:.12vw solid #0f0f14; }
+    .tfv-pips i.x { background:rgba(15,15,20,.3); }
+    .tfv-chip { display:inline-block; margin-top:.4vw; padding:.2vw .6vw; background:#0f0f14; color:#f1f0ea; font-size:.8vw; white-space:nowrap; ${MONO} }
+    .tfv-chip b { font-size:1.15vw; ${PIX} }
+    .tfv-chip.hit { background:#35d07f; color:#0f0f14; border:.12vw solid #0f0f14; }
+    .tfv-chip.over { background:#fff; color:#0f0f14; border:.12vw solid #0f0f14; }
     .tfv-chip.pop { animation:tfvpop .5s cubic-bezier(.2,1.4,.4,1); }
-    .tfv-fan { position:relative; height:1.6vw; margin-top:.35vw; }
-    .tfv-fan i { position:absolute; left:50%; top:0; width:1.1vw; height:1.6vw; margin-left:-.55vw; border-radius:.2vw; border:.1vw solid #f2dbc1;
-      background:repeating-linear-gradient(45deg,#cf624a,#cf624a .2vw,#8b3850 .2vw,#8b3850 .4vw); transform-origin:50% 120%; }
-    .tfv-out { display:none; margin-top:.3vw; font-size:.9vw; font-weight:900; color:#ff9b8f; letter-spacing:.1em; }
+    .tfv-fan { position:relative; height:1.6vw; margin-top:.4vw; }
+    .tfv-fan i { position:absolute; left:50%; top:0; width:1.1vw; height:1.6vw; margin-left:-.55vw; border-radius:.15vw; border:.1vw solid #0f0f14;
+      background-color:#0f0f14; background-image:repeating-linear-gradient(45deg,#0f0f14,#0f0f14 .15vw,#33333d .15vw,#33333d .3vw); box-shadow:inset 0 0 0 .08vw #ffce1f; transform-origin:50% 120%; }
+    .tfv-out { display:none; margin-top:.4vw; }
+    .tfv-out b { display:inline-block; padding:.2vw .6vw; background:#0f0f14; color:#f1f0ea; font-size:.85vw; ${MONO} }
     .tfv-seat.off .tfv-out { display:block; } .tfv-seat.off .tfv-chip, .tfv-seat.off .tfv-fan { display:none; }
 
     /* ---- carta voando ---- */
@@ -92,61 +102,72 @@
     .tfv-fly.back { margin-left:-1vw; margin-top:-1.45vw; }
 
     /* ---- faixa de baixo: de quem é a vez ---- */
-    .tfv-hud { position:absolute; left:8%; right:8%; bottom:3.2%; text-align:center; }
-    .tfv-prompt { font-size:2.1vw; font-weight:900; line-height:1.1; text-shadow:0 .3vw .9vw rgba(0,0,0,.6); }
-    .tfv-prompt.hot { color:#ffcf72; animation:tfvpop .45s ease-out both; }
-    .tfv-sub { margin-top:.35vw; color:#ffdcaf; font-size:1.05vw; font-weight:800; }
-    .tfv-sub em { font-style:normal; display:inline-block; margin-left:.5vw; padding:.1vw .7vw; border-radius:99px; background:#8a3340; color:#ffe1e1; }
-    .tfv-progress { width:30%; height:.3vw; margin:.6vw auto 0; border-radius:99px; background:rgba(255,255,255,.2); overflow:hidden; }
-    .tfv-progress i { display:block; width:100%; height:100%; background:#ffcf72; transform-origin:left; animation-name:tfvcount; animation-timing-function:linear; animation-fill-mode:forwards; }
+    .tfv-hud { position:absolute; left:50%; bottom:2%; width:46vw; margin-left:-23vw; text-align:center; }
+    .tfv-hud > div:first-child { padding:.4vw 1vw .45vw; background:#ffce1f; border:.2vw solid #0f0f14; box-shadow:.45vw .45vw 0 #0f0f14; }
+    .tfv-prompt { font-size:1.6vw; line-height:1.05; ${DISP} }
+    .tfv-prompt .nm { font-size:inherit; padding:0 .45vw; border-width:.15vw; }
+    .tfv-prompt.hot { animation:tfvpop .45s ease-out both; }
+    .tfv-sub { margin-top:.3vw; font-size:.75vw; line-height:1.35; ${MONO} }
+    .tfv-sub em { font-style:normal; display:inline-block; margin-left:.5vw; padding:.05vw .5vw; background:#0f0f14; color:#ffce1f; }
+    .tfv-progress { width:50%; height:.55vw; margin:.6vw auto 0; background:#fff; border:.15vw solid #0f0f14; overflow:hidden; }
+    .tfv-progress i { display:block; width:100%; height:100%; background:#0f0f14; transform-origin:left; animation-name:tfvcount; animation-timing-function:linear; animation-fill-mode:forwards; }
     @keyframes tfvcount { from { transform:scaleX(1); } to { transform:scaleX(0); } }
 
     /* ---- estouro no centro ---- */
-    .tfv-burst { position:absolute; left:50%; top:30%; z-index:8; padding:.8vw 2.4vw; border-radius:1.4vw; background:#fff9ec; color:#24304b; text-align:center;
-      font-size:3vw; font-weight:900; white-space:nowrap; box-shadow:0 1vw 3vw rgba(0,0,0,.6); transform:translate(-50%,-50%); animation:tfvburst 1.7s cubic-bezier(.2,1.3,.3,1) both; pointer-events:none; }
-    .tfv-burst small { display:block; font-size:1.2vw; font-weight:800; }
+    .tfv-burst { position:absolute; left:50%; top:30%; z-index:10; padding:.9vw 2.4vw; background:#0f0f14; color:#ffce1f; border:.3vw solid #0f0f14; text-align:center;
+      font-size:4vw; line-height:1; white-space:nowrap; box-shadow:.8vw .8vw 0 #ffce1f; transform:translate(-50%,-50%); animation:tfvburst 1.7s cubic-bezier(.2,1.3,.3,1) both; pointer-events:none; ${DISP} }
+    .tfv-burst small { display:block; margin-top:.6vw; font-size:1vw; ${MONO} }
     @keyframes tfvburst { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3) rotate(-8deg); } 18% { opacity:1; transform:translate(-50%,-50%) scale(1.08) rotate(2deg); } 82% { opacity:1; transform:translate(-50%,-50%) scale(1); } 100% { opacity:0; transform:translate(-50%,-60%) scale(.9); } }
 
     /* ---- por cima da mesa: início / resultado da rodada / fim ---- */
-    .tfv-over { position:absolute; top:0; left:0; right:0; bottom:0; z-index:9; background:rgba(10,18,36,.95); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2vw; text-align:center; animation:tfvfade .4s ease-out both; }
+    .tfv-over { position:absolute; top:0; left:0; right:0; bottom:0; z-index:9; background:rgba(241,240,234,.96); display:flex; align-items:center; justify-content:center; padding:2vw; text-align:center; animation:tfvfade .4s ease-out both; }
     @keyframes tfvfade { from { opacity:0; } to { opacity:1; } }
-    .tfv-over > * + * { margin-top:1vw; }
-    .tfv-over h2 { font-size:3vw; line-height:1.1; }
-    .tfv-over .kick { color:#ffbc7d; font-size:1.1vw; font-weight:900; letter-spacing:.18em; text-transform:uppercase; }
-    .tfv-over .sub { color:#d9dfed; font-size:1.2vw; }
-    .tfv-rows { width:44vw; }
+    .tfv-box { max-width:62vw; padding:1.8vw 2.4vw; background:#fff; border:.25vw solid #0f0f14; box-shadow:.8vw .8vw 0 #0f0f14; }
+    .tfv-box > * + * { margin-top:1vw; }
+    .tfv-glyph { font-size:4.4vw; line-height:1; color:#d02a20; ${PIX} }
+    .tfv-box h2 { font-size:3.2vw; line-height:.95; ${DISP} }
+    .tfv-box h2 small { font-size:.45em; }
+    .tfv-box h2 .nm { font-size:inherit; padding:0 .5vw; border-width:.2vw; }
+    .tfv-box .kick { display:inline-block; padding:.35vw .8vw; background:#0f0f14; color:#ffce1f; font-size:1vw; ${MONO} }
+    .tfv-box .sub { color:#0f0f14; font-size:1.2vw; font-weight:600; }
+    .tfv-box .hint { font-size:.95vw; ${MONO} }
+    .tfv-rows { width:44vw; margin-left:auto; margin-right:auto; }
     .tfv-rows > * + * { margin-top:.45vw; }
-    .tfv-row { display:flex; align-items:center; padding:.5vw 1vw; border-radius:.9vw; background:#1b2d4c; font-size:1.35vw; text-align:left; animation:tfvrow .4s ease-out both; }
+    .tfv-row { display:flex; align-items:center; padding:.4vw .9vw; background:#fff; border:.2vw solid #0f0f14; font-size:1.3vw; text-align:left; animation:tfvrow .4s ease-out both; }
     .tfv-row > * + * { margin-left:.9vw; }
-    .tfv-row .nm { flex:1; min-width:0; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .tfv-row .st { color:#d9dfed; font-size:1.05vw; white-space:nowrap; }
-    .tfv-row .add { width:4.5vw; text-align:right; font-weight:900; color:#ff9b8f; }
-    .tfv-row .add.ok { color:#a7e6bb; }
-    .tfv-row .lv { width:6.5vw; text-align:right; color:#ff6b7d; font-size:1.05vw; letter-spacing:.1vw; }
-    .tfv-row .lv i { font-style:normal; opacity:.22; color:#d9dfed; }
-    .tfv-row.out { background:#4a1f2c; }
-    .tfv-row.win { background:#4b3b1c; border:.12vw solid #ffcf72; }
+    .tfv-row .avatar { flex:none; }
+    .tfv-row .who { flex:1; min-width:0; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .tfv-row .who i { font-style:normal; margin-left:.5vw; padding:.1vw .4vw; background:#0f0f14; color:#f1f0ea; font-size:.75vw; vertical-align:middle; ${MONO} }
+    .tfv-row .st { font-size:.9vw; white-space:nowrap; ${MONO} }
+    .tfv-row .st b { font-size:1.3vw; ${PIX} }
+    .tfv-row .add { width:4.5vw; text-align:right; font-size:1.5vw; color:#d02a20; ${PIX} }
+    .tfv-row .add.ok { color:#08703b; }
+    .tfv-row .lv { width:7vw; text-align:right; line-height:0; }
+    .tfv-row .lv.txt { line-height:1; font-size:.85vw; ${MONO} }
+    .tfv-row.out { background:#e4e2d9; }
+    .tfv-row.win { background:#ffce1f; box-shadow:.3vw .3vw 0 #0f0f14; }
     @keyframes tfvrow { from { opacity:0; transform:translateX(-1.5vw); } to { opacity:1; transform:none; } }
-    .tfv-steps { display:flex; justify-content:center; flex-wrap:wrap; width:56vw; }
-    .tfv-steps div { width:16vw; margin:.4vw; padding:.8vw; border-radius:.9vw; background:#1b2d4c; border:1px solid #536788; font-size:1.05vw; line-height:1.35; }
-    .tfv-steps b { display:block; color:#ffbc7d; font-size:1.6vw; }
+    .tfv-steps { display:flex; justify-content:center; width:56vw; }
+    .tfv-steps div { width:16vw; margin:.4vw; padding:.8vw; background:#fff; border:.2vw solid #0f0f14; box-shadow:.3vw .3vw 0 #0f0f14; font-size:1vw; font-weight:600; line-height:1.35; text-align:left; }
+    .tfv-steps b { display:block; margin-bottom:.3vw; font-size:1.3vw; line-height:1; ${DISP} }
+    .tfv-steps b span { display:inline-block; margin-right:.4vw; padding:0 .35vw; background:#f0443a; border:.12vw solid #0f0f14; ${PIX} }
 
     /* ---- painel ao lado ---- */
-    .tfv-side-title { border-radius:15px; border:1px solid #596c94; background:#1b3055; padding:15px; text-align:center; }
-    .tfv-side-title b { font-size:30px; color:#ffbc7d; }
-    .tfv-side-title p { margin-top:4px; font-size:16px; color:#e0e4ee; }
-    .tfv-side-box { border-radius:14px; border:1px solid #536788; background:#1b2d4c; padding:12px; color:#f9f4e9; }
-    .tfv-side-box > small { display:block; font-size:11px; color:#ffbc7d; text-transform:uppercase; letter-spacing:.13em; font-weight:900; margin-bottom:6px; }
-    .tfv-line { display:flex; align-items:center; padding:6px 2px; font-size:17px; border-top:1px solid rgba(255,255,255,.11); }
-    .tfv-line:first-of-type { border-top:0; }
+    .tfv-side-title { text-align:center; }
+    .tfv-side-title b { display:inline-block; padding:6px 14px; background:#0f0f14; color:#f1f0ea; font-size:30px; line-height:1; ${DISP} }
+    .tfv-side-title p { margin-top:10px; font-size:13px; ${MONO} }
+    .tfv-side-box > small { display:block; margin-bottom:8px; font-size:12px; ${MONO} }
+    .tfv-line { display:flex; align-items:center; padding:6px 8px; font-size:17px; border:3px solid #0f0f14; background:#fff; }
+    .tfv-line + .tfv-line { margin-top:6px; }
     .tfv-line > * + * { margin-left:8px; }
-    .tfv-line .nm { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-weight:800; }
-    .tfv-line .lv { color:#ff6b7d; font-size:14px; letter-spacing:1px; white-space:nowrap; }
-    .tfv-line .lv i { font-style:normal; opacity:.22; color:#d9dfed; }
-    .tfv-line .bd { color:#d6deeb; font-size:14px; white-space:nowrap; }
+    .tfv-line .who { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-weight:800; }
+    .tfv-line .lv { line-height:0; white-space:nowrap; }
+    .tfv-line .lv i { width:11px; height:11px; margin:0 1px; border-width:2px; }
+    .tfv-line .lv.txt { line-height:1; font-size:12px; ${MONO} }
+    .tfv-line .bd { font-size:18px; white-space:nowrap; ${PIX} }
     .tfv-line.off { opacity:.45; }
-    .tfv-line.now .nm { color:#ffbc7d; }
-    @media (prefers-reduced-motion:reduce) { .tfv-fly { transition:none; } .tfv-burst, .tfv-chip.pop, .tfv-seat.now .tfv-av > b, .tfv-row, .tfv-over, .tfv-slot .stamp, .tfv-slot .crown { animation:none; } }
+    .tfv-line.now { background:#ffce1f; }
+    @media (prefers-reduced-motion:reduce) { .tfv-fly { transition:none; } .tfv-burst, .tfv-chip.pop, .tfv-seat.now .tfv-av, .tfv-row, .tfv-over, .tfv-slot .stamp, .tfv-slot .crown { animation:none; } }
   `;
 
   const cardHtml = (x, cls, extra) => {
@@ -155,10 +176,12 @@
     return `<div class="tfc ${x.s === 'H' || x.s === 'D' ? 'red' : ''} ${cls || ''}" role="img" aria-label="${rank(x.n)} de ${s[1]}"><span class="n">${rank(x.n)}<br>${s[0]}</span><span class="s" aria-hidden="true">${s[0]}</span><span class="lab">${s[1]}</span>${extra || ''}</div>`;
   };
   const backHtml = cls => `<div class="tfc back ${cls || ''}"></div>`;
+  // vidas: quadradinhos brancos (as que sobram) e vazados (as perdidas)
   const vidas = (pen, max) => {
     const left = Math.max(0, max - (pen || 0));
-    return Array(left + 1).join('♥') + (max - left > 0 ? `<i>${Array(max - left + 1).join('♥')}</i>` : '');
+    return `<span class="tfv-pips" title="${left} vidas">${Array(left + 1).join('<i></i>')}${Array(max - left + 1).join('<i class="x"></i>')}</span>`;
   };
+  const nmChip = (c, p) => p ? `<span class="nm" style="background:${c.ci(p.color).hex};color:#0f0f14">${c.esc(p.name)}</span>` : 'Alguém';
 
   // memória entre estados (para descobrir o que aconteceu)
   let prev = null, slotTimer = null, lastChord = '';
@@ -167,7 +190,7 @@
   function burst(html, cor, fundo) {
     const t = $('tfv-table'); if (!t) return;
     const b = document.createElement('div'); b.className = 'tfv-burst'; b.innerHTML = html;
-    if (fundo) { b.style.background = fundo; b.style.color = cor || '#fff'; }
+    if (fundo) { b.style.background = fundo; b.style.color = cor || '#0f0f14'; b.style.boxShadow = '.8vw .8vw 0 #0f0f14'; }
     t.appendChild(b); setTimeout(() => { if (b.parentNode) b.parentNode.removeChild(b); }, 1750);
   }
   // Uma carta voa de um ponto a outro da mesa (em % da mesa).
@@ -214,12 +237,12 @@
           const p = players.find(x => x.pid === pid); if (!p) return '';
           const out = G.phase !== 'setup' && !has(G.active, pid);
           const bid = G.bids && G.bids[pid] !== undefined ? `${G.wins && G.wins[pid] || 0}/${G.bids[pid]}` : '';
-          return `<div class="tfv-line ${out ? 'off' : ''} ${G.turn === pid ? 'now' : ''}">${c.avatar(p, 26)}<span class="nm">${esc(p.name)}</span>${bid ? `<span class="bd">${bid}</span>` : ''}<span class="lv">${out ? 'fora' : vidas(G.penalties && G.penalties[pid], max)}</span></div>`;
+          return `<div class="tfv-line ${out ? 'off' : ''} ${G.turn === pid ? 'now' : ''}">${c.avatar(p, 26)}<span class="who">${esc(p.name)}</span>${bid ? `<span class="bd">${bid}</span>` : ''}<span class="lv ${out ? 'txt' : ''}">${out ? 'fora' : vidas(G.penalties && G.penalties[pid], max)}</span></div>`;
         }).join('');
-        const side = `<div class="tfv-side-title"><b>TE F0D3</b><p>${G.phase === 'setup' ? `${players.length} pessoas na mesa` : `Rodada ${G.round} · ${G.handSize} ${G.handSize === 1 ? 'carta' : 'cartas'}`}</p></div>`
-          + `<div class="tfv-side-box"><small>Vidas · ${max} erros e sai</small>${rows}</div>`
-          + `<div class="tfv-side-box"><small>Como joga</small><p class="sub">Diga quantas vazas vai ganhar. Cada vaza a mais ou a menos custa uma vida. Cartas iguais se anulam. As 2 últimas pessoas vencem.</p></div>`
-          + `<div class="event" style="margin-top:auto">${c.C.event ? c.hl(c.C.event.text) : ''}</div>`;
+        const side = `<div class="box tfv-side-title"><b>TE F0D3</b><p>${G.phase === 'setup' ? `${players.length} pessoas na mesa` : `Rodada ${G.round} · ${G.handSize} ${G.handSize === 1 ? 'carta' : 'cartas'}`}</p></div>`
+          + `<div class="box tfv-side-box"><small>Vidas · ${max} erros e sai</small>${rows}</div>`
+          + `<div class="box tfv-side-box"><small>Como joga</small><p class="sub">Diga quantas vazas vai ganhar. Cada vaza a mais ou a menos custa uma vida. Cartas iguais se anulam. As 2 últimas pessoas vencem.</p></div>`
+          + `<div class="event">${c.C.event ? c.hl(c.C.event.text) : ''}</div>`;
         return { side };
       },
 
@@ -246,7 +269,7 @@
         if (roundEl.innerHTML !== rh) roundEl.innerHTML = rh;
         const vh = G.vira && emJogo ? `${cardHtml(G.vira)}<p>Vira</p><b>Manilha: ${rank(G.manilha)}</b>` : '';
         const vEl = $('tfv-vira'); if (vEl.dataset.k !== vh) { vEl.dataset.k = vh; vEl.innerHTML = vh; }
-        const sh = emJogo && G.handSize === 1 ? '<div class="tfv-surpresa">🙈 Rodada de 1 carta: cada um vê a dos outros, nunca a sua</div>' : '';
+        const sh = emJogo && G.handSize === 1 ? '<div class="tfv-surpresa">Rodada de 1 carta: cada um vê a dos outros, nunca a sua</div>' : '';
         if ($('tfv-surpresa').innerHTML !== sh) $('tfv-surpresa').innerHTML = sh;
 
         // ---------- cartas na mesa: uma vaga na frente de cada cadeira ----------
@@ -257,7 +280,7 @@
             const at = slot[x.pid] || MEIO;
             const anulou = r && has(r.cancelled, x.pid);
             const cls = r ? (r.winner === x.pid ? 'win' : 'lose') : '';
-            const extra = (anulou ? '<span class="stamp">ANULOU</span>' : '') + (r && r.winner === x.pid ? '<span class="crown">👑</span>' : '');
+            const extra = (anulou ? '<span class="stamp">ANULOU</span>' : '') + (r && r.winner === x.pid ? '<span class="crown"><b>LEVOU</b></span>' : '');
             const manilha = x.card.n === G.manilha ? '<span class="mn">MANILHA</span>' : '';
             return `<div class="tfv-slot ${cls} ${esperando === x.pid ? 'wait' : ''}" data-pid="${x.pid}" style="left:${at.x}%;top:${at.y}%"><span class="ord">${i + 1}</span>${cardHtml(x.card, '', manilha)}${extra}</div>`;
           }).join('');
@@ -274,7 +297,7 @@
             slotTimer = setTimeout(() => {
               if (rev) {
                 desenhaVagas(rev, null);
-                if (!rev.winner) burst('Ninguém levou!<small>as cartas mais fortes se anularam</small>', '#fff', '#8a3340');
+                if (!rev.winner) burst('Ninguém levou!<small>as cartas mais fortes se anularam</small>', '#0f0f14', '#fff');
               } else qa(slotsEl, '.tfv-slot.wait').forEach(el => el.classList.remove('wait'));
             }, 560);
           } else desenhaVagas(rev, null);
@@ -290,14 +313,14 @@
           let s = have[pid];
           if (!s) {
             s = document.createElement('div'); s.className = 'tfv-seat'; s.dataset.pid = pid;
-            s.innerHTML = '<div class="tfv-av"><i></i><b></b></div><span class="tfv-ord"></span><span class="tfv-dealer" title="Distribui">D</span><div class="tfv-name"></div><div class="tfv-lives"></div><div class="tfv-chip"></div><div class="tfv-fan"></div><div class="tfv-out">☠ FORA</div>';
+            s.innerHTML = '<div class="tfv-av"><i></i><b></b></div><span class="tfv-ord"></span><span class="tfv-dealer" title="Distribui">D</span><div class="tfv-name"></div><div class="tfv-lives"></div><div class="tfv-chip"></div><div class="tfv-fan"></div><div class="tfv-out"><b>Fora</b></div>';
             seats.appendChild(s);
           }
           const at = pos[pid];
           s.style.left = at.x + '%'; s.style.top = at.y + '%';
-          const avh = c.avatar(p, Math.round(window.innerWidth * 0.042));
+          const avh = c.avatar(p, Math.round(window.innerWidth * 0.032));
           const ai = s.querySelector('.tfv-av > i'); if (ai.dataset.k !== avh) { ai.dataset.k = avh; ai.innerHTML = avh; }
-          const nm = s.querySelector('.tfv-name'); const nt = p.name + (p.on === false ? ' 📵' : ''); if (nm.textContent !== nt) nm.textContent = nt;
+          const nm = s.querySelector('.tfv-name'); const nt = nmChip(c, p) + (p.on === false ? '<em>sem sinal</em>' : ''); if (nm.dataset.k !== nt) { nm.dataset.k = nt; nm.innerHTML = nt; }
           const lv = s.querySelector('.tfv-lives'); const lh = vidas(G.penalties && G.penalties[pid], max); if (lv.innerHTML !== lh) lv.innerHTML = lh;
           const ativo = G.phase === 'setup' || has(G.active, pid);
           const k = seq.indexOf(pid);
@@ -333,16 +356,16 @@
         // ---------- faixa de baixo ----------
         let prompt = '', sub = '', hot = false;
         if (G.phase === 'bid') {
-          prompt = G.turn ? `Palpite de ${nome(G.turn)}` : 'Palpites';
+          prompt = G.turn ? `Palpite de ${nmChip(c, ply(G.turn))}` : 'Palpites';
           sub = `Soma dos palpites: ${G.bidTotal || 0} de ${G.handSize} carta${G.handSize === 1 ? '' : 's'}`;
           if (G.forbiddenBid !== null && G.forbiddenBid !== undefined) sub += `<em>${nome(G.turn)} não pode dizer ${G.forbiddenBid}</em>`;
         } else if (G.phase === 'play') {
-          prompt = `Vez de ${nome(G.turn)}`;
+          prompt = `Vez de ${nmChip(c, ply(G.turn))}`;
           const total = G.bidTotal || 0;
           sub = `Vaza ${G.trick + 1} de ${G.handSize}${seq[0] ? ' · ' + nome(seq[0]) + ' abriu' : ''} · palpites somam ${total} ${total > G.handSize ? '(falta vaza para todo mundo)' : '(sobra vaza: alguém leva a mais)'}`;
         } else if (rev) {
           hot = true;
-          prompt = rev.winner ? `${nome(rev.winner)} levou a vaza!` : 'Ninguém levou a vaza!';
+          prompt = rev.winner ? `${nmChip(c, ply(rev.winner))} levou a vaza!` : 'Ninguém levou a vaza!';
           sub = rev.winner ? `Vaza ${rev.trick} de ${G.handSize}` : 'As cartas mais fortes se anularam';
         }
         const left = rev ? Math.max(.1, Math.min(5, (rev.endsAt - Date.now()) / 1000)) : 0;
@@ -350,7 +373,7 @@
         const hud = $('tfv-hud');
         if (hud.dataset.k !== hk) {
           hud.dataset.k = hk;
-          hud.innerHTML = prompt ? `<div class="tfv-prompt ${hot ? 'hot' : ''}">${prompt}</div><div class="tfv-sub">${sub}</div>${rev ? `<div class="tfv-progress"><i style="animation-duration:${left}s"></i></div>` : ''}` : '';
+          hud.innerHTML = prompt ? `<div><div class="tfv-prompt ${hot ? 'hot' : ''}">${prompt}</div><div class="tfv-sub">${sub}</div>${rev ? `<div class="tfv-progress"><i style="animation-duration:${left}s"></i></div>` : ''}</div>` : '';
         }
 
         // ---------- animações do que aconteceu ----------
@@ -368,20 +391,20 @@
         const over = $('tfv-over');
         let h = '';
         if (G.phase === 'setup') {
-          h = `<div class="tfv-over"><div class="big-emoji">🂠</div><h2>Te F0d3 <small>(f*dinha)</small></h2><p class="sub">${players.length} de 4–7 pessoas na mesa. Toquem em "Começar" no celular.</p>
-            <div class="tfv-steps"><div><b>1. Palpite</b>Quantas vazas você leva? A soma nunca fecha com o número de cartas.</div><div><b>2. Jogue</b>A vira define a manilha. Cartas iguais se anulam.</div><div><b>3. Acerte</b>Cada vaza de diferença custa uma vida. Sem vidas, você sai.</div></div></div>`;
+          h = `<div class="tfv-over"><div class="tfv-box"><div class="tfv-glyph">A♥</div><h2>Te F0d3 <small>(f*dinha)</small></h2><p class="sub"><span class="pix">${players.length}</span> de 4 a 7 pessoas na mesa.</p>
+            <div class="tfv-steps"><div><b><span>1</span>Palpite</b>Quantas vazas você leva? A soma nunca fecha com o número de cartas.</div><div><b><span>2</span>Jogue</b>A vira define a manilha. Cartas iguais se anulam.</div><div><b><span>3</span>Acerte</b>Cada vaza de diferença custa uma vida. Sem vidas, você sai.</div></div><p class="hint">Toquem em Começar no celular</p></div></div>`;
         } else if (G.phase === 'result' || G.phase === 'end') {
           const rows = (G.roundResults || []).slice().sort((a, b) => order.indexOf(a.pid) - order.indexOf(b.pid));
           const lista = G.phase === 'end'
             ? order.slice().sort((a, b) => (G.penalties[a] || 0) - (G.penalties[b] || 0)).map((pid, i) => {
               const r = rows.find(x => x.pid === pid);
-              return `<div class="tfv-row ${has(G.winners, pid) ? 'win' : ''}" style="animation-delay:${i * .08}s">${c.avatar(ply(pid), Math.round(window.innerWidth * .022))}<span class="nm">${has(G.winners, pid) ? '🏆 ' : ''}${nome(pid)}</span>${r ? `<span class="st">${r.won}/${r.bid} vazas</span>` : ''}<span class="lv">${vidas(G.penalties[pid], max)}</span></div>`;
+              return `<div class="tfv-row ${has(G.winners, pid) ? 'win' : ''}" style="animation-delay:${i * .08}s">${c.avatar(ply(pid), Math.round(window.innerWidth * .022))}<span class="who">${nome(pid)}${has(G.winners, pid) ? '<i>venceu</i>' : ''}</span>${r ? `<span class="st"><b>${r.won}/${r.bid}</b> vazas</span>` : ''}<span class="lv">${vidas(G.penalties[pid], max)}</span></div>`;
             }).join('')
-            : rows.map((r, i) => `<div class="tfv-row ${r.out ? 'out' : ''}" style="animation-delay:${i * .08}s">${c.avatar(ply(r.pid), Math.round(window.innerWidth * .022))}<span class="nm">${nome(r.pid)}${r.out ? ' ☠' : ''}</span><span class="st">${r.won}/${r.bid} vazas</span><span class="add ${r.added ? '' : 'ok'}">${r.added ? '−' + r.added + ' ♥' : '✓'}</span><span class="lv">${r.out ? 'fora' : vidas(G.penalties[r.pid], max)}</span></div>`).join('');
+            : rows.map((r, i) => `<div class="tfv-row ${r.out ? 'out' : ''}" style="animation-delay:${i * .08}s">${c.avatar(ply(r.pid), Math.round(window.innerWidth * .022))}<span class="who">${nome(r.pid)}${r.out ? '<i>fora</i>' : ''}</span><span class="st"><b>${r.won}/${r.bid}</b> vazas</span><span class="add ${r.added ? '' : 'ok'}">${r.added ? '−' + r.added : '✓'}</span><span class="lv ${r.out ? 'txt' : ''}">${r.out ? 'fora' : vidas(G.penalties[r.pid], max)}</span></div>`).join('');
           const winners = (G.winners || []).map(nome).join(' e ');
           h = G.phase === 'end'
-            ? `<div class="tfv-over"><div class="big-emoji">🏆</div><p class="kick">Fim de jogo</p><h2>${winners || 'A mesa'} ${G.winners && G.winners.length > 1 ? 'venceram' : 'venceu'}!</h2><div class="tfv-rows">${lista}</div><p class="sub">Toquem em "Jogar de novo" no celular.</p></div>`
-            : `<div class="tfv-over"><p class="kick">Rodada ${G.round} · ${G.handSize} ${G.handSize === 1 ? 'carta' : 'cartas'}</p><h2>Quem acertou o palpite?</h2><div class="tfv-rows">${lista}</div><p class="sub">Vazas ganhas / palpite. Toquem em "Próxima rodada" no celular.</p></div>`;
+            ? `<div class="tfv-over"><div class="tfv-box"><p class="kick">Fim de jogo</p><h2>${winners || 'A mesa'} ${G.winners && G.winners.length > 1 ? 'venceram' : 'venceu'}!</h2><div class="tfv-rows">${lista}</div><p class="hint">Toquem em Jogar de novo no celular</p></div></div>`
+            : `<div class="tfv-over"><div class="tfv-box"><p class="kick">Rodada ${G.round} · ${G.handSize} ${G.handSize === 1 ? 'carta' : 'cartas'}</p><h2>Quem acertou o palpite?</h2><div class="tfv-rows">${lista}</div><p class="hint">Vazas ganhas / palpite · toquem em Próxima rodada no celular</p></div></div>`;
         }
         if (over.dataset.k !== h) { over.dataset.k = h; over.innerHTML = h; }
 
@@ -390,7 +413,7 @@
         if (k2 !== lastChord) {
           if (prev && (G.phase === 'result' || G.phase === 'end')) {
             const fora = (G.roundResults || []).filter(r => r.out);
-            if (fora.length) setTimeout(() => burst(`F0D3U!<small>${fora.map(r => nome(r.pid)).join(' e ')} ${fora.length > 1 ? 'saíram' : 'saiu'} da mesa</small>`, '#fff', '#8a3340'), 350);
+            if (fora.length) setTimeout(() => burst(`F0D3U!<small>${fora.map(r => nome(r.pid)).join(' e ')} ${fora.length > 1 ? 'saíram' : 'saiu'} da mesa</small>`), 350);
             c.chord(G.phase === 'end' ? [523, 659, 784, 1046] : [523, 659, 784]);
           }
           lastChord = k2;

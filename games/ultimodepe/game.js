@@ -44,7 +44,7 @@ const IN_ROUND = ['intro', 'reveal', 'aim', 'ready', 'lock', 'action', 'result']
 
 module.exports = {
   meta: {
-    id: 'ultimodepe', name: 'Último de Pé', emoji: '🐧',
+    id: 'ultimodepe', name: 'Último de Pé', category: 'festa', glyph: '!', emoji: '🐧',
     tagline: 'Decore onde todo mundo está, escolha a direção e ajam todos juntos. Pinguins no gelo ou tiroteio no velho oeste.',
     art: 'linear-gradient(160deg,#bfe9ff 0%,#5fb4e6 38%,#1d4f86 62%,#f59e0b 62.5%,#b45309 100%)',
     minPlayers: 2, maxPlayers: MAX_PLAYERS, spectators: true,   // até 8 na disputa; quem sobra assiste

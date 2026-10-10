@@ -7,7 +7,19 @@
   const A = window.ARCADE, esc = A.esc;
   const D = { pad: (a, b) => A.draw.pad(a, b), viewer: (a, b) => A.draw.viewer(a, b) };   // draw.js carrega antes, mas é lido só na hora de usar
   const CORES = ['#111111', '#ef4444', '#f97316', '#facc15', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#8b5a2b', '#9ca3af'];
-  const TOOLS = [['pen', '✏️', 'caneta'], ['eraser', '🧽', 'borracha'], ['line', '📏', 'reta'], ['rect', '▭', 'retângulo'], ['circle', '◯', 'círculo']];
+  // ícones de traço (SVG em tinta), no lugar dos emojis
+  const ic = d => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+  const ICON = {
+    pen: ic('<path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M14 6l4 4"/>'),
+    eraser: ic('<path d="M3 15l9-9 7 7-6 6H7z"/><path d="M13 19h8"/>'),
+    line: ic('<path d="M5 19L19 5"/>'),
+    rect: ic('<rect x="4" y="6" width="16" height="12"/>'),
+    circle: ic('<circle cx="12" cy="12" r="8"/>'),
+    undo: ic('<path d="M9 4L4 9l5 5"/><path d="M4 9h10a5 5 0 0 1 0 10h-4"/>'),
+    redo: ic('<path d="M15 4l5 5-5 5"/><path d="M20 9H10a5 5 0 0 0 0 10h4"/>'),
+    trash: ic('<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/>'),
+  };
+  const TOOLS = [['pen', ICON.pen, 'caneta'], ['eraser', ICON.eraser, 'borracha'], ['line', ICON.line, 'reta'], ['rect', ICON.rect, 'retângulo'], ['circle', ICON.circle, 'círculo']];
   const SIZES = [4, 8, 16, 28];
   const PACES = [['cedo', 'Cedo'], ['normal', 'Normal'], ['tarde', 'Tarde']];
   const PLACES = [['auto', 'Automático'], ['presencial', 'Todos com a TV'], ['remoto', 'Cada um em casa']];
@@ -18,171 +30,185 @@
   let rankAtStart = {}, beepSec = null, timerT = null, layer = null;
 
   // ---------- estilo ----------
+  // Visual "fliperama de papel" (shared/ui.css): papel, tinta, borda grossa, sombra dura, letra sempre em tinta.
+  // Cor do jogo (categoria desenho): #b08cff. Este arquivo roda no celular e no computador de quem joga de casa.
   const css = `
-  .rb { display:flex; flex-direction:column; gap:10px; }
+  .rb { display:flex; flex-direction:column; gap:12px; color:#0f0f14; }
+  .rb .nm { color:#0f0f14 !important; }
   .rb-col { display:flex; flex-direction:column; gap:8px; }
-  .rb-main, .rb-aside { display:flex; flex-direction:column; gap:10px; min-width:0; }
+  .rb-main, .rb-aside { display:flex; flex-direction:column; gap:12px; min-width:0; }
   @media (min-width: 900px) {
     body.phone #app.rb-wide { max-width:1180px; }
-    .rb.rb-game { display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:16px; align-items:start; }
+    .rb.rb-game { display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:18px; align-items:start; }
     .rb-game .rb-aside { position:sticky; top:12px; }
     .rb-game .rb-msgs { height:calc(100vh - 330px); min-height:220px; }
     .rb-game .rb-canvas, .rb-game .rb-reveal { max-width:calc(100vh - 320px); min-width:320px; margin-left:auto; margin-right:auto; }
   }
-  .rb-top { display:flex; align-items:center; gap:10px; background:#182036; border:1px solid #2a3350; border-radius:18px; padding:10px 12px; }
-  .rb-who { display:flex; align-items:center; gap:8px; min-width:0; flex:1; font-weight:800; font-size:17px; }
+  .rb-k { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; letter-spacing:.06em; text-transform:uppercase; }
+  .rb-top { display:flex; align-items:center; gap:10px; background:#fff; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; padding:8px 10px; }
+  .rb-who { display:flex; align-items:center; gap:8px; min-width:0; flex:1; font-weight:900; font-stretch:112%; font-size:17px; }
   .rb-who span.t { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .rb-av { width:30px; height:30px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:15px; border:2px solid #fff; }
-  .rb-round { color:#9aa6c0; font-size:13px; font-weight:800; text-align:right; line-height:1.2; }
-  .rb-time { min-width:64px; text-align:center; font-weight:900; font-size:24px; font-variant-numeric:tabular-nums; border-radius:12px; padding:4px 8px; background:#0b0e17; }
-  .rb-time.low { color:#ef4444; animation:rbpulse .5s infinite alternate; }
+  .rb-av { width:30px; height:30px; flex:none; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:15px; border:2px solid #0f0f14; }
+  .rb-round { font-family:'JetBrains Mono',monospace; color:#55555e; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; text-align:right; line-height:1.3; }
+  .rb-time { min-width:64px; text-align:center; font-family:'Pixelify Sans',monospace; font-weight:700; font-size:24px; padding:4px 8px; background:#0f0f14; color:#ffce1f; }
+  .rb-time.low { color:#f0443a; animation:rbpulse .5s infinite alternate; }
   @keyframes rbpulse { to { transform:scale(1.08); } }
-  .rb-bar { height:5px; border-radius:99px; background:#0b0e17; overflow:hidden; margin-top:-4px; }
-  .rb-bar i { display:block; height:100%; background:#f59e0b; transition:width .3s linear; }
-  .rb-word { background:#182036; border:1px solid #2a3350; border-radius:18px; padding:12px; text-align:center; }
+  .rb-bar { height:10px; background:#e4e2d9; border:2px solid #0f0f14; border-top:0; overflow:hidden; margin:0 5px 0 0; }
+  .rb-bar i { display:block; height:100%; background:#35d07f; transition:width .3s linear; }
+  .rb-word { background:#fff; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; padding:12px; text-align:center; }
   .rb-hint { display:flex; flex-wrap:wrap; justify-content:center; align-items:flex-end; gap:6px 5px; }
-  .rb-hint i { font-style:normal; width:24px; height:34px; border-bottom:4px solid #9aa6c0; font-size:26px; font-weight:900; line-height:30px; color:#fff; }
-  .rb-hint i.on { border-color:#f59e0b; color:#fbbf24; }
+  .rb-hint i { font-style:normal; width:24px; height:34px; border-bottom:4px solid #0f0f14; font-family:'Pixelify Sans',monospace; font-size:26px; font-weight:700; line-height:30px; color:#0f0f14; }
+  .rb-hint i.on { border-color:#b08cff; }
   .rb-hint i.pop { animation:rbpop .6s ease; }
   .rb-hint i.sp { width:14px; border:0; }
   .rb-hint i.p { border:0; width:12px; }
   @keyframes rbpop { 0% { transform:scale(.3); } 60% { transform:scale(1.35); } 100% { transform:scale(1); } }
-  .rb-meta { display:flex; justify-content:center; flex-wrap:wrap; gap:6px; margin-top:8px; font-size:13px; color:#9aa6c0; font-weight:700; }
-  .rb-chip { display:inline-flex; align-items:center; gap:5px; background:#0b0e17; border:1px solid #2a3350; border-radius:99px; padding:3px 10px; font-size:13px; font-weight:800; color:#e5e7eb; }
-  .rb-chip.mod { border-color:#a855f7; color:#e9d5ff; background:#2a1544; }
-  .rb-the { font-size:32px; font-weight:900; letter-spacing:1px; text-transform:uppercase; line-height:1.1; word-break:break-word; }
-  .rb-the.ok { color:#4ade80; }
-  .rb-small { font-size:13px; color:#9aa6c0; font-weight:700; }
-  .rb-canvas { position:relative; width:100%; aspect-ratio:1; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 0 0 6px #ece5d3, 0 10px 30px rgba(0,0,0,.45); touch-action:none; }
+  .rb-meta { display:flex; justify-content:center; flex-wrap:wrap; gap:6px; margin-top:10px; font-size:13px; color:#55555e; font-weight:700; }
+  .rb-chip { display:inline-flex; align-items:center; gap:5px; background:#fff; border:2px solid #0f0f14; padding:3px 9px; font-size:13px; font-weight:800; color:#0f0f14; }
+  .rb-chip.mod { background:#b08cff; }
+  .rb-the { font-size:30px; font-weight:900; font-stretch:125%; text-transform:uppercase; line-height:1.05; overflow-wrap:anywhere; margin-top:4px; }
+  .rb-the.ok { display:inline-block; background:#35d07f; border:3px solid #0f0f14; padding:4px 12px; }
+  .rb-small { font-size:13px; color:#55555e; font-weight:700; }
+  .rb-canvas { position:relative; width:100%; aspect-ratio:1; background:#fff; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; overflow:hidden; touch-action:none; }
   .rb-canvas canvas { position:absolute; top:0; left:0; width:100%; height:100%; touch-action:none; display:block; }
   .rb-canvas.flip canvas { transform:rotate(180deg); }
   .rb-canvas.shake canvas { animation:rbshake .35s infinite; }
   .rb-canvas.flip.shake canvas { animation:rbshakeflip .35s infinite; }
   @keyframes rbshake { 0%,100% { transform:translate(0,0) rotate(0); } 25% { transform:translate(-3px,2px) rotate(-.6deg); } 75% { transform:translate(3px,-2px) rotate(.6deg); } }
   @keyframes rbshakeflip { 0%,100% { transform:rotate(180deg); } 25% { transform:translate(-3px,2px) rotate(179.4deg); } 75% { transform:translate(3px,-2px) rotate(180.6deg); } }
-  .rb-lock { position:absolute; left:50%; bottom:12px; transform:translateX(-50%); background:rgba(11,14,23,.85); color:#fff; border-radius:99px; padding:6px 14px; font-weight:800; font-size:14px; }
-  .rb-tools { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-  .rb-cor { width:30px; height:30px; border-radius:50%; border:3px solid transparent; box-shadow:0 0 0 1px rgba(0,0,0,.5) inset; flex:none; cursor:pointer; }
-  .rb-cor.sel { border-color:#fff; box-shadow:0 0 0 3px #f59e0b; }
-  .rb-tb { width:38px; height:38px; border-radius:12px; background:#2a3350; display:flex; align-items:center; justify-content:center; flex:none; font-size:20px; cursor:pointer; color:#fff; }
-  .rb-tb.sel { background:#f59e0b; color:#111; }
-  .rb-tb.off { opacity:.3; pointer-events:none; }
-  .rb-tb i { display:block; border-radius:50%; background:#fff; }
-  .rb-tb.sel i { background:#111; }
-  .rb-tv { background:#182036; border:1px dashed #2a3350; border-radius:18px; padding:18px; text-align:center; }
-  .rb-tv .big-emoji { font-size:52px; }
-  .rb-opts { display:flex; flex-direction:column; gap:10px; }
-  .rb-opt { border:0; border-radius:16px; padding:16px; background:#f6f1e7; color:#141a2b; font:inherit; text-align:left; display:flex; align-items:center; gap:12px; cursor:pointer; box-shadow:0 4px 0 #c9bfa6; }
-  .rb-opt:active { transform:translateY(2px); box-shadow:0 2px 0 #c9bfa6; }
-  .rb-opt b { font-size:24px; font-weight:900; text-transform:uppercase; flex:1; word-break:break-word; }
-  .rb-opt small { font-size:13px; font-weight:800; color:#6b6252; white-space:nowrap; }
-  .rb-opt .e { font-size:28px; }
+  .rb-lock { position:absolute; left:50%; bottom:12px; transform:translateX(-50%); background:#0f0f14; color:#ffce1f; padding:6px 14px; font-weight:800; font-size:14px; white-space:nowrap; }
+  .rb-save { position:relative; cursor:pointer; }
+  .rb-savehint { position:absolute; right:8px; bottom:8px; background:#0f0f14; color:#ffce1f; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:11px; letter-spacing:.06em; text-transform:uppercase; padding:5px 8px; pointer-events:none; }
+  .rb-tools { display:grid; grid-template-columns:repeat(10,1fr); gap:6px; align-items:center; }
+  .rb-tools.ferr, .rb-tools.tam { grid-template-columns:repeat(8,1fr); }
+  .rb-tools .lb { grid-column:span 2; }
+  .rb-cor { aspect-ratio:1; border:3px solid #0f0f14; cursor:pointer; }
+  .rb-cor.sel { outline:3px solid #0f0f14; outline-offset:2px; }
+  .rb-tb { aspect-ratio:1; min-width:38px; min-height:38px; background:#fff; border:3px solid #0f0f14; box-shadow:3px 3px 0 #0f0f14; display:flex; align-items:center; justify-content:center; flex:none; font-size:20px; font-weight:900; cursor:pointer; color:#0f0f14; }
+  .rb-tb svg { width:60%; height:60%; fill:none; stroke:#0f0f14; stroke-width:2.6; stroke-linecap:square; }
+  .rb-tb.sel { background:#ffce1f; transform:translate(3px,3px); box-shadow:none; }
+  .rb-tb:active { transform:translate(3px,3px); box-shadow:none; }
+  .rb-tb.off { opacity:.3; pointer-events:none; box-shadow:none; }
+  .rb-tb i { display:block; border-radius:50%; background:#0f0f14; }
+  .rb-tv { background:#fff; border:3px dashed #0f0f14; padding:18px; text-align:center; }
+  .rb-tvic { width:64px; height:48px; margin:0 auto; border:3px solid #0f0f14; background:#b08cff; position:relative; }
+  .rb-tvic::after { content:''; position:absolute; left:18px; right:18px; bottom:-9px; height:6px; background:#0f0f14; }
+  .rb-opts { display:flex; flex-direction:column; gap:12px; }
+  .rb-opt { border:3px solid #0f0f14; padding:14px; background:#fff; color:#0f0f14; font:inherit; text-align:left; display:flex; align-items:center; gap:12px; cursor:pointer; box-shadow:5px 5px 0 #0f0f14; }
+  .rb-opt:active { transform:translate(4px,4px); box-shadow:1px 1px 0 #0f0f14; }
+  .rb-opt b { font-size:22px; font-weight:900; font-stretch:125%; text-transform:uppercase; flex:1; overflow-wrap:anywhere; line-height:1; }
+  .rb-opt small { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; color:#55555e; text-transform:uppercase; white-space:nowrap; }
+  .rb-opt .e { width:40px; height:40px; flex:none; background:#b08cff; border:2px solid #0f0f14; display:flex; align-items:center; justify-content:center; font-size:22px; }
   .rb-wait { text-align:center; padding:26px 16px; }
   .rb-bob { display:flex; justify-content:center; margin-bottom:8px; animation:rbbob 1.2s ease-in-out infinite; }
-  .rb-pod .f { display:flex; justify-content:center; margin-bottom:2px; }
+  .rb-pod .f { display:flex; justify-content:center; margin-bottom:4px; }
   .rb-aw .e { display:flex; align-items:center; gap:6px; }
   @keyframes rbbob { 50% { transform:translateY(-6px); } }
-  .rb-reveal { background:#f6f1e7; color:#141a2b; border-radius:20px; padding:18px; text-align:center; animation:rbin .35s cubic-bezier(.2,.8,.2,1); }
-  @keyframes rbin { from { transform:scale(.85) rotate(-2deg); opacity:0; } }
-  .rb-reveal .k { font-size:13px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:#8a7f69; }
-  .rb-reveal .w { font-size:36px; font-weight:900; text-transform:uppercase; margin:4px 0 10px; word-break:break-word; }
-  .rb-gains { display:flex; flex-direction:column; gap:5px; text-align:left; }
+  .rb-reveal { background:#b08cff; color:#0f0f14; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; padding:16px; text-align:center; animation:rbin .35s cubic-bezier(.2,.8,.2,1); }
+  @keyframes rbin { from { transform:translate(6px,6px); opacity:0; } }
+  .rb-reveal .k { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  .rb-reveal .w { display:inline-block; background:#fff; border:3px solid #0f0f14; padding:6px 14px; font-size:30px; font-weight:900; font-stretch:125%; text-transform:uppercase; margin:8px 0 12px; overflow-wrap:anywhere; line-height:1; }
+  .rb-gains { display:flex; flex-direction:column; gap:5px; text-align:left; background:#fff; border:2px solid #0f0f14; padding:8px 10px; }
   .rb-gain { display:flex; align-items:center; gap:8px; font-weight:800; font-size:16px; }
-  .rb-gain .pts { color:#15803d; font-weight:900; min-width:56px; font-variant-numeric:tabular-nums; }
-  .rb-mini { display:flex; flex-direction:column; gap:4px; margin-top:12px; padding-top:10px; border-top:2px dashed #d8cfba; text-align:left; }
+  .rb-gain .pts { font-family:'Pixelify Sans',monospace; font-weight:700; min-width:56px; color:#0f0f14; }
+  .rb-mini { display:flex; flex-direction:column; gap:4px; margin-top:10px; padding:8px 10px; background:#fff; border:2px solid #0f0f14; text-align:left; }
   .rb-mini div { display:flex; align-items:center; gap:8px; font-weight:800; font-size:15px; }
-  .rb-mini .sc { margin-left:auto; font-variant-numeric:tabular-nums; }
-  .up { color:#15803d; } .down { color:#b91c1c; }
+  .rb-mini .sc { margin-left:auto; font-family:'Pixelify Sans',monospace; }
+  .up { color:#08703b; } .down { color:#d02a20; }
   .rb-rank { display:flex; flex-wrap:wrap; gap:6px; }
-  .rb-rk { display:flex; align-items:center; gap:6px; background:#182036; border:2px solid #2a3350; border-radius:99px; padding:4px 10px 4px 5px; font-size:14px; font-weight:800; transition:border-color .3s, background .3s; }
-  .rb-rk .dot { width:16px; height:16px; }
-  .rb-rk .rb-pl { color:#9aa6c0; font-size:12px; min-width:18px; text-align:right; }
-  .rb-rk .sc { font-variant-numeric:tabular-nums; color:#fbbf24; }
-  .rb-rk.me { background:#1a2340; border-color:#f59e0b; }
-  .rb-rk.ok { border-color:#16a34a; background:#0f2a1a; }
+  .rb-rk { display:flex; align-items:center; gap:6px; background:#fff; border:2px solid #0f0f14; padding:3px 9px 3px 4px; font-size:14px; font-weight:800; color:#0f0f14; }
+  .rb-rk .rb-pl { font-family:'Pixelify Sans',monospace; color:#55555e; font-size:13px; min-width:18px; text-align:right; }
+  .rb-rk .sc { font-family:'Pixelify Sans',monospace; color:#0f0f14; }
+  .rb-rk.me { background:#fff4c2; box-shadow:3px 3px 0 #0f0f14; }
+  .rb-rk.ok { background:#35d07f; }
   .rb-rk.dr { border-style:dashed; }
   .rb-rk.off { opacity:.5; }
   .rb-rk.jump { animation:rbjump .6s ease; }
   @keyframes rbjump { 30% { transform:translateY(-8px) scale(1.06); } }
-  .rb-chat { background:#182036; border:1px solid #2a3350; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; }
+  .rb-chat { background:#fff; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; overflow:hidden; display:flex; flex-direction:column; }
   .rb-msgs { height:190px; overflow-y:auto; padding:10px 12px; display:flex; flex-direction:column; gap:5px; font-size:15px; line-height:1.3; overscroll-behavior:contain; }
   .rb-msgs.tall { height:300px; }
-  .rb-m { word-break:break-word; }
+  .rb-m { overflow-wrap:anywhere; }
   .rb-m b { font-weight:900; margin-right:6px; }
-  .rb-m.guess { color:#9aa6c0; font-size:14px; }
-  .rb-m.guess b { font-weight:800; }
-  .rb-m.hit { align-self:flex-start; background:#14532d; color:#bbf7d0; border-radius:10px; padding:4px 10px; font-weight:800; }
-  .rb-m.hit.me { background:#16a34a; color:#fff; }
-  .rb-m.hit .pts { color:#fde68a; margin-left:4px; }
-  .rb-m.close { align-self:flex-start; background:#0c3440; border:1px solid #22d3ee; color:#cffafe; border-radius:10px; padding:4px 10px; }
-  .rb-m.close em { font-style:normal; font-weight:900; color:#67e8f9; margin-left:6px; }
-  .rb-m.close small { display:block; font-size:11px; color:#67e8f9; opacity:.8; }
-  .rb-m.knower { color:#e9d5ff; background:#2a1544; border-radius:10px; padding:3px 9px; align-self:flex-start; }
-  .rb-m.sys { text-align:center; font-size:13px; font-weight:700; color:#9aa6c0; padding:1px 0; }
+  .rb-m b.who { display:inline-block; border:2px solid #0f0f14; padding:0 5px; font-size:13px; color:#0f0f14; }
+  .rb-m.guess { color:#55555e; font-size:14px; }
+  .rb-m.hit { align-self:flex-start; background:#35d07f; color:#0f0f14; border:2px solid #0f0f14; padding:3px 9px; font-weight:900; }
+  .rb-m.hit.me { box-shadow:3px 3px 0 #0f0f14; }
+  .rb-m.hit .pts { font-family:'Pixelify Sans',monospace; margin-left:6px; }
+  .rb-m.close { align-self:flex-start; background:#d7effc; border:2px solid #0f0f14; color:#0f0f14; padding:3px 9px; }
+  .rb-m.close em { font-style:normal; font-weight:900; margin-left:6px; }
+  .rb-m.close small { display:block; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; text-transform:uppercase; color:#55555e; }
+  .rb-m.knower { color:#0f0f14; background:#e9dcff; border:2px dashed #0f0f14; padding:3px 9px; align-self:flex-start; }
+  .rb-m.sys { text-align:center; font-size:13px; font-weight:700; color:#55555e; padding:1px 0; }
   .rb-m.sys .nm { padding:0 6px; font-size:12px; }
-  .rb-m.sys.t-good { color:#4ade80; } .rb-m.sys.t-bad { color:#f87171; } .rb-m.sys.t-warn { color:#fbbf24; }
-  .rb-m.sys.t-fun { color:#d8b4fe; } .rb-m.sys.t-hint { color:#fbbf24; } .rb-m.sys.t-close { color:#67e8f9; }
-  .rb-form { display:flex; gap:8px; padding:8px; border-top:1px solid #2a3350; background:#121728; }
-  .rb-form input { flex:1; padding:12px 14px; font-size:17px; border-radius:12px; min-width:0; }
-  .rb-form button { border:0; border-radius:12px; background:#f59e0b; color:#111; font-weight:900; font-size:20px; width:52px; flex:none; cursor:pointer; }
-  .rb-form.knows input { border-color:#a855f7; }
-  .rb-hero { background:linear-gradient(135deg,#a855f7 0%,#7e22ce 55%,#1e1b4b 100%); border-radius:20px; padding:18px; position:relative; overflow:hidden; }
-  .rb-hero h2 { font-size:30px; font-weight:900; }
-  .rb-hero p { color:rgba(255,255,255,.9); margin-top:4px; line-height:1.35; font-size:16px; }
-  .rb-hero .e { position:absolute; right:-8px; top:-10px; font-size:92px; opacity:.25; }
-  .rb-share { display:flex; flex-direction:column; gap:8px; }
-  .rb-link { display:flex; align-items:center; gap:8px; background:#0b0e17; border:1px solid #2a3350; border-radius:12px; padding:10px 12px; font-weight:800; font-size:15px; color:#fbbf24; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-  .rb-btns { display:flex; gap:8px; }
-  .rb-btns .btn { padding:12px; font-size:15px; }
+  .rb-m.sys.t-good { color:#08703b; } .rb-m.sys.t-bad { color:#d02a20; } .rb-m.sys.t-warn { color:#8a5a00; }
+  .rb-m.sys.t-fun { color:#5b2bb0; } .rb-m.sys.t-hint { color:#8a5a00; } .rb-m.sys.t-close { color:#0b6b99; }
+  .rb-form { display:flex; gap:8px; padding:8px; border-top:3px solid #0f0f14; background:#e4e2d9; }
+  .rb-form input { flex:1; padding:11px 12px; font-size:17px; min-width:0; }
+  .rb-form button { border:3px solid #0f0f14; background:#ffce1f; color:#0f0f14; font-weight:900; font-size:20px; width:52px; flex:none; cursor:pointer; box-shadow:3px 3px 0 #0f0f14; }
+  .rb-form button:active { transform:translate(3px,3px); box-shadow:none; }
+  .rb-form.knows input { background:#e9dcff; }
+  .rb-hero { background-color:#b08cff; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; padding:18px; position:relative; overflow:hidden; color:#0f0f14; }
+  .rb-hero h2 { font-size:34px; font-weight:900; font-stretch:125%; text-transform:uppercase; line-height:.95; }
+  .rb-hero h2, .rb-hero p { padding-right:66px; }
+  .rb-hero p { margin-top:8px; line-height:1.35; font-size:16px; font-weight:600; }
+  .rb-hero .e { position:absolute; right:14px; top:14px; width:56px; height:56px; background:#fff; border:3px solid #0f0f14; display:flex; align-items:center; justify-content:center; font-family:'Pixelify Sans',monospace; font-size:30px; font-weight:700; }
+  .rb-share { display:flex; flex-direction:column; gap:10px; }
+  .rb-link { display:flex; align-items:center; gap:8px; background:#e4e2d9; border:2px solid #0f0f14; padding:10px 12px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px; color:#0f0f14; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .rb-btns { display:flex; gap:10px; }
+  .rb-btns .btn { padding:12px 8px; font-size:14px; white-space:nowrap; box-shadow:3px 3px 0 #0f0f14; }
   .rb-qr { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
-  .rb-qr svg { width:180px; height:180px; background:#fff; border-radius:10px; }
-  .rb-presets { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .rb-pre { border:2px solid #2a3350; background:#182036; border-radius:16px; padding:12px; cursor:pointer; color:#e5e7eb; }
-  .rb-pre b { display:block; font-size:18px; font-weight:900; }
-  .rb-pre small { display:block; font-size:12px; color:#9aa6c0; font-weight:700; margin-top:2px; }
-  .rb-pre.sel { border-color:#f59e0b; background:#2b230c; }
+  .rb-qr svg { width:180px; height:180px; background:#fff; border:3px solid #0f0f14; }
+  .rb-presets { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .rb-pre { border:3px solid #0f0f14; background:#fff; padding:12px; cursor:pointer; color:#0f0f14; box-shadow:4px 4px 0 #0f0f14; }
+  .rb-pre b { display:block; font-size:17px; font-weight:900; font-stretch:115%; text-transform:uppercase; }
+  .rb-pre small { display:block; font-family:'JetBrains Mono',monospace; font-size:11px; color:#55555e; font-weight:700; margin-top:4px; }
+  .rb-pre.sel { background:#ffce1f; transform:translate(3px,3px); box-shadow:1px 1px 0 #0f0f14; }
+  .rb-pre.sel small { color:#0f0f14; }
   .rb-sum { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .rb-sum .rb-small { flex:1; }
-  .rb-adj { display:flex; flex-direction:column; gap:12px; }
+  .rb-adj { display:flex; flex-direction:column; gap:14px; }
   .rb-row { display:flex; align-items:center; gap:10px; }
   .rb-row > span:first-child { flex:1; font-weight:800; }
   .rb-step { display:flex; align-items:center; gap:6px; }
-  .rb-step b { min-width:58px; text-align:center; font-size:18px; font-variant-numeric:tabular-nums; }
+  .rb-step b { min-width:58px; text-align:center; font-family:'Pixelify Sans',monospace; font-size:20px; }
   .rb-step .rb-tb { width:38px; height:38px; }
-  .rb-seg { display:flex; gap:4px; background:#0b0e17; border-radius:12px; padding:3px; flex-wrap:wrap; }
-  .rb-seg span { padding:7px 10px; border-radius:9px; font-size:13px; font-weight:800; color:#9aa6c0; cursor:pointer; }
-  .rb-seg span.sel { background:#f59e0b; color:#111; }
+  .rb-seg { display:flex; border:2px solid #0f0f14; background:#fff; flex-wrap:wrap; }
+  .rb-seg span { padding:7px 10px; font-size:13px; font-weight:800; color:#55555e; cursor:pointer; }
+  .rb-seg span + span { border-left:2px solid #0f0f14; }
+  .rb-seg span.sel { background:#0f0f14; color:#ffce1f; }
   .rb-cats { display:flex; flex-wrap:wrap; gap:6px; }
-  .rb-cat { border:2px solid #2a3350; border-radius:99px; padding:6px 11px; font-size:14px; font-weight:800; color:#9aa6c0; cursor:pointer; }
-  .rb-cat.sel { border-color:#22c55e; color:#fff; background:#0f2a1a; }
+  .rb-cat { border:2px solid #0f0f14; background:#fff; padding:6px 10px; font-size:14px; font-weight:800; color:#55555e; cursor:pointer; }
+  .rb-cat.sel { color:#0f0f14; background:#35d07f; }
   .rb-cw { display:flex; gap:8px; }
   .rb-cw input { flex:1; padding:12px; font-size:16px; min-width:0; }
   .rb-cw .btn { width:auto; padding:10px 14px; font-size:15px; }
   .rb-people { display:flex; flex-wrap:wrap; gap:6px; }
-  .rb-end h2 { font-size:26px; }
-  .rb-podium { display:flex; align-items:flex-end; justify-content:center; gap:8px; padding-top:8px; }
+  .rb-end h2 { font-size:28px; font-stretch:125%; text-transform:uppercase; }
+  .rb-podium { display:flex; align-items:flex-end; justify-content:center; gap:8px; padding-top:10px; }
   .rb-pod { flex:1; max-width:150px; text-align:center; }
-  .rb-pod .m { font-size:40px; line-height:1; }
-  .rb-pod .n { font-weight:900; font-size:17px; margin-top:4px; word-break:break-word; }
-  .rb-pod .s { color:#fbbf24; font-weight:900; font-variant-numeric:tabular-nums; }
-  .rb-pod .bar { margin-top:8px; border-radius:12px 12px 0 0; background:#2a3350; }
-  .rb-pod.p1 .bar { height:90px; background:linear-gradient(#f59e0b,#b45309); } .rb-pod.p2 .bar { height:62px; background:linear-gradient(#cbd5e1,#64748b); } .rb-pod.p3 .bar { height:44px; background:linear-gradient(#fb923c,#9a3412); }
-  .rb-pod.p1 .m { animation:rbbob 1.4s ease-in-out infinite; }
-  .rb-awards { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .rb-aw { background:#182036; border:1px solid #2a3350; border-radius:16px; padding:12px; }
-  .rb-aw .e { font-size:28px; }
-  .rb-aw b { display:block; font-size:12px; color:#9aa6c0; text-transform:uppercase; letter-spacing:.5px; margin-top:4px; }
+  .rb-pod .m { font-family:'Pixelify Sans',monospace; font-weight:700; font-size:30px; line-height:1; }
+  .rb-pod .n { font-weight:900; font-size:16px; margin-top:4px; overflow-wrap:anywhere; }
+  .rb-pod .s { font-family:'Pixelify Sans',monospace; font-weight:700; font-size:18px; }
+  .rb-pod .bar { margin-top:8px; border:3px solid #0f0f14; border-bottom:0; background:#e4e2d9; }
+  .rb-pod.p1 .bar { height:90px; background:#ffce1f; } .rb-pod.p2 .bar { height:62px; background:#fff; } .rb-pod.p3 .bar { height:44px; background:#b08cff; }
+  .rb-pod.p1 .f { animation:rbbob 1.4s ease-in-out infinite; }
+  .rb-awards { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .rb-aw { background:#fff; border:3px solid #0f0f14; box-shadow:4px 4px 0 #0f0f14; padding:12px; }
+  .rb-aw .e { font-size:26px; }
+  .rb-aw b { display:block; font-family:'JetBrains Mono',monospace; font-size:11px; color:#55555e; text-transform:uppercase; letter-spacing:.04em; margin-top:6px; }
   .rb-aw .n { font-weight:900; font-size:17px; margin-top:2px; }
-  .rb-aw small { display:block; color:#cbd5e1; font-size:13px; margin-top:2px; }
+  .rb-aw small { display:block; color:#3a3a42; font-size:13px; margin-top:2px; }
+  .rb-champ { display:inline-block; border:3px solid #0f0f14; box-shadow:4px 4px 0 #0f0f14; padding:4px 12px; }
   #rb-fx { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; z-index:80; overflow:hidden; }
-  .rb-float { position:absolute; font-weight:900; font-size:22px; color:#fde68a; text-shadow:0 2px 6px rgba(0,0,0,.7); transition:transform 1.1s cubic-bezier(.2,.8,.2,1), opacity 1.1s ease; white-space:nowrap; }
-  .rb-float.big { font-size:44px; color:#4ade80; }
-  .rb-bit { position:absolute; width:9px; height:13px; border-radius:2px; transition:transform .95s cubic-bezier(.15,.7,.3,1), opacity .95s ease; }
-  .rb-pill { position:absolute; left:50%; top:22%; transform:translate(-50%,0) scale(.6); opacity:0; background:#182036; border:2px solid #f59e0b; color:#fff; font-weight:900; font-size:22px; border-radius:99px; padding:12px 22px; transition:transform .25s ease, opacity .25s ease; white-space:nowrap; box-shadow:0 10px 30px rgba(0,0,0,.5); }
+  .rb-float { position:absolute; font-family:'Pixelify Sans',monospace; font-weight:700; font-size:24px; color:#0f0f14; background:#ffce1f; border:2px solid #0f0f14; padding:0 6px; transition:transform 1.1s cubic-bezier(.2,.8,.2,1), opacity 1.1s ease; white-space:nowrap; }
+  .rb-float.big { font-size:44px; background:#35d07f; border-width:3px; }
+  .rb-bit { position:absolute; width:9px; height:13px; border:1px solid #0f0f14; transition:transform .95s cubic-bezier(.15,.7,.3,1), opacity .95s ease; }
+  .rb-pill { position:absolute; left:50%; top:22%; transform:translate(-50%,0) scale(.6); opacity:0; background:#fff; border:3px solid #0f0f14; color:#0f0f14; font-weight:900; font-size:21px; padding:12px 20px; transition:transform .25s ease, opacity .25s ease; white-space:nowrap; box-shadow:6px 6px 0 #0f0f14; }
   .rb-pill.on { transform:translate(-50%,0) scale(1); opacity:1; }
-  .rb-pill.close { border-color:#22d3ee; }
-  .rb-pill.hit { border-color:#16a34a; background:#14532d; }
-  .rb-pill.ok { border-color:#16a34a; }
+  .rb-pill.close { background:#d7effc; }
+  .rb-pill.hit { background:#35d07f; }
+  .rb-pill.ok { background:#ffce1f; }
   `;
   let styled = false;
   const ensureStyle = () => { if (styled) return; const el = document.createElement('style'); el.textContent = css; document.head.appendChild(el); styled = true; };
@@ -266,7 +292,7 @@
         C.chord([660, 880, 1320]); vib([40, 30, 90]);
         floatAt(window.innerWidth / 2, window.innerHeight * 0.38, '+' + e.pts, true);
         confetti(window.innerWidth / 2, window.innerHeight * 0.38, 26);
-        pill(e.first ? '🎯 Primeiro a acertar!' : '✓ Você acertou!', 'hit', 1500);
+        pill(e.first ? 'Primeiro a acertar!' : '✓ Você acertou!', 'hit', 1500);
       } else if (remote) C.beep(e.first ? 990 : 880, .08, 'sine', e.first ? .14 : .08);
       const r = rowRect(e.pid);
       if (r && !mine) { floatAt(r.left + r.width / 2, r.top, '+' + e.pts); confetti(r.left + r.width / 2, r.top + r.height / 2, e.first ? 14 : 8); }
@@ -275,16 +301,16 @@
       if (e.dpid === me() && e.dpts) { C.beep(740, .07, 'triangle', .1); }
     } else if (e.k === 'close') {
       C.beep(740, .07, 'sine', .14); later(() => C.beep(820, .07, 'sine', .14), 110); vib(30);
-      pill('Tá muito perto 👀', 'close', 1300);
+      pill('Tá muito perto!', 'close', 1300);
     } else if (e.k === 'miss') {
       C.beep(210, .07, 'square', .04);
     } else if (e.k === 'lead') {
       const r = rowRect(e.pid);
-      if (r) { const el = root.querySelector(`.rb-rk[data-pid="${e.pid}"]`); if (el) { el.classList.remove('jump'); void el.offsetWidth; el.classList.add('jump'); } floatAt(r.left + r.width / 2, r.top - 4, '👑'); }
-      if (mine) { C.chord([784, 988, 1175]); pill('👑 Você está na frente!', 'ok', 1500); }
+      if (r) { const el = root.querySelector(`.rb-rk[data-pid="${e.pid}"]`); if (el) { el.classList.remove('jump'); void el.offsetWidth; el.classList.add('jump'); } floatAt(r.left + r.width / 2, r.top - 4, '★'); }
+      if (mine) { C.chord([784, 988, 1175]); pill('★ Você está na frente!', 'ok', 1500); }
       else if (remote) C.chord([523, 659, 784]);
     } else if (e.k === 'turn') {
-      if (mine) { C.chord([523, 659, 784]); vib([90, 60, 90]); pill('✏️ Sua vez de desenhar!', 'ok', 1600); }
+      if (mine) { C.chord([523, 659, 784]); vib([90, 60, 90]); pill('✎ Sua vez de desenhar!', 'ok', 1600); }
     } else if (e.k === 'reveal') {
       if (remote || g.amDrawer) { if (e.hits) C.chord([523, 659, 784]); else { C.beep(392, .18, 'triangle', .14); later(() => C.beep(330, .28, 'triangle', .14), 180); } }
     } else if (e.k === 'hint') {
@@ -327,9 +353,9 @@
     const mine = m.pid && m.pid === me();
     if (m.k === 'sys') return `<div class="rb-m sys t-${m.tone || 'info'}">${C.hl(m.text)}</div>`;
     const w = who(m.pid, m);
-    const nameB = `<b style="color:${w.hex}">${esc(mine ? 'Você' : w.name)}</b>`;
+    const nameB = `<b class="who" style="background:${w.hex}">${esc(mine ? 'Você' : w.name)}</b>`;
     if (m.k === 'hit') return `<div class="rb-m hit ${mine ? 'me' : ''}">✓ ${esc(mine ? 'Você acertou!' : w.name + ' acertou!')}${m.pts ? `<span class="pts">+${m.pts}</span>` : ''}</div>`;
-    if (m.k === 'close') return `<div class="rb-m close">${esc(m.text)}<em>Tá muito perto 👀</em><small>só você vê esta mensagem</small></div>`;
+    if (m.k === 'close') return `<div class="rb-m close">${esc(m.text)}<em>Tá muito perto!</em><small>só você vê esta mensagem</small></div>`;
     if (m.k === 'knower') return `<div class="rb-m knower">🔒 ${nameB}${esc(m.text)}</div>`;
     if (m.k === 'guess') return `<div class="rb-m guess">${nameB}${esc(m.text)}</div>`;
     return `<div class="rb-m chat">${nameB}${esc(m.text)}</div>`;
@@ -342,7 +368,7 @@
     if (sig !== msgSig || !box.childNodes.length) {
       msgSig = sig;
       const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
-      box.innerHTML = list.length ? list.map(msgHtml).join('') : '<div class="rb-m sys">Ninguém falou nada ainda. Diga oi! 👋</div>';
+      box.innerHTML = list.length ? list.map(msgHtml).join('') : '<div class="rb-m sys">Ninguém falou nada ainda. Diga oi!</div>';
       if (atEnd || box.dataset.first !== '1') { box.scrollTop = box.scrollHeight; box.dataset.first = '1'; }
     }
     const inp = $('rb-in'), form = $('rb-form');
@@ -371,7 +397,7 @@
     return g.rank.map(r => {
       const w = who(r.pid);
       const cls = ['rb-rk', r.pid === me() ? 'me' : '', g.guessed.indexOf(r.pid) >= 0 ? 'ok' : '', r.pid === g.drawer && (g.phase === 'draw' || g.phase === 'choose') ? 'dr' : '', w.on ? '' : 'off'].join(' ');
-      const badge = (r.pid === g.drawer && (g.phase === 'draw' || g.phase === 'choose') ? ' ✏️' : '') + (g.guessed.indexOf(r.pid) >= 0 ? ' ✓' : '') + (r.pid === g.leader && r.score > 0 ? ' 👑' : '') + (w.on ? '' : ' 📵');
+      const badge = (r.pid === g.drawer && (g.phase === 'draw' || g.phase === 'choose') ? ' ✎' : '') + (g.guessed.indexOf(r.pid) >= 0 ? ' ✓' : '') + (r.pid === g.leader && r.score > 0 ? ' ★' : '') + (w.on ? '' : ' · fora');
       return `<div class="${cls}" data-pid="${esc(r.pid)}"><span class="rb-pl">${r.place}º</span>${av(r.pid, 22)}<span>${esc(w.name)}${badge}</span><span class="sc">${r.score}</span></div>`;
     }).join('');
   }
@@ -385,7 +411,7 @@
     else if (g.phase === 'draw') t = g.amDrawer ? 'Desenhe!' : `${esc(d ? d.name : '')} está desenhando`;
     else t = 'Fim da vez';
     const myR = g.rank.find(r => r.pid === me());
-    return `<div class="rb-who">${g.drawer && g.phase !== 'reveal' ? av(g.drawer) : '<span class="rb-av" style="background:#f59e0b;color:#111">✓</span>'}<span class="t">${t}</span></div>
+    return `<div class="rb-who">${g.drawer && g.phase !== 'reveal' ? av(g.drawer) : '<span class="rb-av" style="background:#35d07f;color:#0f0f14">✓</span>'}<span class="t">${t}</span></div>
       <div class="rb-round">Rodada ${g.round}/${g.rounds}${myR ? `<br>você: ${myR.place}º` : ''}</div>
       <div class="rb-time" id="rb-time">—</div>`;
   }
@@ -398,16 +424,16 @@
       return `<i class="on ${was[i] === '_' ? 'pop' : ''}">${esc(ch)}</i>`;
     }).join('')}</div>`;
   }
-  function modChip(g) { return g.mod ? `<span class="rb-chip mod">🌀 ${esc(g.mod.emoji + ' ' + g.mod.name)}</span>` : ''; }
+  function modChip(g) { return g.mod ? `<span class="rb-chip mod">${esc(g.mod.emoji + ' ' + g.mod.name)}</span>` : ''; }
   function wordHtml() {
     const g = G();
     if (g.phase === 'choose') return `<div class="rb-small">${g.amDrawer ? 'Só você vê as opções.' : 'A palavra aparece aqui como dica: _ _ _ _'}</div>${g.mod ? `<div class="rb-meta">${modChip(g)}<span>${esc(g.mod.desc)}</span></div>` : ''}`;
     const cat = g.cat ? `<span class="rb-chip">${esc(g.cat.emoji + ' ' + g.cat.name)}</span>` : '';
     if (g.phase === 'reveal') return `<div class="rb-small">A palavra era</div><div class="rb-the">${esc(g.word || '')}</div><div class="rb-meta">${cat}</div>`;
     if (g.amDrawer) return `<div class="rb-small">Desenhe:</div><div class="rb-the">${esc(g.word || '')}</div><div class="rb-meta">${cat}${modChip(g)}</div>`;
-    if (g.knower) return `<div class="rb-small">✓ Você acertou. Não conte para ninguém 🤫</div><div class="rb-the ok">${esc(g.word || '')}</div><div class="rb-meta">${cat}</div>`;
+    if (g.knower) return `<div class="rb-small">✓ Você acertou. Não conte para ninguém!</div><div class="rb-the ok">${esc(g.word || '')}</div><div class="rb-meta">${cat}</div>`;
     const lens = g.lens || [];
-    const dicas = g.hintsTotal ? `💡 ${g.revealed}/${g.hintsTotal} dicas` : 'sem dicas';
+    const dicas = g.hintsTotal ? `${g.revealed}/${g.hintsTotal} dicas` : 'sem dicas';
     return `${hintHtml(g.hint || [])}<div class="rb-meta">${cat}<span class="rb-chip">${lens.length > 1 ? lens.join(' + ') + ' letras' : plural(lens[0] || 0, 'letra', 'letras')}</span><span class="rb-chip">${dicas}</span>${modChip(g)}</div>`;
   }
 
@@ -429,11 +455,11 @@
     const tools = rules === 'umtraco' || rules === 'semborracha' ? TOOLS.filter(t => t[0] !== 'eraser' && (rules !== 'umtraco' || t[0] === 'pen')) : TOOLS;
     const p = pad;
     if (!p) return '';
-    let h = `<div class="rb-tools">${cores.map(c => `<div class="rb-cor ${p.tool !== 'eraser' && p.color === c ? 'sel' : ''}" style="background:${c}" data-rb="color" data-c="${c}"></div>`).join('')}</div>`;
-    h += `<div class="rb-tools">${tools.map(t => `<div class="rb-tb ${p.tool === t[0] ? 'sel' : ''}" data-rb="tool" data-k="${t[0]}" title="${t[2]}">${t[1]}</div>`).join('')}<span style="flex:1"></span>`;
-    if (p.canErase()) h += `<div class="rb-tb ${p.canUndo() ? '' : 'off'}" data-rb="undo" title="desfazer">↶</div><div class="rb-tb ${p.canRedo() ? '' : 'off'}" data-rb="redo" title="refazer">↷</div><div class="rb-tb" data-rb="clear" title="limpar tudo">🗑</div>`;
+    let h = `<div class="rb-tools cores">${cores.map(c => `<div class="rb-cor ${p.tool !== 'eraser' && p.color === c ? 'sel' : ''}" style="background:${c}" data-rb="color" data-c="${c}"></div>`).join('')}</div>`;
+    h += `<div class="rb-tools ferr">${tools.map(t => `<div class="rb-tb ${p.tool === t[0] ? 'sel' : ''}" data-rb="tool" data-k="${t[0]}" title="${t[2]}">${t[1]}</div>`).join('')}`;
+    if (p.canErase()) h += `<div class="rb-tb ${p.canUndo() ? '' : 'off'}" data-rb="undo" title="desfazer">${ICON.undo}</div><div class="rb-tb ${p.canRedo() ? '' : 'off'}" data-rb="redo" title="refazer">${ICON.redo}</div><div class="rb-tb" data-rb="clear" title="limpar tudo">${ICON.trash}</div>`;
     h += '</div>';
-    if (rules !== 'gigante') h += `<div class="rb-tools"><span class="rb-small">Traço</span>${SIZES.map(t => `<div class="rb-tb ${p.size === t ? 'sel' : ''}" data-rb="size" data-t="${t}"><i style="width:${Math.min(28, t + 4)}px;height:${Math.min(28, t + 4)}px"></i></div>`).join('')}</div>`;
+    if (rules !== 'gigante') h += `<div class="rb-tools tam"><span class="rb-k lb">Traço</span>${SIZES.map(t => `<div class="rb-tb ${p.size === t ? 'sel' : ''}" data-rb="size" data-t="${t}"><i style="width:${Math.min(26, t + 3)}px;height:${Math.min(26, t + 3)}px"></i></div>`).join('')}</div>`;
     return h;
   }
   function refreshTools() { const t = $('rb-tools'); if (t) t.innerHTML = toolsHtml(); const l = $('rb-lock'); if (l) l.style.display = pad && pad.locked ? '' : 'none'; }
@@ -445,18 +471,18 @@
     dropPad(); viewer = null;
     if (g.phase === 'choose') {
       if (g.amDrawer && g.options) {
-        st.innerHTML = `<div class="rb-opts">${g.options.map((o, i) => `<button class="rb-opt" data-rb="pick" data-i="${i}"><span class="e">${o.cat ? esc(o.cat.emoji) : '🎲'}</span><b>${esc(o.w)}</b><small>${o.cat ? esc(o.cat.name) : ''}</small></button>`).join('')}</div>
-          <p class="rb-small" style="text-align:center;margin-top:8px">Se não escolher a tempo, o jogo escolhe por você.</p>`;
+        st.innerHTML = `<div class="rb-opts">${g.options.map((o, i) => `<button class="rb-opt" data-rb="pick" data-i="${i}"><span class="e">${o.cat ? esc(o.cat.emoji) : '?'}</span><b>${esc(o.w)}</b><small>${o.cat ? esc(o.cat.name) : ''}</small></button>`).join('')}</div>
+          <p class="rb-small" style="text-align:center;margin-top:10px">Se não escolher a tempo, o jogo escolhe por você.</p>`;
       } else {
         const d = who(g.drawer);
-        st.innerHTML = `<div class="box rb-wait"><div class="rb-bob">${av(g.drawer, 72)}</div><p class="sub"><b style="color:${d.hex}">${esc(d.name)}</b> está escolhendo a palavra…</p><p class="rb-small" style="margin-top:6px">Prepare os dedos para digitar ⌨️</p></div>`;
+        st.innerHTML = `<div class="box rb-wait"><div class="rb-bob">${av(g.drawer, 72)}</div><p class="sub"><span class="nm" style="background:${d.hex}">${esc(d.name)}</span> está escolhendo a palavra…</p><p class="rb-k" style="margin-top:8px;color:#55555e">Prepare os dedos para digitar</p></div>`;
       }
       return;
     }
     if (g.phase === 'draw' && g.amDrawer) {
-      st.innerHTML = `<div class="rb-canvas" id="rb-cvwrap"><canvas id="rb-cv"></canvas><div class="rb-lock" id="rb-lock" style="display:none">✋ Seu traço acabou</div></div>
-        <div id="rb-tools" class="rb-col" style="margin-top:8px"></div>
-        <button class="btn ghost" data-rb="skip" style="margin-top:8px;padding:12px;font-size:15px">⏭️ Pular minha vez</button>`;
+      st.innerHTML = `<div class="rb-canvas" id="rb-cvwrap"><canvas id="rb-cv"></canvas><div class="rb-lock" id="rb-lock" style="display:none">Seu traço acabou</div></div>
+        <div id="rb-tools" class="rb-col" style="margin-top:12px"></div>
+        <button class="btn ghost" data-rb="skip" style="margin-top:8px;padding:12px;font-size:15px">Pular minha vez ▸▸</button>`;
       pad = D.pad($('rb-cv'), { send: ops => A.send({ t: 'input', k: 'draw', ops }), onChange: refreshTools });
       padTurn = g.turnNo;
       pad.setRules(g.mod ? g.mod.key : null, g.mod && g.mod.colors);
@@ -466,13 +492,14 @@
       return;
     }
     if (g.phase === 'draw' && !canvasHere()) {
-      st.innerHTML = `<div class="rb-tv"><div class="big-emoji">📺</div><p class="sub" style="margin-top:6px">Olhe o desenho na TV e digite o palpite aqui embaixo.</p><button class="btn ghost" data-rb="here" style="margin-top:10px;padding:12px;font-size:15px">Ver o desenho aqui também</button></div>`;
+      st.innerHTML = `<div class="rb-tv"><div class="rb-tvic"></div><p class="sub" style="margin-top:16px">Olhe o desenho na TV e digite o palpite aqui embaixo.</p><button class="btn ghost" data-rb="here" style="margin-top:10px;padding:12px;font-size:15px">Ver o desenho aqui também</button></div>`;
       return;
     }
     // assistindo (desenho) ou revelação com o desenho por trás
     const mods = g.mod && g.phase === 'draw' ? (g.mod.key === 'espelho' ? ' flip' : '') + (g.mod.key === 'tremor' ? ' shake' : '') : '';
     let h = canvasHere() ? `<div class="rb-canvas${mods}"><canvas id="rb-view"></canvas></div>` : '';
-    if (g.phase === 'reveal') h = revealHtml() + (h ? `<div style="margin-top:10px">${h}</div>` : '');
+    // na revelação o desenho aparece sempre (também com a TV), e um toque salva a imagem
+    if (g.phase === 'reveal') h = revealHtml() + `<div class="rb-canvas rb-save" style="margin-top:12px" data-copyimg="rabisco-${esc(String(g.word || 'desenho').toLowerCase().replace(/[^a-z0-9à-ú]+/g, '-'))}"><canvas id="rb-view"></canvas><span class="rb-savehint">Toque para salvar</span></div>`;
     if (g.phase === 'draw' && g.place === 'presencial') h += `<button class="btn ghost" data-rb="nothere" style="margin-top:8px;padding:10px;font-size:14px">Esconder o desenho (olhar só a TV)</button>`;
     st.innerHTML = h;
     const cv = $('rb-view');
@@ -494,17 +521,17 @@
     }).join('');
     const none = !g.guessed.length;
     return `<div class="rb-reveal"><div class="k">A palavra era</div><div class="w">${esc(g.word || '')}</div>
-      ${none ? '<div style="font-weight:900;font-size:18px">Ninguém acertou 😭</div>' : `<div class="rb-gains">${gains.map(x => { const w = who(x.pid); return `<div class="rb-gain"><span class="pts">+${x.pts}</span>${av(x.pid, 22)}${esc(w.name)}${x.pid === g.drawer ? ' ✏️' : ''}</div>`; }).join('')}</div>`}
+      ${none ? '<div style="font-weight:900;font-size:18px;text-transform:uppercase;font-stretch:115%">Ninguém acertou</div>' : `<div class="rb-gains">${gains.map(x => { const w = who(x.pid); return `<div class="rb-gain"><span class="pts">+${x.pts}</span>${av(x.pid, 22)}${esc(w.name)}${x.pid === g.drawer ? ' ✎' : ''}</div>`; }).join('')}</div>`}
       <div class="rb-mini">${mini}</div></div>`;
   }
 
   // ---------- telas ----------
   function setupHtml() {
     const g = G();
-    return `<div class="rb-hero"><span class="e">✏️</span><h2>Rabisco</h2><p>Desenhe no celular. Adivinhe digitando no chat. Quem acerta primeiro ganha mais pontos.</p></div>
+    return `<div class="rb-hero dots"><span class="e">✏</span><h2>Rabisco</h2><p>Desenhe no celular. Adivinhe digitando no chat. Quem acerta primeiro ganha mais pontos.</p></div>
       <div class="box rb-share">
         <div class="rb-small">Chame a turma: quem abrir o link escolhe um nome e já entra.</div>
-        <div class="rb-link">🔗 ${esc(joinUrl().replace(/^https?:\/\//, ''))}</div>
+        <div class="rb-link">${esc(joinUrl().replace(/^https?:\/\//, ''))}</div>
         <div class="rb-btns"><button class="btn blue" data-rb="copy">Copiar link</button>${navigator.share ? '<button class="btn ghost" data-rb="share">Compartilhar</button>' : ''}<button class="btn ghost" data-rb="qr">QR</button></div>
         <div id="rb-qr"></div>
       </div>
@@ -512,23 +539,23 @@
       <div class="box rb-sum" id="rb-sum"></div>
       <div class="box rb-adj" id="rb-adj" style="display:none"></div>
       <div class="box rb-col">
-        <div style="font-weight:900">✍️ Palavras da turma</div>
+        <div style="font-weight:900;font-stretch:115%;text-transform:uppercase">Palavras da turma</div>
         <div class="rb-small">Nomes, piadas internas, lugares de vocês. Separe por vírgula. Ninguém vê a lista.</div>
         <div class="rb-cw"><input id="rb-cw" maxlength="300" placeholder="Ex.: tio Zé, churrasco, Bidu" autocomplete="off"><button class="btn ok" data-rb="addw">Adicionar</button></div>
         <div id="rb-cwinfo"></div>
       </div>
       <div class="box" id="rb-people"></div>
-      <button class="btn big ok" data-rb="begin" id="rb-begin">▶ Começar</button>
+      <button class="btn big ok" data-rb="begin" id="rb-begin">Começar ▶</button>
       <p class="sub center" id="rb-event"></p>
       ${chatBox(false)}`;
   }
   function patchSetup() {
     const g = G(), cfg = g.cfg;
     const pre = $('rb-presets');
-    if (pre) pre.innerHTML = Object.keys(g.presets).map(k => { const p = g.presets[k]; return `<div class="rb-pre ${cfg.preset === k ? 'sel' : ''}" data-rb="preset" data-k="${k}"><b>${p.emoji} ${esc(p.name)}</b><small>${p.rounds} rodadas · ${p.drawSec}s${p.chaos ? ' · com surpresas' : ''}</small></div>`; }).join('');
+    if (pre) pre.innerHTML = Object.keys(g.presets).map(k => { const p = g.presets[k]; return `<div class="rb-pre ${cfg.preset === k ? 'sel' : ''}" data-rb="preset" data-k="${k}"><b>${esc(p.name)}</b><small>${p.rounds} rodadas · ${p.drawSec}s${p.chaos ? ' · com surpresas' : ''}</small></div>`; }).join('');
     const catN = cfg.cats.length;
     const sum = $('rb-sum');
-    if (sum) sum.innerHTML = `<span class="rb-small">${cfg.preset === 'custom' ? '🛠️ Personalizado · ' : ''}${plural(cfg.rounds, 'rodada', 'rodadas')} · ${cfg.drawSec}s · ${cfg.hints ? plural(cfg.hints, 'dica', 'dicas') + ' (' + cfg.pace + ')' : 'sem dicas'} · ${catN === g.cats.length ? 'todas as categorias' : plural(catN, 'categoria', 'categorias')}${cfg.chaos ? ' · 🌀 caos' : ''}<br>${g.hasTv ? '📺 TV conectada: o desenho aparece grande na TV' : '🏠 Sem TV: cada um vê o desenho no próprio celular'}</span><button class="btn ghost" data-rb="adjust" style="width:auto;padding:10px 14px;font-size:15px">${adjustOpen ? 'Fechar' : '⚙️ Ajustar'}</button>`;
+    if (sum) sum.innerHTML = `<span class="rb-small">${cfg.preset === 'custom' ? 'Personalizado · ' : ''}${plural(cfg.rounds, 'rodada', 'rodadas')} · ${cfg.drawSec}s · ${cfg.hints ? plural(cfg.hints, 'dica', 'dicas') + ' (' + cfg.pace + ')' : 'sem dicas'} · ${catN === g.cats.length ? 'todas as categorias' : plural(catN, 'categoria', 'categorias')}${cfg.chaos ? ' · caos' : ''}<br>${g.hasTv ? 'TV conectada: o desenho aparece grande na TV' : 'Sem TV: cada um vê o desenho no próprio celular'}</span><button class="btn" data-rb="adjust" style="width:auto;padding:10px 14px;font-size:15px;box-shadow:3px 3px 0 #0f0f14">${adjustOpen ? 'Fechar' : 'Ajustar'}</button>`;
     const adj = $('rb-adj');
     if (adj) {
       adj.style.display = adjustOpen ? '' : 'none';
@@ -538,17 +565,17 @@
           <div class="rb-row"><span>Tempo para desenhar</span>${step('drawSec', cfg.drawSec, 's', 10)}</div>
           <div class="rb-row"><span>Dicas (letras)</span>${step('hints', cfg.hints, '', 1)}</div>
           <div class="rb-row"><span>Dicas aparecem</span><div class="rb-seg">${PACES.map(p => `<span class="${cfg.pace === p[0] ? 'sel' : ''}" data-rb="cfg" data-k="pace" data-v="${p[0]}">${p[1]}</span>`).join('')}</div></div>
-          <div class="rb-row"><span>Modo Caos 🌀<br><small class="rb-small">pincel gigante, quadro de cabeça para baixo…</small></span><div class="rb-seg"><span class="${cfg.chaos ? '' : 'sel'}" data-rb="cfg" data-k="chaos" data-v="0">Não</span><span class="${cfg.chaos ? 'sel' : ''}" data-rb="cfg" data-k="chaos" data-v="1">Sim</span></div></div>
+          <div class="rb-row"><span>Modo Caos<br><small class="rb-small">pincel gigante, quadro de cabeça para baixo…</small></span><div class="rb-seg"><span class="${cfg.chaos ? '' : 'sel'}" data-rb="cfg" data-k="chaos" data-v="0">Não</span><span class="${cfg.chaos ? 'sel' : ''}" data-rb="cfg" data-k="chaos" data-v="1">Sim</span></div></div>
           <div><div style="font-weight:800;margin-bottom:6px">Onde vocês estão?</div><div class="rb-seg">${PLACES.map(p => `<span class="${cfg.place === p[0] ? 'sel' : ''}" data-rb="cfg" data-k="place" data-v="${p[0]}">${p[1]}</span>`).join('')}</div>
             <div class="rb-small" style="margin-top:4px">Com a TV, o celular de quem adivinha só mostra o chat (o desenho fica grande na TV).</div></div>
           <div><div style="font-weight:800;margin-bottom:6px">Categorias</div><div class="rb-cats">${g.cats.map(k => `<span class="rb-cat ${cfg.cats.indexOf(k.key) >= 0 ? 'sel' : ''}" data-rb="cat" data-k="${k.key}">${esc(k.emoji + ' ' + k.name)}</span>`).join('')}<span class="rb-cat" data-rb="allcats">Todas</span></div></div>`;
       }
     }
     const info = $('rb-cwinfo');
-    if (info) info.innerHTML = cfg.customN ? `<div class="rb-row"><span class="rb-small" style="font-weight:800;color:#4ade80">✓ ${plural(cfg.customN, 'palavra da turma', 'palavras da turma')}</span><div class="rb-seg"><span class="${cfg.onlyCustom ? '' : 'sel'}" data-rb="cfg" data-k="onlyCustom" data-v="0">Misturar</span><span class="${cfg.onlyCustom ? 'sel' : ''}" data-rb="cfg" data-k="onlyCustom" data-v="1">Só elas</span></div><div class="rb-tb" data-rb="clearw" title="apagar">🗑</div></div>` : '';
+    if (info) info.innerHTML = cfg.customN ? `<div class="rb-row"><span class="rb-small" style="font-weight:800;color:#08703b">✓ ${plural(cfg.customN, 'palavra da turma', 'palavras da turma')}</span><div class="rb-seg"><span class="${cfg.onlyCustom ? '' : 'sel'}" data-rb="cfg" data-k="onlyCustom" data-v="0">Misturar</span><span class="${cfg.onlyCustom ? 'sel' : ''}" data-rb="cfg" data-k="onlyCustom" data-v="1">Só elas</span></div><div class="rb-tb" data-rb="clearw" title="apagar">${ICON.trash}</div></div>` : '';
     const ppl = $('rb-people');
     const ps = C.C.players, on = ps.filter(p => p.on !== false).length;
-    if (ppl) ppl.innerHTML = `<div class="rb-small" style="margin-bottom:8px">${plural(ps.length, 'jogador', 'jogadores')} na sala${on < 2 ? ' · precisa de 2 ou mais' : ''}</div><div class="rb-people">${ps.map(p => { const w = who(p.pid); return `<span class="rb-chip">${av(p.pid, 22)}${esc(p.name)}${p.on === false ? ' 📵' : ''}</span>`; }).join('')}</div>`;
+    if (ppl) ppl.innerHTML = `<div class="rb-small" style="margin-bottom:8px">${plural(ps.length, 'jogador', 'jogadores')} na sala${on < 2 ? ' · precisa de 2 ou mais' : ''}</div><div class="rb-people">${ps.map(p => { const w = who(p.pid); return `<span class="rb-chip">${av(p.pid, 22)}${esc(p.name)}${p.on === false ? ' · fora' : ''}</span>`; }).join('')}</div>`;
     const b = $('rb-begin'); if (b) b.disabled = on < 2;
     const ev = $('rb-event'); if (ev) ev.innerHTML = C.C.event ? C.hl(C.C.event.text) : '';
     const qr = $('rb-qr');
@@ -557,7 +584,7 @@
       if (qr.dataset.s !== want) {
         qr.dataset.s = want;
         const nets = ((C.meta && C.meta.nets) || []).filter(x => x.qr);
-        qr.innerHTML = qrOpen ? `<div class="rb-qr">${nets.map(x => `<div style="text-align:center">${x.qr}${nets.length > 1 ? `<div class="rb-small">${esc(x.label)}</div>` : ''}</div>`).join('')}</div><p class="rb-small" style="text-align:center;margin-top:6px">Aponte a câmera de outro celular. Código da sala: <b style="color:#fbbf24">${esc(C.room)}</b></p>` : '';
+        qr.innerHTML = qrOpen ? `<div class="rb-qr">${nets.map(x => `<div style="text-align:center">${x.qr}${nets.length > 1 ? `<div class="rb-small">${esc(x.label)}</div>` : ''}</div>`).join('')}</div><p class="rb-small" style="text-align:center;margin-top:6px">Aponte a câmera de outro celular. Código da sala: <b class="pix" style="color:#0f0f14;font-size:16px">${esc(C.room)}</b></p>` : '';
       }
     }
   }
@@ -590,27 +617,27 @@
   }
   function endHtml() {
     return `<div class="rb rb-end" id="rb-root">
-      <div class="box center"><div class="big-emoji">🏆</div><h2 id="rb-champ" style="margin-top:6px"></h2><div class="rb-podium" id="rb-podium"></div></div>
+      <div class="box center"><p class="rb-k" style="color:#55555e">Fim de jogo</p><h2 id="rb-champ" style="margin-top:8px"></h2><div class="rb-podium" id="rb-podium"></div></div>
       <div class="rb-awards" id="rb-awards"></div>
       <div class="box" id="rb-final"></div>
-      <button class="btn big ok" data-rb="again">🔄 Jogar de novo</button>
-      <button class="btn blue" data-rb="setup">⚙️ Trocar configurações</button>
-      <button class="btn ghost" data-rb="quit">🕹️ Voltar para o Arcade</button>
+      <button class="btn big ok" data-rb="again">Jogar de novo</button>
+      <button class="btn blue" data-rb="setup">Trocar configurações</button>
+      <button class="btn ghost" data-rb="quit">Voltar para o Arcade</button>
       ${chatBox(false)}
     </div>`;
   }
   function patchEnd() {
     const g = G(), r = g.rank;
     const champ = $('rb-champ');
-    if (champ) champ.innerHTML = r.length ? `<span style="color:${who(r[0].pid).hex}">${esc(who(r[0].pid).name)}</span> venceu!` : 'Fim de jogo';
+    if (champ) champ.innerHTML = r.length ? `<span class="rb-champ" style="background:${who(r[0].pid).hex}">${esc(who(r[0].pid).name)}</span><br>venceu!` : 'Fim de jogo';
     const pod = $('rb-podium');
     if (pod) {
-      const medal = ['🥇', '🥈', '🥉'];
+      const medal = ['1º', '2º', '3º'];
       const order = [1, 0, 2].filter(i => r[i]);
-      pod.innerHTML = order.map(i => { const w = who(r[i].pid); return `<div class="rb-pod p${i + 1}"><div class="f">${av(r[i].pid, i ? 52 : 64)}</div><div class="m">${medal[i]}</div><div class="n" style="color:${w.hex}">${esc(w.name)}</div><div class="s">${r[i].score}</div><div class="bar"></div></div>`; }).join('');
+      pod.innerHTML = order.map(i => { const w = who(r[i].pid); return `<div class="rb-pod p${i + 1}"><div class="f">${av(r[i].pid, i ? 52 : 64)}</div><div class="m">${medal[i]}</div><div class="n">${esc(w.name)}</div><div class="s">${r[i].score}</div><div class="bar"></div></div>`; }).join('');
     }
     const aw = $('rb-awards');
-    if (aw) aw.innerHTML = (g.awards || []).map(a => { const w = who(a.pid); return `<div class="rb-aw"><div class="e">${a.emoji} ${av(a.pid, 30)}</div><b>${esc(a.title)}</b><div class="n" style="color:${w.hex}">${esc(w.name)}</div><small>${esc(a.detail)}</small></div>`; }).join('');
+    if (aw) aw.innerHTML = (g.awards || []).map(a => { const w = who(a.pid); return `<div class="rb-aw"><div class="e">${a.emoji} ${av(a.pid, 30)}</div><b>${esc(a.title)}</b><div class="n">${esc(w.name)}</div><small>${esc(a.detail)}</small></div>`; }).join('');
     const fin = $('rb-final');
     if (fin) fin.innerHTML = `<div class="players">${r.map(x => { const w = who(x.pid); return `<div class="pl ${x.pid === me() ? 'me' : ''}">${av(x.pid, 30)}<b>${x.place}º ${esc(w.name)}</b><span>${x.score} pts</span></div>`; }).join('')}</div>`;
   }
@@ -663,7 +690,7 @@
   }
   function copyLink() {
     const url = joinUrl();
-    const ok = () => pill('🔗 Link copiado!', 'ok', 1400);
+    const ok = () => pill('Link copiado!', 'ok', 1400);
     const fallback = () => {
       const t = document.createElement('textarea'); t.value = url; t.style.position = 'fixed'; t.style.opacity = '0';
       document.body.appendChild(t); t.select();

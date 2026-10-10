@@ -4,21 +4,37 @@
   const SIZE = 640;                      // resolução interna do desenho (quadrado)
   const CORES = ['#111111', '#ef4444', '#f97316', '#facc15', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#8b5a2b', '#ffffff'];
   let styled = false;
+  // Visual "fliperama de papel" (shared/ui.css): quadro branco com borda de tinta, botões quadrados com sombra dura.
   const style = `
-    .tsf-wrap { position:relative; width:100%; aspect-ratio:1; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 8px 30px #0008; touch-action:none; }
+    .tsf-wrap { position:relative; width:100%; aspect-ratio:1; background:#fff; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; overflow:hidden; touch-action:none; }
     .tsf-wrap canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
-    .tsf-tools { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .tsf-cor { width:38px; height:38px; border-radius:50%; border:3px solid transparent; box-shadow:0 0 0 1px #0008 inset; flex:none; }
-    .tsf-cor.sel { border-color:#fff; box-shadow:0 0 0 3px #f59e0b; }
-    .tsf-sz { width:44px; height:44px; border-radius:12px; background:#2a3350; display:flex; align-items:center; justify-content:center; flex:none; }
-    .tsf-sz.sel { background:#f59e0b; }
-    .tsf-sz.off { opacity:.3; }
-    .tsf-sz { font-size:22px; }
-    .tsf-sz i { display:block; border-radius:50%; background:#fff; }
-    .tsf-sz.sel i { background:#111; }
-    .tsf-mini { width:100%; aspect-ratio:1; background:#fff; border-radius:16px; object-fit:contain; }
-    .tsf-frase { font-size:30px; font-weight:900; line-height:1.2; text-align:center; }
+    .tsf-tools { display:grid; gap:6px; align-items:center; }
+    .tsf-tools.cores { grid-template-columns:repeat(10,1fr); }
+    .tsf-tools.ferr { grid-template-columns:repeat(8,1fr); }
+    .tsf-tools.tam { grid-template-columns:repeat(8,1fr); }
+    .tsf-tools .lb { grid-column:span 2; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; letter-spacing:.06em; text-transform:uppercase; padding-right:6px; }
+    .tsf-cor { aspect-ratio:1; border:3px solid #0f0f14; cursor:pointer; }
+    .tsf-cor.sel { outline:3px solid #0f0f14; outline-offset:2px; }
+    .tsf-sz { aspect-ratio:1; min-height:38px; background:#fff; border:3px solid #0f0f14; box-shadow:3px 3px 0 #0f0f14; display:flex; align-items:center; justify-content:center; color:#0f0f14; cursor:pointer; transition:transform .06s, box-shadow .06s; }
+    .tsf-sz svg { width:60%; height:60%; fill:none; stroke:#0f0f14; stroke-width:2.6; stroke-linecap:square; stroke-linejoin:miter; }
+    .tsf-sz.sel { background:#ffce1f; transform:translate(3px,3px); box-shadow:none; }
+    .tsf-sz:active { transform:translate(3px,3px); box-shadow:none; }
+    .tsf-sz.off { opacity:.3; box-shadow:none; }
+    .tsf-sz.gap { margin-left:4px; }
+    .tsf-sz i { display:block; border-radius:50%; background:#0f0f14; }
+    .tsf-mini { display:block; width:100%; aspect-ratio:1; background:#fff; border:3px solid #0f0f14; object-fit:contain; }
+    .tsf-frase { font-size:28px; font-weight:900; font-stretch:112%; line-height:1.15; text-align:center; overflow-wrap:anywhere; }
+    .tsf-lb { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; letter-spacing:.06em; text-transform:uppercase; display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+    .tsf-lb.c { justify-content:center; text-align:center; }
+    .tsf-lb .nm { font-family:'Archivo',sans-serif; font-size:15px; letter-spacing:0; text-transform:none; }
     .tsf-prog { display:flex; gap:6px; flex-wrap:wrap; }
+    .tsf-prog .nm { font-size:15px; }
+    .tsf-prog .nm.wait { background:#fff; color:#55555e; border-style:dashed; }
+    .tsf-done { width:72px; height:72px; margin:0 auto 12px; background:#35d07f; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; display:flex; align-items:center; justify-content:center; font-family:'Pixelify Sans',monospace; font-size:44px; font-weight:700; }
+    .tsf-h { font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:24px; line-height:1; }
+    .tsf-step { display:flex; flex-direction:column; gap:10px; }
+    .tsf-save { position:relative; cursor:pointer; }
+    .tsf-savehint { position:absolute; right:8px; bottom:8px; background:#0f0f14; color:#ffce1f; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:11px; letter-spacing:.06em; text-transform:uppercase; padding:5px 8px; pointer-events:none; }
   `;
   const ensureStyle = () => { if (styled) return; const el = document.createElement('style'); el.textContent = style; document.head.appendChild(el); styled = true; };
 
@@ -75,13 +91,24 @@
   const redoFn = () => { if (!cx2 || !redo.length) return; hist.push(cx2.getImageData(0, 0, SIZE, SIZE)); cx2.putImageData(redo.pop(), 0, 0); };
   const clear = () => { if (!cx2) return; hist.push(cx2.getImageData(0, 0, SIZE, SIZE)); redo = []; cx2.fillStyle = '#fff'; cx2.fillRect(0, 0, SIZE, SIZE); };
   const exportImg = () => { if (!cv) return ''; const out = document.createElement('canvas'); out.width = 480; out.height = 480; out.getContext('2d').drawImage(cv, 0, 0, 480, 480); return out.toDataURL('image/jpeg', 0.82); };
-  const TOOLS = [['pen', '✏️', 'caneta'], ['eraser', '🧽', 'borracha'], ['line', '📏', 'reta'], ['rect', '▭', 'retângulo'], ['circle', '◯', 'círculo']];
+  // ícones de traço (SVG em tinta), no lugar dos emojis
+  const ic = d => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+  const ICON = {
+    pen: ic('<path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M14 6l4 4"/>'),
+    eraser: ic('<path d="M3 15l9-9 7 7-6 6H7z"/><path d="M13 19h8"/>'),
+    line: ic('<path d="M5 19L19 5"/>'),
+    rect: ic('<rect x="4" y="6" width="16" height="12"/>'),
+    circle: ic('<circle cx="12" cy="12" r="8"/>'),
+    undo: ic('<path d="M9 4L4 9l5 5"/><path d="M4 9h10a5 5 0 0 1 0 10h-4"/>'),
+    redo: ic('<path d="M15 4l5 5-5 5"/><path d="M20 9H10a5 5 0 0 0 0 10h4"/>'),
+    trash: ic('<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/>'),
+  };
+  const TOOLS = [['pen', ICON.pen, 'caneta'], ['eraser', ICON.eraser, 'borracha'], ['line', ICON.line, 'reta'], ['rect', ICON.rect, 'retângulo'], ['circle', ICON.circle, 'círculo']];
   function toolsHtml() {
-    return `<div class="tsf-tools">${CORES.map(c => `<div class="tsf-cor ${tool !== 'eraser' && cor === c ? 'sel' : ''}" style="background:${c}" data-a="tcor" data-c="${c}"></div>`).join('')}</div>
-      <div class="tsf-tools">${TOOLS.map(function (t) { const k = t[0], ic = t[1], nome = t[2]; return `<div class="tsf-sz ${tool === k ? 'sel' : ''}" data-a="tool" data-k="${k}" title="${nome}">${ic}</div>`; }).join('')}
-        <span style="flex:1"></span>
-        <div class="tsf-sz ${hist.length ? '' : 'off'}" data-a="undo" title="desfazer">↶</div><div class="tsf-sz ${redo.length ? '' : 'off'}" data-a="redo" title="refazer">↷</div><div class="tsf-sz" data-a="limpar" title="limpar tudo">🗑</div></div>
-      <div class="tsf-tools"><span class="sub mut">Traço</span>${[4, 8, 16, 28].map(t => `<div class="tsf-sz ${tam === t ? 'sel' : ''}" data-a="tam" data-t="${t}"><i style="width:${Math.min(30, t + 4)}px;height:${Math.min(30, t + 4)}px"></i></div>`).join('')}</div>`;
+    return `<div class="tsf-tools cores">${CORES.map(c => `<div class="tsf-cor ${tool !== 'eraser' && cor === c ? 'sel' : ''}" style="background:${c}" data-a="tcor" data-c="${c}"></div>`).join('')}</div>
+      <div class="tsf-tools ferr" style="margin-top:10px">${TOOLS.map(function (t) { const k = t[0], icone = t[1], nome = t[2]; return `<div class="tsf-sz ${tool === k ? 'sel' : ''}" data-a="tool" data-k="${k}" title="${nome}">${icone}</div>`; }).join('')}
+        <div class="tsf-sz ${hist.length ? '' : 'off'}" data-a="undo" title="desfazer">${ICON.undo}</div><div class="tsf-sz ${redo.length ? '' : 'off'}" data-a="redo" title="refazer">${ICON.redo}</div><div class="tsf-sz" data-a="limpar" title="limpar tudo">${ICON.trash}</div></div>
+      <div class="tsf-tools tam" style="margin-top:10px"><span class="lb">Traço</span>${[4, 8, 16, 28].map(t => `<div class="tsf-sz ${tam === t ? 'sel' : ''}" data-a="tam" data-t="${t}"><i style="width:${Math.min(26, t + 3)}px;height:${Math.min(26, t + 3)}px"></i></div>`).join('')}</div>`;
   }
   function refreshTools(root) { const t = root.querySelector('#tsf-tools'); if (t) { t.innerHTML = toolsHtml(); bindTools(root); } }
   function bindTools(root) {
@@ -99,6 +126,28 @@
     });
   }
 
+  // quem já entregou: crachá na cor da pessoa (letra em tinta); quem falta: crachá branco tracejado
+  const progTxt = G => `Rodada ${G.step + 1} de ${G.total} · ${G.done.length}/${G.order.length} entregaram`;
+  const progHtml = c => { const G = c.G; return G.order.map(pid => { const p = c.C.players.find(x => x.pid === pid); if (!p) return ''; const ok = G.done.includes(pid); return `<span class="nm${ok ? '' : ' wait'}" style="${ok ? `background:${c.ci(p.color).hex};color:#0f0f14` : ''}">${ok ? '✓ ' : ''}${c.esc(p.name)}</span>`; }).join(''); };
+
+  // Toque para salvar (shared/client.js, data-copyimg): o ajudante lê a imagem com fetch, e a política de
+  // segurança do site não deixa buscar endereço data:. Por isso cada imagem salvável ganha uma cópia em
+  // <canvas> escondida, que vem antes da <img> e é a que o ajudante usa.
+  function canvasCopies() {
+    Array.prototype.slice.call(document.querySelectorAll('[data-copyimg]')).forEach(w => {
+      const img = w.querySelector('img');
+      if (!img || w.querySelector('canvas')) return;
+      const make = () => {
+        if (w.querySelector('canvas') || !img.naturalWidth) return;
+        const cv = document.createElement('canvas');
+        cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.style.display = 'none';
+        cv.getContext('2d').drawImage(img, 0, 0);
+        w.insertBefore(cv, w.firstChild);
+      };
+      if (img.complete) make(); else img.addEventListener('load', make);
+    });
+  }
+
   ARCADE.register('telefone', {
     phone: {
       // enquanto a pessoa desenha/escreve, a tela não é redesenhada
@@ -106,30 +155,32 @@
 
       html(c) {
         ensureStyle();
-        const G = c.G, esc = c.esc, nm = p => p ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle">${c.avatar(p, 26)}${c.nm(p)}</span>` : '';
+        const G = c.G, esc = c.esc;
+        const chip = p => p ? `<span class="nm" style="background:${c.ci(p.color).hex};color:#0f0f14">${esc(p.name)}</span>` : '';
+        const nm = p => p ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle">${c.avatar(p, 26)}${chip(p)}</span>` : '';
         if (!G) return '<div class="box center"><p class="sub">Preparando…</p></div>';
-        const prog = () => `<div class="box"><p class="sub mut" style="margin-bottom:6px" id="tsf-progtxt">Rodada ${G.step + 1} de ${G.total} · ${G.done.length}/${G.order.length} entregaram</p>
-          <div class="tsf-prog" id="tsf-prog">${G.order.map(pid => { const p = c.C.players.find(x => x.pid === pid); return p ? `<span class="nm" style="${c.nmStyle(p)};opacity:${G.done.includes(pid) ? 1 : .35}">${G.done.includes(pid) ? '✓ ' : ''}${esc(p.name)}</span>` : ''; }).join('')}</div></div>`;
+        const prog = () => `<div class="box"><p class="tsf-lb" style="margin-bottom:8px" id="tsf-progtxt">${progTxt(G)}</p>
+          <div class="tsf-prog" id="tsf-prog">${progHtml(c)}</div></div>`;
 
         if (['write', 'draw', 'describe'].includes(G.phase)) {
           const me = G.me;
           if (!me || me.chain < 0) return `<div class="box center"><p class="sub">Você entrou depois do começo. Espere a próxima partida.</p></div>` + prog();
-          if (me.submitted) return `<div class="box center"><div class="big-emoji">✅</div><p class="sub">Entregue! Esperando os outros…</p></div>` + prog();
+          if (me.submitted) return `<div class="box center"><div class="tsf-done">✓</div><div class="tsf-h">Entregue!</div><p class="sub mut" style="margin-top:6px">Esperando os outros…</p></div>` + prog();
           let h = c.timerHtml(G.phase === 'draw' ? 'Quando acabar, o desenho é enviado sozinho.' : '', G.turnMs);
           if (G.phase === 'write') {
-            h += `<div class="box hi"><p class="sub center" style="margin-bottom:10px">✍️ Escreva uma frase maluca para alguém desenhar</p>
+            h += `<div class="box hi"><p class="tsf-h center" style="font-size:20px;margin-bottom:12px">Escreva uma frase maluca para alguém desenhar</p>
               <input id="tsf-text" maxlength="120" placeholder="${esc(me.sug)}" autocomplete="off">
-              <p class="sub mut center" style="margin-top:8px">Sem ideia? Deixe em branco e vai a sugestão: "${esc(me.sug)}"</p></div>
+              <p class="sub center" style="margin-top:10px;font-size:15px">Sem ideia? Deixe em branco e vai a sugestão: "${esc(me.sug)}"</p></div>
               <button class="btn big ok" data-a="enviarTexto">Enviar frase</button>`;
           } else if (G.phase === 'draw') {
-            h += `<div class="box hi"><p class="sub mut center">🎨 Desenhe isto (recebido de ${nm(c.C.players.find(x => x.pid === me.prev.by))}):</p><div class="tsf-frase">${esc(me.prev.content)}</div></div>
+            h += `<div class="box hi tsf-step"><p class="tsf-lb c">Desenhe isto · de ${nm(c.C.players.find(x => x.pid === me.prev.by))}</p><div class="tsf-frase">${esc(me.prev.content)}</div></div>
               <div class="tsf-wrap"><canvas id="tsf-cv"></canvas></div>
               <div id="tsf-tools">${toolsHtml()}</div>
               <button class="btn big ok" data-a="enviarDesenho">Enviar desenho</button>`;
           } else {
-            h += `<div class="box hi"><p class="sub mut center" style="margin-bottom:8px">👀 O que é isto? (desenho de ${nm(c.C.players.find(x => x.pid === me.prev.by))})</p>
-              ${me.prev.content ? `<img class="tsf-mini" src="${me.prev.content}">` : '<div class="tsf-mini" style="display:flex;align-items:center;justify-content:center;color:#999">(não deu tempo de desenhar)</div>'}
-              <input id="tsf-text" maxlength="120" placeholder="Descreva o desenho…" autocomplete="off" style="margin-top:10px"></div>
+            h += `<div class="box hi tsf-step"><p class="tsf-lb c">O que é isto? · desenho de ${nm(c.C.players.find(x => x.pid === me.prev.by))}</p>
+              ${me.prev.content ? `<img class="tsf-mini" src="${me.prev.content}">` : '<div class="tsf-mini" style="display:flex;align-items:center;justify-content:center;color:#55555e;font-weight:700">(não deu tempo de desenhar)</div>'}
+              <input id="tsf-text" maxlength="120" placeholder="Descreva o desenho…" autocomplete="off"></div>
               <button class="btn big ok" data-a="enviarTexto">Enviar descrição</button>`;
           }
           return h + prog();
@@ -137,18 +188,19 @@
 
         if (G.phase === 'reveal' || G.phase === 'end') {
           const a = G.album;
-          let h = `<div class="box center"><p class="sub mut">Álbum · corrente ${a ? a.chain + 1 : 0} de ${G.chainsCount}</p>${a ? `<p class="sub">Começou com ${nm(c.C.players.find(x => x.pid === a.owner))}</p>` : ''}</div>`;
+          let h = `<div class="box center" style="background:#b08cff"><p class="tsf-lb c">Álbum · corrente ${a ? a.chain + 1 : 0} de ${G.chainsCount}</p>${a ? `<p class="tsf-lb c" style="margin-top:8px">Começou com ${nm(c.C.players.find(x => x.pid === a.owner))}</p>` : ''}</div>`;
           if (a) h += a.items.map((it, i) => it.type === 'draw'
-            ? `<div class="box"><p class="sub mut">${i + 1}. ${nm(c.C.players.find(x => x.pid === it.by))} desenhou:</p>${it.content ? `<img class="tsf-mini" src="${it.content}">` : '<p class="sub">(sem desenho)</p>'}</div>`
-            : `<div class="box"><p class="sub mut">${i + 1}. ${nm(c.C.players.find(x => x.pid === it.by))} ${i === 0 ? 'escreveu' : 'descreveu'}:</p><div class="tsf-frase">${esc(it.content)}</div></div>`).join('');
-          if (G.phase === 'reveal') h += `<div class="row"><button class="btn ghost" data-a="prev">⬅️</button><button class="btn big warn" data-a="next" style="flex:3">Próximo ➡️</button></div><p class="sub mut center">Olhem para a TV! Qualquer um pode avançar.</p>`;
-          else h += `<button class="btn big ok" data-a="again">🔄 Jogar de novo</button>`;
+            ? `<div class="box tsf-step"><p class="tsf-lb">${i + 1} · ${nm(c.C.players.find(x => x.pid === it.by))} desenhou:</p>${it.content ? `<div class="tsf-save" data-copyimg="telefone-${a.chain + 1}-${i + 1}"><img class="tsf-mini" src="${it.content}" alt="Desenho"><span class="tsf-savehint">Toque para salvar</span></div>` : '<p class="sub mut">(sem desenho)</p>'}</div>`
+            : `<div class="box tsf-step"><p class="tsf-lb">${i + 1} · ${nm(c.C.players.find(x => x.pid === it.by))} ${i === 0 ? 'escreveu' : 'descreveu'}:</p><div class="tsf-frase">${esc(it.content)}</div></div>`).join('');
+          if (G.phase === 'reveal') h += `<div class="row"><button class="btn" data-a="prev" aria-label="Voltar">◀</button><button class="btn big warn" data-a="next" style="flex:3">Próximo ▶</button></div><p class="sub mut center">Olhem para a TV! Qualquer um pode avançar.</p>`;
+          else h += `<button class="btn big ok" data-a="again">Jogar de novo</button>`;
           return h;
         }
         return '';
       },
 
       after(c) {
+        canvasCopies();
         const G = c.G; if (!G) return;
         const root = document.getElementById('app');
         const canvasEl = document.getElementById('tsf-cv');
@@ -165,9 +217,9 @@
           tEl.addEventListener('input', () => scheduleDraft(800));
         }
         const progtxt = document.getElementById('tsf-progtxt');
-        if (progtxt) progtxt.textContent = `Rodada ${G.step + 1} de ${G.total} · ${G.done.length}/${G.order.length} entregaram`;
+        if (progtxt) progtxt.textContent = progTxt(G);
         const prog = document.getElementById('tsf-prog');
-        if (prog) prog.innerHTML = G.order.map(pid => { const p = c.C.players.find(x => x.pid === pid); return p ? `<span class="nm" style="${c.nmStyle(p)};opacity:${G.done.includes(pid) ? 1 : .35}">${G.done.includes(pid) ? '✓ ' : ''}${c.esc(p.name)}</span>` : ''; }).join('');
+        if (prog) prog.innerHTML = progHtml(c);
         // tempo acabou: envia o que tem, uma vez só por rodada
         const r = c.remaining();
         if (G.me && !G.me.submitted && r !== null && r <= 0.3 && autoSent !== tag) {

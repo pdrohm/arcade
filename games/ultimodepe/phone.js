@@ -214,11 +214,11 @@
         : 'Todo mundo aparece por alguns segundos. Depois os outros somem: <b>toque</b> para andar até um lugar novo e <b>arraste</b> para mirar de memória. No 3, 2, 1 o lugar fica fixo e só dá para mirar. No <b>FOGO!</b>, todos atiram juntos. Levou tiro, saiu. Dois se acertando caem juntos.'}</p>
         <p class="sub mut" style="margin-top:8px">O último de pé vence. Se todos os que restam saem juntos, eles jogam um desempate.</p></div>
       <button class="udp-toggle ${G.showOthers ? 'on' : ''}" data-a="udp-show" ${host ? '' : 'disabled'} aria-pressed="${G.showOthers}">
-        <span class="sw"><i></i></span><span><b>👀 Mostrar todo mundo antes de cada rodada</b><small>${G.showOthers ? 'Ligado: MEMORIZE de alguns segundos no começo de cada rodada.' : 'Desligado: ninguém aparece antes. Só a memória da rodada anterior.'}</small></span>
+        <span class="sw"><i></i></span><span><b>Mostrar todo mundo antes de cada rodada</b><small>${G.showOthers ? 'Ligado: MEMORIZE de alguns segundos no começo de cada rodada.' : 'Desligado: ninguém aparece antes. Só a memória da rodada anterior.'}</small></span>
       </button>
-      <div class="box">${c.playersHtml({ tag: (p, i) => (i >= 8 ? ' 👀' : '') })}${n > 8 ? '<p class="sub mut center" style="margin-top:8px">Até 8 na disputa. 👀 assiste esta partida.</p>' : ''}</div>
+      <div class="box">${c.playersHtml({ tag: (p, i) => (i >= 8 ? ' <span class="udp-lbl" style="display:inline;margin:0">ASSISTE</span>' : '') })}${n > 8 ? '<p class="sub mut center" style="margin-top:8px">Até 8 na disputa. Quem tem ASSISTE vê esta partida de fora.</p>' : ''}</div>
       ${host
-        ? `<button class="btn big ok" data-a="udp-start" ${n >= 2 ? '' : 'disabled'}>▶️ Começar</button>${n < 2 ? '<p class="sub center mut">Precisa de pelo menos 2 jogadores.</p>' : ''}`
+        ? `<button class="btn big ok" data-a="udp-start" ${n >= 2 ? '' : 'disabled'}>Começar</button>${n < 2 ? '<p class="sub center mut">Precisa de pelo menos 2 jogadores.</p>' : ''}`
         : `<p class="sub center mut">${hostP ? c.nm(hostP) : 'O primeiro jogador'} escolhe a variante e começa.</p>`}
     </section>`;
   }
@@ -245,24 +245,24 @@
     const G = c.G, you = G.you || {}, peng = G.variant === 'penguins';
     const put = (id, t) => { const e = document.getElementById(id); if (e && e.textContent !== t) e.textContent = t; };
     let a = '', b = '';
-    if (!you.playing) { a = '👀 Na torcida'; b = 'Você joga na próxima partida'; }
-    else if (!you.alive && G.phase !== 'end' && !(G.phase === 'result' && G.result && G.result.out.includes(you.pid))) { a = peng ? '💦 Você caiu' : '💥 Você saiu'; b = 'Assista e torça!'; }
+    if (!you.playing) { a = 'Na torcida'; b = 'Você joga na próxima partida'; }
+    else if (!you.alive && G.phase !== 'end' && !(G.phase === 'result' && G.result && G.result.out.includes(you.pid))) { a = peng ? 'Você caiu' : 'Você saiu'; b = 'Assista e torça!'; }
     else switch (G.phase) {
       case 'intro': a = 'Prepare-se!'; b = 'Leia as regras na tela'; break;
       case 'reveal': a = G.blind ? 'Sem espiar!' : G.tiebreak ? 'DESEMPATE! Memorize' : 'MEMORIZE!'; b = G.blind ? 'Lembre da rodada anterior' : 'Decore onde cada um está'; break;
-      case 'aim': a = peng ? 'Arraste: direção e força' : '🏃 Toque: andar · 🎯 Arraste: mirar'; b = peng ? 'longe = forte · perto = fraco' : 'No 3, 2, 1 só dá para mirar'; break;
+      case 'aim': a = peng ? 'Arraste: direção e força' : 'Toque: andar · Arraste: mirar'; b = peng ? 'longe = forte · perto = fraco' : 'No 3, 2, 1 só dá para mirar'; break;
       case 'ready': a = 'Prepare-se… 3, 2, 1'; b = peng ? 'Ainda dá para ajustar' : 'Lugar fixo: agora só mirar'; break;
       case 'lock': case 'action': a = peng ? 'JÁ!' : 'FOGO!'; b = ''; break;
       case 'result': {
         const r = G.result || { out: [] };
-        if (G.ending) { a = G.winners.includes(you.pid) ? (G.winners.length > 1 ? '🤝 Empate!' : '🏆 Você venceu!') : '🏁 Fim!'; b = ''; }
-        else if (r.tie) { a = '😱 Todo mundo saiu junto'; b = 'Desempate!'; }
-        else if (r.out.includes(you.pid)) { a = peng ? '💦 Você caiu!' : '💥 Te pegaram!'; b = 'Assista e torça!'; }
+        if (G.ending) { a = G.winners.includes(you.pid) ? (G.winners.length > 1 ? 'Empate!' : 'Você venceu!') : 'Fim!'; b = ''; }
+        else if (r.tie) { a = 'Todo mundo saiu junto'; b = 'Desempate!'; }
+        else if (r.out.includes(you.pid)) { a = peng ? 'Você caiu!' : 'Te pegaram!'; b = 'Assista e torça!'; }
         else if (r.none) { a = peng ? 'Ninguém caiu!' : 'Todo mundo errou!'; b = 'Próxima rodada'; }
         else { a = 'Você sobreviveu!'; b = r.out.map(pid => who(G, pid).name).join(', ') + (r.out.length > 1 ? ' saíram' : ' saiu'); }
         break;
       }
-      case 'end': a = G.winners.includes(you.pid) ? (G.winners.length > 1 ? '🤝 Vitória dividida!' : '🏆 Você venceu!') : '🏁 Fim de partida'; b = ''; break;
+      case 'end': a = G.winners.includes(you.pid) ? (G.winners.length > 1 ? 'Vitória dividida!' : 'Você venceu!') : 'Fim de partida'; b = ''; break;
     }
     put('udp-status', a); put('udp-sub', b);
   }
@@ -280,8 +280,8 @@
     for (const o of G.outList.slice().reverse()) if (!seen.has(o.pid)) { seen.add(o.pid); list.push({ pid: o.pid, pos: pos++, round: o.round }); }
     for (const p of G.roster) if (!seen.has(p.pid)) list.push({ pid: p.pid, pos: pos++ });
     const host = c.you && c.you.pid === G.hostPid;
-    el.innerHTML = `<div class="udp-rank">${list.map(x => { const p = who(G, x.pid); return `<p class="${c.you && x.pid === c.you.pid ? 'me' : ''}"><i>${x.pos}º</i>${face(c, p, 34)}<span class="nm" style="background:${c.esc(p.color)};color:${ink(p.color)}">${c.esc(p.name)}</span>${x.round ? `<small>rodada ${x.round}</small>` : ''}</p>`; }).join('')}</div>
-      ${host ? '<button class="btn big ok" id="udp-again">🔁 Jogar de novo</button>' : '<p class="sub center mut">O primeiro jogador pode começar outra partida.</p>'}`;
+    el.innerHTML = `<div class="udp-rank">${list.map(x => { const p = who(G, x.pid); return `<p class="${c.you && x.pid === c.you.pid ? 'me' : ''} ${x.pos === 1 ? 'first' : ''}"><i>${x.pos}º</i>${face(c, p, 34)}<span class="nm" style="background:${c.esc(p.color)};color:${ink(p.color)}">${c.esc(p.name)}</span>${x.round ? `<small>rodada ${x.round}</small>` : ''}</p>`; }).join('')}</div>
+      ${host ? '<button class="btn big ok" id="udp-again">Jogar de novo</button>' : '<p class="sub center mut">O primeiro jogador pode começar outra partida.</p>'}`;
     const again = document.getElementById('udp-again');
     if (again) again.onclick = ev => { ev.stopPropagation(); A.send({ t: 'udp-again' }); };
   }

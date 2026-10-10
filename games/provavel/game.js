@@ -26,7 +26,7 @@ const PERGUNTAS = [
 
 module.exports = {
   meta: {
-    id: 'provavel', name: 'Quem é mais provável?', emoji: '👉',
+    id: 'provavel', name: 'Quem é mais provável?', category: 'festa', glyph: '→', emoji: '👉',
     tagline: 'Uma pergunta, todos apontam para alguém. A TV revela.',
     art: 'linear-gradient(135deg,#ec4899 0%,#9d174d 55%,#4a044e 100%)',
     minPlayers: 3, maxPlayers: 8,

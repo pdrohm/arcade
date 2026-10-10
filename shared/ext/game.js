@@ -23,7 +23,7 @@ function externalGame(cfg) {
   return {
     ext,
     meta: {
-      id: cfg.id, name: cfg.name, emoji: cfg.emoji || '🎮',
+      id: cfg.id, name: cfg.name, emoji: cfg.emoji || '🎮', category: cfg.category || 'videogame', glyph: cfg.glyph || '▶',
       tagline: cfg.tagline || 'Jogo de navegador na TV. Seu celular é o controle.',
       art: cfg.art,
       minPlayers: 1, maxPlayers: pads, spectators: true,   // sala cheia pode: os outros esperam a vez

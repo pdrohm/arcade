@@ -96,7 +96,7 @@ window.ARCADE = (() => {
 
   // ---------- ajudantes de desenho ----------
   const ci = c => (meta.colors || []).find(x => x.key === c) || { hex: '#888', dark: true, name: c };
-  const nmStyle = p => `background:${ci(p.color).hex};color:${ci(p.color).dark ? '#fff' : '#111'}`;
+  const nmStyle = p => `background:${ci(p.color).hex};color:#0f0f14`;
   const nm = p => p ? `<span class="nm" style="${nmStyle(p)}">${esc(p.name)}</span>` : '';
   // Boneco da pessoa (shared/avatar.js), na cor dela. size em px. Sem o arquivo carregado, volta a bolinha de cor.
   function avatar(p, size) {
@@ -118,7 +118,7 @@ window.ARCADE = (() => {
   function timerHtml(label, totalMs) {
     const r = remaining(); if (r === null) return '';
     const total = (totalMs || 120000) / 1000;
-    return `<div class="box" style="padding:12px"><div class="timer ${r <= 15 ? 'low' : ''}" id="timer">⏱ ${fmt(r)}</div><div class="tbar"><i id="tbar" style="width:${Math.min(100, r / total * 100)}%"></i></div>${label ? `<p class="sub center" style="margin-top:6px">${label}</p>` : ''}</div>`;
+    return `<div class="box" style="padding:12px"><div class="timer ${r <= 15 ? 'low' : ''}" id="timer">${fmt(r)}</div><div class="tbar"><i id="tbar" style="width:${Math.min(100, r / total * 100)}%"></i></div>${label ? `<p class="sub center" style="margin-top:6px">${label}</p>` : ''}</div>`;
   }
   function playersHtml(opts) {
     opts = opts || {};
@@ -139,6 +139,59 @@ window.ARCADE = (() => {
     overT = setTimeout(() => { el.innerHTML = ''; }, ms || 2600);
     if (vibrate && navigator.vibrate) { try { navigator.vibrate(vibrate); } catch (err) {} }
   }
+  // ---------- toque para copiar ----------
+  // O site não deixa selecionar texto (ver shared/ui.css). O que faz sentido levar embora tem toque:
+  //   data-copy="texto"     copia o texto (código, link da sala);
+  //   data-copyimg          num <canvas> ou <img> (ou no pai de um deles): copia a imagem, ou baixa o PNG.
+  // A área de transferência moderna só existe em página segura (https). Fora dela, o texto vai pelo
+  // jeito antigo (execCommand) e a imagem é baixada.
+  function copyText(t) {
+    const old = () => {
+      const ta = document.createElement('textarea');
+      ta.value = t; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:-100px;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (err) {}
+      ta.remove(); return ok;
+    };
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(t).then(() => true, old);
+    return Promise.resolve(old());
+  }
+  function imageBlob(el) {
+    // <img> passa por um canvas: o CSP (connect-src) não deixa fazer fetch de data: URL.
+    let cv = el;
+    if (el.tagName !== 'CANVAS') {
+      cv = document.createElement('canvas');
+      cv.width = el.naturalWidth || el.width; cv.height = el.naturalHeight || el.height;
+      cv.getContext('2d').drawImage(el, 0, 0);
+    }
+    return new Promise(r => cv.toBlob(r, 'image/png'));
+  }
+  function copyImage(el, name) {
+    return imageBlob(el).then(blob => {
+      if (!blob) throw new Error('sem imagem');
+      if (navigator.clipboard && window.ClipboardItem && window.isSecureContext && blob.type === 'image/png') {
+        return navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => 'Imagem copiada!');
+      }
+      throw new Error('sem área de transferência');
+    }).catch(() => imageBlob(el).then(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = (name || 'arcade') + '.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      return 'Imagem salva!';
+    }));
+  }
+  document.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('[data-copy],[data-copyimg]');
+    if (!t) return;
+    if (t.hasAttribute('data-copy')) {
+      copyText(t.getAttribute('data-copy')).then(ok => toast(ok ? 'Copiado!' : 'Não deu para copiar'));
+      return;
+    }
+    const img = /^(CANVAS|IMG)$/.test(t.tagName) ? t : t.querySelector('canvas,img');
+    if (img) copyImage(img, t.getAttribute('data-copyimg')).then(toast, () => toast('Não deu para copiar'));
+  });
+
   function toast(t) { const el = $('#toast'); if (!el) return; el.textContent = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2800); }
 
   // ---------- som ----------
@@ -194,7 +247,7 @@ window.ARCADE = (() => {
       setInterval(() => {
         if (!S || !S.core.timerEnd) return;
         const r = remaining(), t = $('#timer'), b = $('#tbar');
-        if (t) { t.textContent = '⏱ ' + fmt(r); t.classList.toggle('low', r <= 15); }
+        if (t) { t.textContent = fmt(r); t.classList.toggle('low', r <= 15); }
         if (b) { const total = ((S.game && S.game.turnMs) || 120000) / 1000; b.style.width = Math.min(100, r / total * 100) + '%'; }
       }, 250);
       connect();

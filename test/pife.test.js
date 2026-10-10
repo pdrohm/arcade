@@ -145,3 +145,33 @@ test('uma batida válida fecha a rodada e marca um ponto', () => {
   assert.equal(t.view('p0').roundWinner, 'p0');
   assert.equal(t.view('p0').scores.p0, 1);
 });
+
+test('cada pessoa arruma a ordem da própria mão; ordem inválida é ignorada', () => {
+  const t = table(2);
+  t.game.action(t.players[0], { t: 'begin' });
+  const turn = t.view('p0').turn, other = turn === 'p0' ? 'p1' : 'p0';
+  const who = pid => t.players.find(p => p.pid === pid);
+  const ids = t.view(other).hand.map(c => c.id);
+  const reversed = [...ids].reverse();
+  // fora da vez também pode arrumar
+  t.game.action(who(other), { t: 'reorder', ids: reversed });
+  assert.deepEqual(t.view(other).hand.map(c => c.id), reversed);
+  // entradas ruins: faltando carta, carta repetida, carta de outra pessoa, lixo
+  const foreign = t.view(turn).hand[0].id;
+  for (const bad of [reversed.slice(1), [reversed[0], ...reversed.slice(0, -1)], [foreign, ...reversed.slice(1)], 'abc', null, [...reversed, 999]]) {
+    t.game.action(who(other), { t: 'reorder', ids: bad });
+    assert.deepEqual(t.view(other).hand.map(c => c.id), reversed);
+  }
+  // a carta comprada vai para o fim da mão arrumada
+  const mine = t.view(turn).hand.map(c => c.id);
+  const shuffled = [...mine.slice(4), ...mine.slice(0, 4)];
+  t.game.action(who(turn), { t: 'reorder', ids: shuffled });
+  t.game.action(who(turn), { t: 'draw', from: 'stock' });
+  const after = t.view(turn).hand.map(c => c.id);
+  assert.deepEqual(after.slice(0, 9), shuffled);
+  assert.equal(after.length, 10);
+  // a ordem continua depois de salvar e restaurar
+  const copy = pife.create({ players: t.players, byPid: pid => t.players.find(p => p.pid === pid), setEvent() {}, clearTimer() {} });
+  copy.restore(JSON.parse(JSON.stringify(t.game.serialize())));
+  assert.deepEqual(copy.view(who(turn)).hand.map(c => c.id), after);
+});

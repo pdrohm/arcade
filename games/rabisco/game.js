@@ -586,7 +586,7 @@ module.exports = {
   meta: {
     id: 'rabisco',
     name: 'Rabisco',
-    emoji: '✏️',
+    category: 'desenho', glyph: '✏', emoji: '✏️',
     tagline: 'Um desenha, todo mundo chuta no chat. Quem acerta primeiro ganha mais. Com TV ou cada um em casa.',
     art: 'linear-gradient(135deg,#f59e0b 0%,#ea580c 45%,#7c2d12 100%)',
     minPlayers: 2, maxPlayers: 12,

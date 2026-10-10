@@ -58,9 +58,9 @@
       var peng = G.variant === 'penguins', chips = '', ps = c.C.players;
       for (var i = 0; i < ps.length && i < 8; i++) chips += chip({ name: ps[i].name, color: c.ci(ps[i].color).hex }, '', face(c, ps[i], 52));
       el.innerHTML = '<div class="udp-card ' + G.variant + '"><div class="udp-logo">Último de Pé</div>' +
-        '<div class="udp-variant">' + (peng ? '🐧 PINGUINS' : '🤠 TIROTEIO') + '</div>' +
+        '<div class="udp-variant">' + (peng ? 'PINGUINS · DASH NO GELO' : 'TIROTEIO · UM TIRO CADA') + '</div>' +
         '<div class="udp-rule">' + (peng ? 'Decore onde todo mundo está, escolha a direção e escorregue junto com todo mundo. Quem cai na água sai.' : 'Decore onde todo mundo está, mire escondido e todo mundo atira no mesmo instante. Quem leva tiro sai.') + '</div>' +
-        '<div class="udp-rule">' + (G.showOthers ? '👀 Todo mundo aparece por alguns segundos antes de cada rodada.' : '🙈 Sem espiar: ninguém aparece antes da rodada.') + (peng ? ' Arraste o dedo: direção e força do dash.' : '') + '</div>' +
+        '<div class="udp-rule">' + (G.showOthers ? 'Todo mundo aparece por alguns segundos antes de cada rodada.' : 'Sem espiar: ninguém aparece antes da rodada.') + (peng ? ' Arraste o dedo: direção e força do dash.' : '') + '</div>' +
         '<div class="udp-chips">' + chips + '</div>' +
         '<div class="udp-hint">' + (ps.length < 2 ? 'Precisa de pelo menos 2 jogadores' : 'O primeiro jogador escolhe a variante e começa pelo celular') + '</div></div>';
     } else if (G.phase === 'end') {

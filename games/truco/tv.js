@@ -8,8 +8,8 @@
 'use strict';
 (() => {
   const variants = { paulista: 'Paulista', mineiro: 'Mineiro', gaucho: 'Gaudério' };
-  const TEAM = ['#f2c14e', '#62b6ff'];
-  const TEAM_INK = ['#2a1d00', '#04213a'];
+  const TEAM = ['#ffce1f', '#3db4f2'];
+  const TEAM_INK = ['#0f0f14', '#0f0f14'];
   const suits = {
     french: { S: ['♠', 'Espadas'], H: ['♥', 'Copas'], D: ['♦', 'Ouros'], C: ['♣', 'Paus'] },
     spanish: { E: ['E', 'Espadas'], B: ['B', 'Bastos'], O: ['O', 'Ouros'], C: ['C', 'Copas'] },
@@ -27,60 +27,60 @@
   };
 
   const css = `
-    .trv { position:absolute; top:0; right:0; bottom:0; left:0; overflow:hidden; border-radius:2vw; color:#f9f1da;
-      background:radial-gradient(ellipse at 50% 48%,#1d7451 0%,#0f4a34 58%,#0a3125 100%);
-      box-shadow:inset 0 0 0 .9vw #173b2f,inset 0 0 0 1.1vw #9c7540,inset 0 0 5vw rgba(0,0,0,.55); }
-    .trv-felt { position:absolute; top:17%; left:17%; width:66%; height:66%; border:.15vw solid rgba(225,198,130,.2); border-radius:50%; }
-    .trv-brand { position:absolute; top:3%; left:3%; color:#e9cf8d; font-size:1.25vw; font-weight:900; letter-spacing:.18em; text-transform:uppercase; }
-    .trv-brand small { display:block; margin-top:.3vw; color:#cfe0d2; font-size:.85vw; letter-spacing:.08em; }
+    .trv { position:absolute; top:0; right:.6vw; bottom:.6vw; left:0; overflow:hidden; color:#0f0f14;
+      background-color:#f0443a; background-image:radial-gradient(rgba(15,15,20,.16) .1vw, transparent .11vw); background-size:.6vw .6vw;
+      border:.25vw solid #0f0f14; box-shadow:.6vw .6vw 0 #0f0f14; }
+    .trv-felt { display:none; }
+    .trv-brand { position:absolute; top:2.5%; left:2%; }
+    .trv-brand b { display:inline-block; padding:.45vw .9vw; background:#0f0f14; color:#f1f0ea; font-size:1.7vw; font-weight:900; font-stretch:125%; text-transform:uppercase; letter-spacing:-.01em; line-height:1; }
+    .trv-brand small { display:block; margin-top:.45vw; font-family:'JetBrains Mono',monospace; font-size:.85vw; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#0f0f14; }
 
     /* ---- canto: valor da mão e vazas ---- */
-    .trv-stake { position:absolute; top:3%; right:3%; text-align:center; padding:.6vw 1.1vw; border-radius:1vw; background:rgba(0,0,0,.32); border:.12vw solid rgba(233,207,141,.45); }
-    .trv-stake b { display:block; font-size:2.6vw; line-height:1; color:#ffe09a; }
-    .trv-stake small { display:block; font-size:.8vw; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:#e9cf8d; }
-    .trv-stake.ask { border-color:#ffe09a; animation:trv-pulse .7s ease-in-out infinite alternate; }
-    @keyframes trv-pulse { to { box-shadow:0 0 0 .5vw rgba(255,224,154,.25); } }
+    .trv-stake { position:absolute; top:2.5%; right:2%; min-width:8vw; text-align:center; padding:.6vw 1vw .7vw; background:#fff; border:.2vw solid #0f0f14; box-shadow:.4vw .4vw 0 #0f0f14; }
+    .trv-stake b { display:block; font-family:'Pixelify Sans',monospace; font-size:3vw; line-height:1; color:#0f0f14; }
+    .trv-stake small { display:block; font-family:'JetBrains Mono',monospace; font-size:.75vw; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#0f0f14; }
+    .trv-stake.ask { background:#ffce1f; animation:trv-pulse .6s ease-in-out infinite alternate; }
+    @keyframes trv-pulse { to { transform:scale(1.06); } }
     .trv-tricks { display:flex; justify-content:center; margin-top:.5vw; }
-    .trv-tricks i { display:block; width:1.2vw; height:1.2vw; margin:0 .2vw; border-radius:50%; border:.12vw solid rgba(255,255,255,.45); background:rgba(0,0,0,.25); }
-    .trv-tricks i.tie { background:#9aa79c; border-color:#9aa79c; }
+    .trv-tricks i { display:block; width:1.2vw; height:1.2vw; margin:0 .2vw; border:.15vw solid #0f0f14; background:#e4e2d9; }
+    .trv-tricks i.tie { background:#9a978c; }
 
     /* ---- vira ---- */
-    .trv-vira { position:absolute; left:3%; bottom:4%; display:flex; align-items:center; padding:.6vw .9vw; border-radius:1vw; background:rgba(0,0,0,.28); }
-    .trv-vira .trv-card { width:3.6vw; height:5.4vw; margin-right:.8vw; }
+    .trv-vira { position:absolute; left:2%; bottom:3%; display:flex; align-items:center; padding:.6vw .9vw; background:#fff; border:.2vw solid #0f0f14; box-shadow:.4vw .4vw 0 #0f0f14; }
+    .trv-vira .trv-card { width:3.6vw; height:5.4vw; margin-right:.8vw; box-shadow:.2vw .2vw 0 #0f0f14; }
     .trv-vira .trv-card .num { font-size:.9vw; } .trv-vira .trv-card .symbol { font-size:2vw; } .trv-vira .trv-card .suit { display:none; }
-    .trv-vira .txt b { display:block; font-size:1.05vw; color:#ffe09a; }
-    .trv-vira .txt span { display:block; font-size:.85vw; color:#d6e3d6; font-weight:800; margin-top:.2vw; max-width:16vw; }
+    .trv-vira .txt b { display:block; font-size:1.2vw; font-weight:900; font-stretch:125%; text-transform:uppercase; }
+    .trv-vira .txt span { display:block; font-family:'JetBrains Mono',monospace; font-size:.8vw; font-weight:700; color:#0f0f14; margin-top:.25vw; max-width:16vw; line-height:1.3; }
 
     /* ---- carta ---- */
-    .trv-card { position:relative; width:6vw; height:9vw; background:#fffaf0; border:.18vw solid #d8caa5; border-radius:.55vw; box-shadow:0 .35vw 0 #aa9d7e,0 .7vw 1.2vw rgba(0,0,0,.4); color:#18291f; overflow:hidden; }
-    .trv-card.red { color:#b23139; } .trv-card.sp { background:#faf8f2; border-color:#e7dcc4; }
+    .trv-card { position:relative; width:6vw; height:9vw; background:#fff; border:.2vw solid #0f0f14; border-radius:.35vw; box-shadow:.35vw .35vw 0 #0f0f14; color:#0f0f14; overflow:hidden; }
+    .trv-card.red { color:#d02a20; } .trv-card.sp { background:#fff; }
     .trv-card.sp .trv-art { display:block; width:100%; height:100%; }
-    .trv-card.sp .trv-value { position:absolute; top:.25vw; left:.25vw; min-width:1.5vw; padding:0 .2vw; border:1px solid #726448; border-radius:.3vw; background:rgba(255,251,236,.97); color:#241f19; font-size:1.05vw; font-weight:900; line-height:1.5vw; text-align:center; }
-    .trv-card.sp .trv-face { position:absolute; right:.25vw; bottom:.3vw; padding:.1vw .25vw; border-radius:.2vw; background:rgba(255,251,236,.96); color:#241f19; font-size:.62vw; font-weight:900; text-transform:uppercase; }
-    .trv-card .num { position:absolute; top:.35vw; left:.4vw; font-size:1.2vw; font-weight:900; line-height:1; text-align:center; }
+    .trv-card.sp .trv-value { position:absolute; top:.25vw; left:.25vw; min-width:1.5vw; padding:0 .2vw; border:.1vw solid #0f0f14; background:#fff; color:#0f0f14; font-family:'Pixelify Sans',monospace; font-size:1.05vw; font-weight:700; line-height:1.5vw; text-align:center; }
+    .trv-card.sp .trv-face { position:absolute; right:.25vw; bottom:.3vw; padding:.1vw .25vw; background:#0f0f14; color:#fff; font-family:'JetBrains Mono',monospace; font-size:.6vw; font-weight:700; text-transform:uppercase; }
+    .trv-card .num { position:absolute; top:.35vw; left:.4vw; font-size:1.3vw; font-weight:900; line-height:1; text-align:center; }
     .trv-card .symbol { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:3vw; line-height:1; }
-    .trv-card .suit { position:absolute; bottom:.35vw; left:.1vw; right:.1vw; font-size:.55vw; font-weight:900; letter-spacing:.07em; text-transform:uppercase; text-align:center; }
-    .trv-card.back { background:#7d2f2b; border-color:#e9d3a0; }
-    .trv-card.back:after { content:''; position:absolute; top:8%; left:10%; width:80%; height:84%; border-radius:.35vw; border:.12vw solid rgba(233,211,160,.7);
-      background:repeating-linear-gradient(45deg,#943e37,#943e37 .35vw,#57252a .35vw,#57252a .7vw); }
-    .trv-card.back.sp { background:#faf8f2 url('/cards/spanish/back.webp') center no-repeat; background-size:100% 100%; }
+    .trv-card .suit { position:absolute; bottom:.35vw; left:.1vw; right:.1vw; font-family:'JetBrains Mono',monospace; font-size:.55vw; font-weight:700; letter-spacing:.06em; text-transform:uppercase; text-align:center; }
+    .trv-card.back { background-color:#0f0f14; background-image:repeating-linear-gradient(45deg,#0f0f14,#0f0f14 .35vw,#23232b .35vw,#23232b .7vw); }
+    .trv-card.back:after { content:''; position:absolute; top:8%; left:10%; width:80%; height:84%; box-sizing:border-box; border:.15vw solid #ffce1f; }
+    .trv-card.back.sp { background:#fff url('/cards/spanish/back.webp') center no-repeat; background-size:100% 100%; }
     .trv-card.back.sp:after { display:none; }
-    .trv-card.sm { width:2.6vw; height:3.9vw; border-width:.12vw; border-radius:.3vw; box-shadow:0 .15vw .4vw rgba(0,0,0,.45); }
+    .trv-card.sm { width:2.6vw; height:3.9vw; border-width:.12vw; border-radius:.25vw; box-shadow:.15vw .15vw 0 #0f0f14; }
 
     /* ---- lugar na mesa de cada carta jogada ---- */
-    .trv-slot { position:absolute; width:6vw; height:9vw; margin:-4.5vw 0 0 -3vw; border-radius:.6vw; border:.15vw dashed rgba(233,207,141,.18); transition:transform .35s, opacity .35s; }
+    .trv-slot { position:absolute; width:6vw; height:9vw; margin:-4.5vw 0 0 -3vw; border-radius:.35vw; border:.15vw dashed rgba(15,15,20,.4); transition:transform .35s, opacity .35s; }
     .trv-slot.full { border-color:transparent; }
-    .trv-slot .trv-card { position:absolute; top:-.18vw; left:-.18vw; }
-    .trv-slot.best .trv-card { box-shadow:0 0 0 .3vw #ffe09a,0 0 2.5vw rgba(255,224,154,.75),0 .7vw 1.2vw rgba(0,0,0,.4); }
+    .trv-slot .trv-card { position:absolute; top:-.15vw; left:-.15vw; }
+    .trv-slot.best .trv-card { box-shadow:0 0 0 .3vw #ffce1f,.6vw .6vw 0 #0f0f14; }
     .trv-slot.best { transform:scale(1.12); z-index:2; }
-    .trv-slot.dim { opacity:.45; transform:scale(.94); }
-    .trv-slot .crown { position:absolute; left:50%; bottom:-1.9vw; margin-left:-3vw; width:6vw; text-align:center; font-size:.85vw; font-weight:900; color:#2a1d00; }
-    .trv-slot .crown span { display:inline-block; padding:.15vw .55vw; border-radius:99px; background:#ffe09a; white-space:nowrap; }
-    .trv-slot .who { position:absolute; left:50%; bottom:-1.7vw; width:10vw; margin-left:-5vw; text-align:center; font-size:.8vw; font-weight:900; color:#e8eedf; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 .1vw .3vw #000; }
+    .trv-slot.dim { opacity:.7; transform:scale(.94); }
+    .trv-slot .crown { position:absolute; left:50%; bottom:-2.3vw; margin-left:-4vw; width:8vw; text-align:center; }
+    .trv-slot .crown span { display:inline-block; padding:.2vw .5vw; background:#ffce1f; border:.15vw solid #0f0f14; color:#0f0f14; font-family:'JetBrains Mono',monospace; font-size:.75vw; font-weight:700; text-transform:uppercase; white-space:nowrap; }
+    .trv-slot .who { position:absolute; left:50%; bottom:-1.7vw; width:10vw; margin-left:-5vw; text-align:center; font-size:.8vw; font-weight:900; color:#0f0f14; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* ---- sentido da jogada ---- */
-    .trv-dir { position:absolute; left:50%; top:50%; width:44vw; height:30vw; margin:-15vw 0 0 -22vw; border-radius:50%; border:.2vw dashed rgba(255,255,255,.1); }
-    .trv-dir i { position:absolute; font-style:normal; font-size:1.6vw; line-height:1; color:rgba(255,255,255,.32); }
+    .trv-dir { position:absolute; left:50%; top:50%; width:44vw; height:30vw; margin:-15vw 0 0 -22vw; border-radius:50%; border:.2vw dashed rgba(15,15,20,.28); }
+    .trv-dir i { position:absolute; font-style:normal; font-size:1.6vw; line-height:1; color:rgba(15,15,20,.5); }
     .trv-dir .a1 { left:50%; top:-.95vw; margin-left:-.6vw; transform:rotate(180deg); }
     .trv-dir .a2 { right:-.7vw; top:50%; margin-top:-.8vw; transform:rotate(90deg); }
     .trv-dir .a3 { left:50%; bottom:-.95vw; margin-left:-.6vw; transform:rotate(0deg); }
@@ -90,24 +90,22 @@
     /* ---- cadeiras ---- */
     .trs { position:absolute; width:13vw; margin-left:-6.5vw; margin-top:-5.4vw; text-align:center; transition:opacity .4s; }
     .trs.off { opacity:.45; }
-    .trs-fan { position:relative; height:2.4vw; margin-bottom:.15vw; }
-    .trs-fan i { position:absolute; left:50%; bottom:0; width:1.5vw; height:2.2vw; margin-left:-.75vw; border-radius:.2vw; border:.1vw solid #dbc389;
-      background:repeating-linear-gradient(45deg,#943e37,#943e37 .2vw,#57252a .2vw,#57252a .4vw); transform-origin:50% 130%; box-shadow:0 .1vw .3vw rgba(0,0,0,.45); }
-    .trs-av { position:relative; width:5vw; height:5vw; margin:0 auto; border-radius:50%; transition:transform .3s; }
-    .trs-av > i { display:block; line-height:0; }
-    .trs-av > b { position:absolute; left:-.4vw; top:-.4vw; right:-.4vw; bottom:-.4vw; border-radius:50%; border:.3vw solid #fff; opacity:.9; }
-    .trs.now .trs-av { transform:scale(1.14); }
-    .trs.now .trs-av > b { border-color:#fff; animation:trs-ring 1.05s ease-in-out infinite alternate; }
-    @keyframes trs-ring { from { box-shadow:0 0 0 0 rgba(255,255,255,.65); } to { box-shadow:0 0 0 .8vw rgba(255,255,255,0); } }
-    .trs-ord { position:absolute; right:-1.1vw; top:-.6vw; min-width:2vw; height:2vw; padding:0 .3vw; border-radius:99px; background:#fff; color:#10291f; font-size:1vw; font-weight:900; line-height:2vw; box-shadow:0 .15vw .5vw rgba(0,0,0,.5); }
-    .trs-ord.done { background:rgba(255,255,255,.35); color:#fff; }
+    .trs-fan { position:relative; height:2.4vw; margin-bottom:.3vw; }
+    .trs-fan i { position:absolute; left:50%; bottom:0; width:1.5vw; height:2.2vw; margin-left:-.75vw; border:.12vw solid #0f0f14; border-radius:.15vw;
+      background:#0f0f14; box-shadow:inset 0 0 0 .15vw #ffce1f; transform-origin:50% 130%; }
+    .trs-av { position:relative; width:5vw; height:5vw; margin:0 auto; background:#fff; border:.2vw solid #0f0f14; box-shadow:.35vw .35vw 0 #0f0f14; transition:transform .3s, box-shadow .3s; }
+    .trs-av > i { display:block; line-height:0; overflow:hidden; height:100%; }
+    .trs-av > b { position:absolute; left:0; right:0; bottom:0; height:0; border-top:.45vw solid #0f0f14; }
+    .trs.now .trs-av { background:#ffce1f; transform:translate(-.2vw,-.2vw) scale(1.1); box-shadow:.6vw .6vw 0 #0f0f14; }
+    .trs-ord { position:absolute; right:-1.2vw; top:-.8vw; min-width:2vw; height:2vw; padding:0 .3vw; background:#0f0f14; color:#fff; border:.12vw solid #0f0f14; font-family:'Pixelify Sans',monospace; font-size:1vw; font-weight:700; line-height:1.8vw; }
+    .trs-ord.done { background:#fff; color:#0f0f14; }
     .trs-ord:empty { display:none; }
-    .trs-tag { position:absolute; left:-1.2vw; top:-.6vw; height:2vw; padding:0 .5vw; border-radius:99px; background:#2b1d0f; color:#ffe09a; border:.1vw solid #ffe09a; font-size:.75vw; font-weight:900; line-height:1.85vw; letter-spacing:.06em; text-transform:uppercase; }
+    .trs-tag { position:absolute; left:-1.4vw; top:-.8vw; height:2vw; padding:0 .45vw; background:#ffce1f; color:#0f0f14; border:.12vw solid #0f0f14; font-family:'JetBrains Mono',monospace; font-size:.75vw; font-weight:700; line-height:1.8vw; letter-spacing:.06em; text-transform:uppercase; }
     .trs-tag:empty { display:none; }
-    .trs-name { margin-top:.7vw; font-size:1.2vw; font-weight:900; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 .1vw .5vw rgba(0,0,0,.75); }
-    .trs-team { display:inline-block; margin-top:.25vw; padding:.15vw .7vw; border-radius:99px; font-size:.8vw; font-weight:900; letter-spacing:.05em; white-space:nowrap; }
-    .trs-say { position:absolute; left:50%; top:-1.5vw; z-index:8; padding:.5vw 1.2vw; border-radius:1vw; background:#fff; color:#10291f; font-size:1.6vw; font-weight:900; white-space:nowrap;
-      transform:translateX(-50%); box-shadow:0 .5vw 1.5vw rgba(0,0,0,.5); animation:trs-say 2.6s ease-out both; pointer-events:none; }
+    .trs-name { display:inline-block; max-width:12vw; margin-top:.7vw; padding:.1vw .6vw; border:.15vw solid #0f0f14; background:#fff; font-size:1.15vw; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .trs-team { display:table; margin:.3vw auto 0; padding:.15vw .6vw; border:.12vw solid #0f0f14; font-family:'JetBrains Mono',monospace; font-size:.75vw; font-weight:700; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
+    .trs-say { position:absolute; left:50%; top:-1.8vw; z-index:8; padding:.4vw 1vw; background:#fff; color:#0f0f14; border:.2vw solid #0f0f14; box-shadow:.35vw .35vw 0 #0f0f14; font-size:1.5vw; font-weight:900; font-stretch:125%; text-transform:uppercase; white-space:nowrap;
+      transform:translateX(-50%); animation:trs-say 2.6s ease-out both; pointer-events:none; }
     @keyframes trs-say { 0% { opacity:0; transform:translateX(-50%) translateY(1vw) scale(.5); } 12% { opacity:1; transform:translateX(-50%) translateY(-.4vw) scale(1.08); } 20% { transform:translateX(-50%) translateY(0) scale(1); } 85% { opacity:1; } 100% { opacity:0; transform:translateX(-50%) translateY(-1vw); } }
 
     /* ---- carta voando ---- */
@@ -115,71 +113,77 @@
     .trv-fly.small { margin-left:-1.3vw; margin-top:-1.95vw; }
 
     /* ---- centro: vez, resultado ---- */
-    .trv-mid { position:absolute; left:50%; top:50%; width:22vw; margin-left:-11vw; margin-top:-2.2vw; text-align:center; z-index:3; }
-    .trv-mid .line1 { font-size:1.45vw; font-weight:900; text-shadow:0 .2vw .6vw rgba(0,0,0,.6); }
-    .trv-mid .line2 { margin-top:.3vw; font-size:.95vw; font-weight:800; color:#d4e3d6; }
-    .trv-banner { position:absolute; left:50%; top:50%; z-index:7; width:30vw; margin-left:-15vw; margin-top:-4vw; padding:1vw 1.2vw 1.3vw; border-radius:1.2vw; text-align:center;
-      background:rgba(6,26,19,.93); border:.2vw solid #ffe09a; box-shadow:0 1vw 3vw rgba(0,0,0,.6); overflow:hidden; animation:trv-banner .45s cubic-bezier(.2,1.3,.3,1) both; }
-    .trv-banner small { display:block; font-size:.85vw; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:#e9cf8d; }
-    .trv-banner b { display:block; margin-top:.3vw; font-size:2.2vw; line-height:1.1; }
-    .trv-banner span { display:block; margin-top:.35vw; font-size:1.05vw; font-weight:800; color:#e9efe3; }
-    .trv-banner .time { position:absolute; left:0; right:0; bottom:0; height:.35vw; background:rgba(255,255,255,.15); }
-    .trv-banner .time i { display:block; width:100%; height:100%; background:#ffe09a; transform-origin:left; animation-name:trv-time; animation-timing-function:linear; animation-fill-mode:forwards; }
-    .trv-banner.compact { width:20vw; margin-left:-10vw; margin-top:-3.6vw; padding:.7vw .8vw 1vw; }
-    .trv-banner.compact b { font-size:1.6vw; } .trv-banner.compact span { font-size:.85vw; }
+    .trv-mid { position:absolute; left:50%; top:50%; width:17vw; margin-left:-8.5vw; margin-top:-2.6vw; text-align:center; z-index:3; }
+    .trv-mid > div { background:#ffce1f; border:.2vw solid #0f0f14; padding:.5vw .7vw; }
+    .trv-mid > div + div { border-top:0; }
+    .trv-mid > div:last-child { box-shadow:.45vw .45vw 0 #0f0f14; }
+    .trv-mid .line1 { font-size:1.35vw; font-weight:900; font-stretch:125%; text-transform:uppercase; line-height:1.05; }
+    .trv-mid .line2 { font-family:'JetBrains Mono',monospace; font-size:.75vw; font-weight:700; text-transform:uppercase; line-height:1.35; background:#fff; }
+    .trv-banner { position:absolute; left:50%; top:50%; z-index:7; width:30vw; margin-left:-15vw; margin-top:-4vw; padding:1vw 1.2vw 1.5vw; text-align:center;
+      background:#fff; border:.25vw solid #0f0f14; box-shadow:.7vw .7vw 0 #0f0f14; overflow:hidden; animation:trv-banner .45s cubic-bezier(.2,1.3,.3,1) both; }
+    .trv-banner small { display:block; font-family:'JetBrains Mono',monospace; font-size:.85vw; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#0f0f14; }
+    .trv-banner b { display:inline-block; margin-top:.4vw; padding:.2vw .7vw; border:.2vw solid #0f0f14; font-size:2vw; font-weight:900; font-stretch:125%; text-transform:uppercase; line-height:1.1; color:#0f0f14; }
+    .trv-banner span { display:block; margin-top:.5vw; font-size:1.05vw; font-weight:800; color:#0f0f14; }
+    .trv-banner .time { position:absolute; left:0; right:0; bottom:0; height:.5vw; background:#e4e2d9; border-top:.15vw solid #0f0f14; }
+    .trv-banner .time i { display:block; width:100%; height:100%; background:#0f0f14; transform-origin:left; animation-name:trv-time; animation-timing-function:linear; animation-fill-mode:forwards; }
+    .trv-banner.compact { width:20vw; margin-left:-10vw; margin-top:-3.6vw; padding:.7vw .8vw 1.1vw; }
+    .trv-banner.compact b { font-size:1.4vw; } .trv-banner.compact span { font-size:.85vw; }
     @keyframes trv-time { to { transform:scaleX(0); } }
     @keyframes trv-banner { from { opacity:0; transform:scale(.7); } to { opacity:1; transform:scale(1); } }
 
     /* ---- estouro: TRUCO!, QUERO!, CORREU! ---- */
-    .trv-burst { position:absolute; left:50%; top:30%; z-index:9; padding:.8vw 2.6vw; border-radius:1.4vw; background:#ffe09a; color:#2a1d00; font-size:4vw; font-weight:900; white-space:nowrap;
-      transform:translate(-50%,-50%); box-shadow:0 1vw 3vw rgba(0,0,0,.6); animation:trv-burst 1.5s cubic-bezier(.2,1.3,.3,1) both; pointer-events:none; }
-    @keyframes trv-burst { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3) rotate(-8deg); } 18% { opacity:1; transform:translate(-50%,-50%) scale(1.1) rotate(2deg); } 30% { transform:translate(-50%,-50%) scale(1) rotate(0); } 80% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-62%) scale(.92); } }
+    .trv-burst { position:absolute; left:50%; top:30%; z-index:9; padding:.8vw 2.6vw; background:#ffce1f; color:#0f0f14; border:.3vw solid #0f0f14; box-shadow:.9vw .9vw 0 #0f0f14; font-size:4.5vw; font-weight:900; font-stretch:125%; text-transform:uppercase; line-height:1; white-space:nowrap;
+      transform:translate(-50%,-50%); animation:trv-burst 1.5s cubic-bezier(.2,1.3,.3,1) both; pointer-events:none; }
+    @keyframes trv-burst { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3) rotate(-8deg); } 18% { opacity:1; transform:translate(-50%,-50%) scale(1.1) rotate(2deg); } 30% { transform:translate(-50%,-50%) scale(1) rotate(-2deg); } 80% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-62%) scale(.92) rotate(-2deg); } }
 
     /* ---- por cima da mesa: preparação, mão de 11, fim de mão, fim de jogo ---- */
-    .trv-over { position:absolute; left:50%; top:50%; z-index:5; width:34vw; margin-left:-17vw; transform:translateY(-50%); padding:1.5vw 1.6vw; border-radius:1.4vw; text-align:center;
-      background:rgba(6,26,19,.94); border:.15vw solid rgba(233,207,141,.6); box-shadow:0 1vw 3vw rgba(0,0,0,.55); }
-    .trv-over small { display:block; font-size:.85vw; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:#e9cf8d; }
-    .trv-over h2 { margin-top:.4vw; font-size:2.3vw; line-height:1.1; }
-    .trv-over p { margin-top:.6vw; font-size:1.05vw; color:#dbe6dc; line-height:1.35; }
-    .trv-over .big { font-size:3.6vw; line-height:1; }
-    .trv-over .teams { display:flex; justify-content:center; margin-top:1vw; }
-    .trv-over .teams > div { width:46%; padding:.7vw .5vw; border-radius:.9vw; background:rgba(255,255,255,.06); }
+    .trv-veil { position:absolute; top:0; right:0; bottom:0; left:0; z-index:5; background:rgba(241,240,234,.96); }
+    .trv-over { position:absolute; left:50%; top:50%; z-index:5; width:40vw; margin-left:-20vw; transform:translateY(-50%); padding:1.8vw 2vw; text-align:center;
+      background:#fff; border:.25vw solid #0f0f14; box-shadow:.8vw .8vw 0 #0f0f14; }
+    .trv-over small { display:inline-block; padding:.35vw .7vw; background:#0f0f14; color:#f1f0ea; font-family:'JetBrains Mono',monospace; font-size:.85vw; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+    .trv-over h2 { margin-top:.9vw; font-size:2.6vw; font-weight:900; font-stretch:125%; text-transform:uppercase; line-height:1; }
+    .trv-over p { margin-top:.9vw; font-size:1.1vw; color:#0f0f14; line-height:1.4; }
+    .trv-over .teams { display:flex; justify-content:center; margin-top:1.2vw; }
+    .trv-over .teams > div { width:47%; padding:.8vw .5vw; border:.2vw solid #0f0f14; box-shadow:.35vw .35vw 0 #0f0f14; color:#0f0f14; }
     .trv-over .teams > div + div { margin-left:4%; }
-    .trv-over .teams b { display:block; font-size:2.6vw; line-height:1; }
-    .trv-over .teams span { display:block; margin-top:.35vw; font-size:.9vw; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .trv-over .chips { margin-top:.9vw; }
-    .trv-over .chips span { display:inline-block; margin:.2vw; padding:.3vw .8vw; border-radius:99px; background:rgba(255,255,255,.08); border:1px solid rgba(233,207,141,.35); font-size:.9vw; font-weight:800; }
+    .trv-over .teams b { display:block; font-family:'Pixelify Sans',monospace; font-size:3.4vw; line-height:1; }
+    .trv-over .teams span { display:block; margin-top:.35vw; font-size:.95vw; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .trv-over .chips { margin-top:1vw; }
+    .trv-over .chips span { display:inline-block; margin:.2vw; padding:.35vw .8vw; background:#fff; border:.15vw solid #0f0f14; font-family:'JetBrains Mono',monospace; font-size:.8vw; font-weight:700; text-transform:uppercase; line-height:1.4; }
 
-    .trv-msg { position:absolute; left:20%; right:20%; bottom:1.3vw; text-align:center; font-size:1.05vw; font-weight:800; color:#eafff4; text-shadow:0 .1vw .5vw #000; }
+    .trv-msg { position:absolute; right:2%; bottom:3%; max-width:26vw; text-align:right; font-size:1vw; font-weight:800; color:#0f0f14; }
+    .trv-msg:not(:empty) { padding:.45vw .7vw; background:#fff; border:.15vw solid #0f0f14; box-shadow:.3vw .3vw 0 #0f0f14; }
 
     /* ---- painel do lado ---- */
-    .trp-head { background:#123e32; border:1px solid #52745b; border-radius:16px; padding:14px 16px; text-align:center; }
-    .trp-head b { color:#f5d787; font-size:27px; } .trp-head p { margin-top:3px; color:#d3ddcb; font-size:15px; }
-    .trp-team { position:relative; background:#123e32; border:1px solid #52745b; border-radius:16px; padding:12px 14px 14px; overflow:hidden; }
-    .trp-team.win { border-color:#f5d787; }
+    .trp-head { background:#0f0f14; color:#f1f0ea; border:3px solid #0f0f14; box-shadow:5px 5px 0 #f0443a; padding:14px 16px; }
+    .trp-head b { display:block; font-size:30px; font-weight:900; font-stretch:125%; text-transform:uppercase; line-height:1; }
+    .trp-head p { margin-top:6px; color:#ffce1f; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+    .trp-team { position:relative; background:#fff; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; padding:12px 14px 14px; }
+    .trp-team.win { background:#ffce1f; }
     .trp-team .row { display:flex; align-items:center; }
-    .trp-team .dot { width:14px; height:14px; border-radius:50%; margin-right:9px; flex:none; }
-    .trp-team .nm { flex:1; min-width:0; font-size:17px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .trp-team strong { font-size:44px; line-height:1; margin-left:auto; padding-left:10px; }
-    .trp-team .bar { height:8px; margin-top:9px; border-radius:99px; background:rgba(0,0,0,.35); overflow:hidden; }
-    .trp-team .bar i { display:block; height:100%; border-radius:99px; transition:width .6s; }
-    .trp-box { background:#172c28; border:1px solid #456653; border-radius:14px; padding:12px 13px; color:#f6efd7; font-size:15px; line-height:1.35; }
-    .trp-box > small { display:block; color:#c1d5c7; text-transform:uppercase; letter-spacing:.12em; font-size:11px; font-weight:900; margin-bottom:7px; }
+    .trp-team .dot { width:18px; height:18px; border:2px solid #0f0f14; margin-right:10px; flex:none; }
+    .trp-team .nm { flex:1; min-width:0; padding:0; border:0; background:none; font-size:17px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .trp-team strong { font-family:'Pixelify Sans',monospace; font-size:46px; font-weight:700; line-height:1; margin-left:auto; padding-left:10px; color:#0f0f14; }
+    .trp-team .bar { height:14px; margin-top:9px; background:#e4e2d9; border:2px solid #0f0f14; overflow:hidden; }
+    .trp-team .bar i { display:block; height:100%; transition:width .6s; }
+    .trp-box { background:#fff; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; padding:12px 13px; color:#0f0f14; font-size:15px; line-height:1.35; }
+    .trp-box > small { display:block; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.08em; font-size:12px; font-weight:700; color:#55555e; margin-bottom:8px; }
     .trp-order { display:flex; flex-wrap:wrap; margin:-3px; }
-    .trp-order span { margin:3px; padding:5px 9px; border-radius:99px; background:rgba(255,255,255,.07); font-size:14px; font-weight:800; border:2px solid transparent; }
-    .trp-order span.now { border-color:#fff; background:rgba(255,255,255,.16); }
-    .trp-order span.done { opacity:.5; }
-    .trp-hist { display:flex; align-items:center; padding:6px 0; border-top:1px solid rgba(255,255,255,.08); }
+    .trp-order span { margin:3px; padding:4px 8px; background:#fff; border:2px solid #0f0f14; font-size:14px; font-weight:800; }
+    .trp-order span i { display:inline-block; width:10px; height:10px; margin-right:6px; border:2px solid #0f0f14; vertical-align:-1px; }
+    .trp-order span.now { background:#ffce1f; box-shadow:3px 3px 0 #0f0f14; }
+    .trp-order span.done { opacity:.45; }
+    .trp-hist { display:flex; align-items:center; padding:6px 0; border-top:2px solid #e4e2d9; }
     .trp-hist:first-of-type { border-top:0; }
-    .trp-hist > em { width:62px; flex:none; font-style:normal; font-size:12px; font-weight:900; color:#c1d5c7; text-transform:uppercase; }
+    .trp-hist > em { width:62px; flex:none; font-style:normal; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; color:#55555e; text-transform:uppercase; }
     .trp-hist .cards { display:flex; flex:1; }
-    .trp-hist .trv-card { width:30px; height:45px; border-width:2px; border-radius:4px; margin-right:4px; box-shadow:none; }
+    .trp-hist .trv-card { width:30px; height:45px; border-width:2px; border-radius:3px; margin-right:5px; box-shadow:2px 2px 0 #0f0f14; }
     .trp-hist .trv-card .num { font-size:11px; top:2px; left:3px; } .trp-hist .trv-card .symbol { font-size:19px; } .trp-hist .trv-card .suit { display:none; }
     .trp-hist .trv-card.sp .trv-value { font-size:10px; min-width:12px; line-height:13px; top:1px; left:1px; } .trp-hist .trv-card.sp .trv-face { display:none; }
-    .trp-hist .trv-card.win { box-shadow:0 0 0 2px #ffe09a; }
-    .trp-hist > b { flex:none; margin-left:6px; padding:3px 8px; border-radius:99px; font-size:12px; }
+    .trp-hist .trv-card.win { box-shadow:0 0 0 2px #ffce1f,3px 3px 0 #0f0f14; }
+    .trp-hist > b { flex:none; margin-left:6px; padding:3px 7px; border:2px solid #0f0f14; font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; }
 
-    @media (prefers-reduced-motion:reduce) { .trv-fly,.trv-slot { transition:none; } .trs-say,.trv-burst,.trv-banner,.trs.now .trs-av > b,.trv-stake.ask { animation:none; } }
+    @media (prefers-reduced-motion:reduce) { .trv-fly,.trv-slot { transition:none; } .trs-say,.trv-burst,.trv-banner,.trv-stake.ask { animation:none; } }
   `;
 
   const rank = n => n === 1 ? 'A' : n === 10 ? 'Q' : n === 11 ? 'J' : n === 12 ? 'K' : String(n);
@@ -198,7 +202,7 @@
 
   // Lugares em volta da mesa (% da mesa), no sentido da jogada: baixo, esquerda, cima, direita.
   const SEATS = { 2: [{ x: 50, y: 84 }, { x: 50, y: 15 }], 4: [{ x: 50, y: 84 }, { x: 11, y: 50 }, { x: 50, y: 15 }, { x: 89, y: 50 }] };
-  const SLOTS = { 2: [{ x: 50, y: 64 }, { x: 50, y: 36 }], 4: [{ x: 50, y: 66 }, { x: 31, y: 50 }, { x: 50, y: 34 }, { x: 69, y: 50 }] };
+  const SLOTS = { 2: [{ x: 50, y: 63 }, { x: 50, y: 37 }], 4: [{ x: 50, y: 63.5 }, { x: 31, y: 50 }, { x: 50, y: 36.5 }, { x: 69, y: 50 }] };
   const CENTER = { x: 50, y: 50 };
 
   const trucoName = (G, kind, points) => kind === 'truco' || /^\d+$/.test(kind)
@@ -211,14 +215,14 @@
   function burst(txt, bg, ink) {
     const t = $('trv'); if (!t) return;
     const b = document.createElement('div'); b.className = 'trv-burst'; b.textContent = txt;
-    if (bg) { b.style.background = bg; b.style.color = ink || '#fff'; }
+    if (bg) { b.style.background = bg; b.style.color = ink || '#0f0f14'; }
     t.appendChild(b); later(() => b.remove(), 1550);
   }
   function say(pid, txt, bg, ink) {
     const s = document.querySelector(`.trs[data-pid="${pid}"]`); if (!s) return;
     const old = s.querySelector('.trs-say'); if (old) old.remove();
     const b = document.createElement('div'); b.className = 'trs-say'; b.textContent = txt;
-    if (bg) { b.style.background = bg; b.style.color = ink || '#fff'; }
+    if (bg) { b.style.background = bg; b.style.color = ink || '#0f0f14'; }
     s.appendChild(b); later(() => b.remove(), 2650);
   }
   // Uma carta voa de um ponto a outro da mesa (em % da mesa).
@@ -272,7 +276,7 @@
         const n = seats.length;
         const teamBox = t => {
           const pct = Math.max(0, Math.min(100, (G.scores[t] || 0) / (G.target || 12) * 100));
-          return `<div class="trp-team ${G.phase === 'end' && G.winner === t ? 'win' : ''}"><div class="row"><i class="dot" style="background:${TEAM[t]}"></i><span class="nm">${n === 2 ? members(t) : `Dupla ${t + 1} · ${members(t)}`}</span><strong style="color:${TEAM[t]}">${G.scores[t] || 0}</strong></div><div class="bar"><i style="width:${pct}%;background:${TEAM[t]}"></i></div></div>`;
+          return `<div class="trp-team ${G.phase === 'end' && G.winner === t ? 'win' : ''}"><div class="row"><i class="dot" style="background:${TEAM[t]}"></i><span class="nm">${n === 2 ? members(t) : `Dupla ${t + 1} · ${members(t)}`}</span><strong>${G.scores[t] || 0}</strong></div><div class="bar"><i style="width:${pct}%;background:${TEAM[t]}"></i></div></div>`;
         };
         const playing = G.phase === 'play' || G.phase === 'reveal';
         const lead = G.trickLead || G.turn;
@@ -280,8 +284,8 @@
         const played = {}; (G.table || []).forEach(x => { played[x.pid] = true; });
         const order = playing && leadAt >= 0 && G.phase === 'play'
           ? `<div class="trp-box"><small>Ordem desta vaza</small><div class="trp-order">${G.order.map((pid, i) => G.order[(leadAt + i) % n]).map((pid, i) =>
-            `<span class="${G.turn === pid && !G.bid ? 'now' : ''} ${played[pid] ? 'done' : ''}" style="color:${TEAM[G.teams[pid]]}">${i + 1}º ${name(pid)}${played[pid] ? ' ✓' : ''}</span>`).join('')}</div></div>` : '';
-        const hist = (G.history || []).map((h, i) => `<div class="trp-hist"><em>Vaza ${i + 1}</em><div class="cards">${h.plays.map(x => card(x.card, G, (h.best || []).indexOf(x.pid) >= 0 && h.winner !== null ? 'win' : '')).join('')}</div><b style="${h.winner === null ? 'background:#55615a;color:#fff' : `background:${TEAM[h.winner]};color:${TEAM_INK[h.winner]}`}">${h.winner === null ? 'empate' : `Dupla ${h.winner + 1}`}</b></div>`).join('');
+            `<span class="${G.turn === pid && !G.bid ? 'now' : ''} ${played[pid] ? 'done' : ''}"><i style="background:${TEAM[G.teams[pid]]}"></i>${i + 1}º ${name(pid)}${played[pid] ? ' ✓' : ''}</span>`).join('')}</div></div>` : '';
+        const hist = (G.history || []).map((h, i) => `<div class="trp-hist"><em>Vaza ${i + 1}</em><div class="cards">${h.plays.map(x => card(x.card, G, (h.best || []).indexOf(x.pid) >= 0 && h.winner !== null ? 'win' : '')).join('')}</div><b style="${h.winner === null ? 'background:#e4e2d9' : `background:${TEAM[h.winner]};color:${TEAM_INK[h.winner]}`}">${h.winner === null ? 'empate' : `Dupla ${h.winner + 1}`}</b></div>`).join('');
         let side = `<div class="trp-head"><b>TRUCO ${(variants[G.cfg.variant] || '').toUpperCase()}</b><p>${G.phase === 'setup' ? `Até ${G.target} pontos · ${n === 2 || n === 4 ? `${n} pessoas` : 'entrem 2 ou 4 pessoas'}` : `Mão ${G.round} · até ${G.target} pontos`}</p></div>`;
         side += teamBox(0) + teamBox(1) + order;
         if (hist) side += `<div class="trp-box"><small>Cartas desta mão</small>${hist}</div>`;
@@ -311,14 +315,14 @@
         const justPlayed = G.lastPlay && prev && prev.lastAt !== lastAt && !newRound ? G.lastPlay : null;
 
         // ---------- topo: marca, valor da mão, vazas ----------
-        const brand = `Truco ${variants[G.cfg.variant] || ''}<small>${G.phase === 'setup' ? `Até ${G.target} pontos` : `Mão ${G.round} · até ${G.target}`}</small>`;
+        const brand = `<b>Truco ${variants[G.cfg.variant] || ''}</b><small>${G.phase === 'setup' ? `Até ${G.target} pontos` : `Mão ${G.round} · até ${G.target}`}</small>`;
         if ($('trv-brand').innerHTML !== brand) $('trv-brand').innerHTML = brand;
         const stakeEl = $('trv-stake');
         let stake = '';
         if (G.phase !== 'setup') {
           const dots = [0, 1, 2].map(i => {
             const w = (G.tricks || [])[i];
-            return w === undefined ? '<i></i>' : w === null ? '<i class="tie"></i>' : `<i style="background:${TEAM[w]};border-color:${TEAM[w]}"></i>`;
+            return w === undefined ? '<i></i>' : w === null ? '<i class="tie"></i>' : `<i style="background:${TEAM[w]}"></i>`;
           }).join('');
           stake = G.bid
             ? `<small>Valendo</small><b>${G.bid.points}?</b><small>${G.bid.kind === 'truco' ? 'pedido' : 'aposta'}</small>`
@@ -357,10 +361,10 @@
           s.style.left = pos[pid].x + '%'; s.style.top = pos[pid].y + '%';
           const t = teamOf(pid, i);
           const av = s.querySelector('.trs-av');
-          const avh = c.avatar(p, Math.round(window.innerWidth * 0.05));
+          const avh = c.avatar(p, Math.round(window.innerWidth * 0.046));
           const ai = av.children[0]; if (ai.dataset.k !== avh) { ai.dataset.k = avh; ai.innerHTML = avh; }
           av.children[1].style.borderColor = TEAM[t];
-          const nm = s.querySelector('.trs-name'); const nome = p.name + (p.on === false ? ' 📵' : ''); if (nm.textContent !== nome) nm.textContent = nome;
+          const nm = s.querySelector('.trs-name'); const nst = 'background:' + c.ci(p.color).hex + ';color:#0f0f14'; if (nm.getAttribute('style') !== nst) nm.setAttribute('style', nst); const nome = p.name + (p.on === false ? ' 📵' : ''); if (nm.textContent !== nome) nm.textContent = nome;
           const tm = s.querySelector('.trs-team'); const tt = n === 2 ? (i === 0 ? 'Lado 1' : 'Lado 2') : `Dupla ${t + 1}`;
           if (tm.textContent !== tt) tm.textContent = tt;
           tm.style.background = TEAM[t]; tm.style.color = TEAM_INK[t];
@@ -447,8 +451,8 @@
         if (prev && G.lastAnswer && G.lastAnswer.at !== prev.answerAt) {
           const ok = G.lastAnswer.accept;
           const txt = ok ? 'QUERO!' : 'CORREU!';
-          burst(txt, ok ? '#2fbf71' : '#d9463b', '#fff');
-          say(G.lastAnswer.pid, txt, ok ? '#2fbf71' : '#d9463b', '#fff');
+          burst(txt, ok ? '#35d07f' : '#f0443a', '#0f0f14');
+          say(G.lastAnswer.pid, txt, ok ? '#35d07f' : '#f0443a', '#0f0f14');
           if (ok) c.chord([523, 659]); else c.chord([392, 311], 'sawtooth');
         }
 
@@ -476,31 +480,32 @@
             const title = reveal.winner === null ? 'Vaza empatada!' : reveal.kind === 'match' ? 'Venceram o jogo!' : reveal.kind === 'hand' ? 'Ganharam a mão!' : 'Ganharam a vaza!';
             const small = reveal.kind === 'trick' ? `Vaza ${reveal.trick} de 3` : reveal.reason === 'pedido recusado' ? 'A outra dupla correu' : reveal.kind === 'match' ? 'Fim de jogo' : 'Fim da mão';
             const pts = reveal.points ? `+${reveal.points} ${reveal.points === 1 ? 'ponto' : 'pontos'}` : reveal.winner === null ? 'Ninguém leva esta vaza' : 'As cartas vão para quem ganhou';
-            const col = reveal.winner === null ? '#c9d3cb' : TEAM[reveal.winner];
+            const col = reveal.winner === null ? '#e4e2d9' : TEAM[reveal.winner];
             // a faixa fica longe das cartas: no centro só quando a mesa está vazia
-            bannerEl.innerHTML = `<div class="trv-banner ${table.length ? 'compact' : ''}" style="border-color:${col}"><small>${small}</small><b style="color:${col}">${who || title}</b><span>${who ? `${title} · ${pts}` : pts}</span><div class="time"><i style="animation-duration:${left}s"></i></div></div>`;
+            bannerEl.innerHTML = `<div class="trv-banner ${table.length ? 'compact' : ''}"><small>${small}</small><b style="background:${col}">${who || title}</b><span>${who ? `${title} · ${pts}` : pts}</span><div class="time"><i style="animation-duration:${left}s"></i></div></div>`;
             if (reveal.kind !== 'trick') c.chord(reveal.kind === 'match' ? [523, 659, 784, 1046] : [523, 659, 784]);
             else c.beep(reveal.winner === null ? 330 : 660, .12, 'sine', .14);
           }
         }
 
         // ---------- por cima da mesa: preparação, mão de 11, fim de mão, fim de jogo ----------
-        const teamsHtml = `<div class="teams">${[0, 1].map(t => `<div style="border:.12vw solid ${TEAM[t]}"><b style="color:${TEAM[t]}">${G.scores[t] || 0}</b><span>${seats.filter((pid, i) => teamOf(pid, i) === t).map(name).join(' + ') || `Dupla ${t + 1}`}</span></div>`).join('')}</div>`;
+        const teamsHtml = `<div class="teams">${[0, 1].map(t => `<div style="background:${TEAM[t]}"><b>${G.scores[t] || 0}</b><span>${seats.filter((pid, i) => teamOf(pid, i) === t).map(name).join(' + ') || `Dupla ${t + 1}`}</span></div>`).join('')}</div>`;
         let over = '';
         if (G.phase === 'setup') {
           const ok = n === 2 || n === 4;
           over = `<div class="trv-over"><small>Truco ${variants[G.cfg.variant] || ''} · até ${G.target} pontos</small><h2>${ok ? n === 4 ? 'Duplas na mesa' : 'Mano a mano' : 'Entrem 2 ou 4 pessoas'}</h2><p>${ok ? n === 4 ? 'Quem senta de frente é parceiro. No celular dá para sortear os lugares.' : 'Uma pessoa contra a outra.' : `Agora há ${n} ${n === 1 ? 'pessoa' : 'pessoas'} na sala.`}</p><div class="chips"><span>${esc(G.rules || '')}</span></div><p>Escolham a regra e toquem em <b>Começar</b> no celular.</p></div>`;
         } else if (G.phase === 'eleven') {
           const sp = G.special || {};
-          over = `<div class="trv-over" style="border-color:${TEAM[sp.team]}"><small>Mão de ${sp.threshold || 11}</small><h2 style="color:${TEAM[sp.team]}">Dupla ${(sp.team || 0) + 1} decide</h2><p>Eles veem as cartas do parceiro. Jogar vale ${sp.stake || 3}; correr dá ${sp.runPoints || 1} ${sp.runPoints === 1 ? 'ponto' : 'pontos'} para a outra dupla.</p>${teamsHtml}</div>`;
+          over = `<div class="trv-over"><small>Mão de ${sp.threshold || 11}</small><h2>Dupla ${(sp.team || 0) + 1} decide</h2><p>Eles veem as cartas do parceiro. Jogar vale ${sp.stake || 3}; correr dá ${sp.runPoints || 1} ${sp.runPoints === 1 ? 'ponto' : 'pontos'} para a outra dupla.</p>${teamsHtml}</div>`;
         } else if (G.phase === 'round') {
           const w = G.roundWinner;
-          over = `<div class="trv-over" ${w !== null && w !== undefined ? `style="border-color:${TEAM[w]}"` : ''}><small>Fim da mão ${G.round}</small><h2 ${w !== null && w !== undefined ? `style="color:${TEAM[w]}"` : ''}>${w === null || w === undefined ? 'Mão empatada' : `Dupla ${w + 1} ganhou a mão`}</h2>${teamsHtml}<p>Toquem em <b>Próxima mão</b> no celular.</p></div>`;
+          over = `<div class="trv-over"><small>Fim da mão ${G.round}</small><h2>${w === null || w === undefined ? 'Mão empatada' : `Dupla ${w + 1} ganhou a mão`}</h2>${teamsHtml}<p>Toquem em <b>Próxima mão</b> no celular.</p></div>`;
         } else if (G.phase === 'end') {
           const w = G.winner;
-          over = `<div class="trv-over" style="border-color:${TEAM[w] || '#ffe09a'}"><div class="big">🏆</div><small style="margin-top:.6vw">Fim de jogo</small><h2 style="color:${TEAM[w] || '#ffe09a'}">${seats.filter((pid, i) => teamOf(pid, i) === w).map(name).join(' + ') || `Dupla ${w + 1}`} ${n === 2 ? 'venceu!' : 'venceram!'}</h2>${teamsHtml}<p>Toquem em <b>Jogar de novo</b> no celular.</p></div>`;
+          over = `<div class="trv-over"><small>Fim de jogo</small><h2>${seats.filter((pid, i) => teamOf(pid, i) === w).map(name).join(' + ') || `Dupla ${w + 1}`} ${n === 2 ? 'venceu!' : 'venceram!'}</h2>${teamsHtml}<p>Toquem em <b>Jogar de novo</b> no celular.</p></div>`;
         }
         const overEl = $('trv-over');
+        if (over) over = '<div class="trv-veil"></div>' + over;
         if (overEl.innerHTML !== over) overEl.innerHTML = over;
 
         const msg = c.C.event ? c.hl(c.C.event.text) : '';

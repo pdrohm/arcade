@@ -14,7 +14,7 @@
   // sobra e usa uma câmera quase de cima (.95), que espalha a arena na vertical e deixa mirar fácil.
   // Uma tela só tem um renderizador, então TILT é trocado por quadro (setTilt) e não por chamada.
   var TAU = Math.PI * 2, TILT = 0.58;
-  var FONT = "'Arial Black','Helvetica Neue',Impact,Arial,sans-serif";
+  var FONT = "Archivo,'Arial Black','Helvetica Neue',Impact,Arial,sans-serif";   // a fonte da casa (shared/ui.css); sem ela, Arial Black
   var HIDDEN = { aim: 1, ready: 1, lock: 1 };
   var AIMING = { aim: 1, ready: 1 };
 
@@ -637,15 +637,17 @@
     var h = fs * 1.35, face = this.hasFaces(), a = face ? h * 1.75 : 0;
     var tw = ctx.measureText(text).width, w = tw + fs * .9 + (face ? a * .78 : 0);
     var left = x - w / 2;
-    ctx.fillStyle = color; rrect(ctx, left, y - h, w, h, h / 2); ctx.fill();
-    ctx.strokeStyle = me ? '#ffffff' : 'rgba(15,23,42,0.55)'; ctx.lineWidth = Math.max(me ? 2 : 1, fs * (me ? .14 : .08)); ctx.stroke();
+    var bw = Math.max(2, fs * (me ? .16 : .11));   // crachá da casa: quadrado, borda de tinta e sombra dura
+    ctx.fillStyle = '#0f0f14'; ctx.fillRect(left + bw * 1.4, y - h + bw * 1.4, w, h);
+    ctx.fillStyle = color; ctx.fillRect(left, y - h, w, h);
+    ctx.strokeStyle = me ? '#ffce1f' : '#0f0f14'; ctx.lineWidth = bw; ctx.strokeRect(left, y - h, w, h);
     ctx.fillStyle = light(color) ? '#111827' : '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(text, face ? left + a * .78 + (w - a * .78) / 2 : x, y - h / 2 + 1);
     // o boneco sai um pouco para fora do crachá, à esquerda, em cima de um disco claro (lê de longe)
     if (face) {
       var fx = left + a * .36, fy = y - h * .62;
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(fx, fy, a * .47, 0, TAU); ctx.fill();
-      ctx.strokeStyle = me ? '#ffffff' : 'rgba(15,23,42,0.55)'; ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(fx - a * .45, fy - a * .45, a * .9, a * .9);
+      ctx.strokeStyle = '#0f0f14'; ctx.lineWidth = bw; ctx.strokeRect(fx - a * .45, fy - a * .45, a * .9, a * .9);
       this.face(av, color, fx, fy, a * .9);
     }
   };
@@ -880,8 +882,9 @@
     if ((ph === 'reveal' || ph === 'aim' || ph === 'ready') && G.phaseMs) {
       var bottom = phone && this.opts.insetBottom ? this.opts.insetBottom() : 0;
       var k = clamp(left / G.phaseMs, 0, 1), bw = W * (phone ? .8 : .5), bh = Math.max(8, H * .012), bx = (W - bw) / 2, by = H - bottom - bh - pad * .8;
-      ctx.fillStyle = 'rgba(15,23,42,0.6)'; rrect(ctx, bx - 3, by - 3, bw + 6, bh + 6, bh); ctx.fill();
-      ctx.fillStyle = ph === 'ready' ? '#ef4444' : ph === 'aim' ? '#facc15' : '#38bdf8'; rrect(ctx, bx, by, Math.max(bh, bw * k), bh, bh / 2); ctx.fill();
+      ctx.fillStyle = '#0f0f14'; ctx.fillRect(bx - 3, by - 3, bw + 6 + 4, bh + 6 + 4);   // barra da casa: tinta, papel e sombra dura
+      ctx.fillStyle = '#e4e2d9'; ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = ph === 'ready' ? '#f0443a' : ph === 'aim' ? '#ffce1f' : '#3db4f2'; ctx.fillRect(bx, by, Math.max(2, bw * k), bh);
     }
     var age = this.elapsed(), me = this.youPid(), you = G.you;
     var goWord = vars ? 'JÁ!' : 'FOGO!';
@@ -934,10 +937,17 @@
   R.intro = function (age) {
     var ctx = this.ctx, W = this.W, H = this.H, vars = this.G.variant === 'penguins';
     var k = easeOut(age / 350), w = Math.min(W * .88, H * 1.25), h = Math.min(H * .7, w * .62), x = (W - w) / 2, y = (H - h) / 2 + (1 - k) * 30;
-    ctx.globalAlpha = k * .9; ctx.fillStyle = vars ? '#0c4a6e' : '#7c2d12'; rrect(ctx, x, y, w, h, h * .08); ctx.fill();
-    ctx.globalAlpha = k; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(3, h * .012); ctx.stroke();
+    // cartaz da casa: papel, borda de tinta e sombra dura, título numa faixa da cor da variante
+    var lw = Math.max(3, h * .014);
+    ctx.globalAlpha = k; ctx.fillStyle = '#0f0f14'; ctx.fillRect(x + lw * 2.6, y + lw * 2.6, w, h);
+    ctx.fillStyle = '#f1f0ea'; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#0f0f14'; ctx.lineWidth = lw; ctx.strokeRect(x, y, w, h);
     var fs = h * .12;
-    this.text(vars ? 'PINGUINS' : 'TIROTEIO', W / 2, y + h * .16, fs, vars ? '#7dd3fc' : '#fdba74');
+    ctx.fillStyle = vars ? '#3db4f2' : '#ffce1f'; ctx.fillRect(x, y, w, h * .3); ctx.fillRect(x, y + h * .3 - lw / 2, w, lw);
+    ctx.fillStyle = '#0f0f14'; ctx.fillRect(x, y + h * .3 - lw / 2, w, lw);
+    ctx.strokeRect(x, y, w, h);
+    ctx.font = '900 ' + Math.round(fs) + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#0f0f14'; ctx.fillText(vars ? 'PINGUINS' : 'TIROTEIO', W / 2, y + h * .155);
     var lines = vars
       ? ['Decore onde todo mundo está.', 'Escolha sua direção.', 'No JÁ!, todos avançam juntos.', 'Último pinguim no gelo vence.']
       : ['Decore onde todo mundo está.', 'Mire enquanto estão escondidos.', 'No FOGO!, todos atiram juntos.', 'Último de pé vence.'];
@@ -945,7 +955,8 @@
       var la = clamp((age - 300 - i * 450) / 300, 0, 1);
       if (la <= 0) continue;
       ctx.globalAlpha = la;
-      this.text((i + 1) + '. ' + lines[i], W / 2, y + h * (.38 + i * .15), h * .075, '#ffffff');
+      ctx.font = '800 ' + Math.round(h * .07) + 'px ' + FONT; ctx.fillStyle = '#0f0f14';
+      ctx.fillText((i + 1) + '. ' + lines[i], W / 2, y + h * (.42 + i * .14));
     }
     ctx.globalAlpha = 1;
   };

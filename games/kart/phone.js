@@ -12,6 +12,8 @@
   const portrait = (i, color, cls = 'ks-portrait') => `<span class="${cls}" style="background:${I() ? I().driverBg(i) : '#cfe2ee'}">${I() ? I().driver(i, color) : ''}</span>`;
   const face = (c, p, px) => { const q = (c.C.players || []).find(x => x.pid === p.pid); return c.avatar && q ? c.avatar(q, px) : ''; };
   const misc = name => I() ? I().misc(name) : '';
+  // Cabeçalho verde pontilhado (categoria ação): etiqueta preta, título largo, linha de apoio.
+  const hero = (kicker, title, sub) => `<div class="ks-hero"><span class="ks-kicker">${kicker}</span><b class="ks-logo">${title}</b>${sub ? `<p class="ks-sub">${sub}</p>` : ''}</div>`;
   const mine = c => c.G.roster.find(p => c.you && p.pid === c.you.pid);
   const driving = c => ['loading', 'countdown', 'playing'].includes(c.G.phase) && !!mine(c);
   function stop() { if (controller) controller.destroy(); controller = null; lastItem = null; document.body.classList.remove('kart-driving'); }
@@ -173,10 +175,9 @@
   function setup(c) {
     const g = c.G, p = mine(c), host = c.you.pid === g.hostPid;
     const mode = `<div class="ks-block"><h3 class="ks-title">Disputa <small>${host ? 'você escolhe' : 'o primeiro piloto escolhe'}</small></h3><div class="ks-modes">${[['race', 'flag', 'CORRIDA', '3 voltas · ' + TRACKS.race], ['battle', 'burst', 'BATALHA', '2 minutos · ' + TRACKS.battle]].map(([id, icon, label, sub]) => `<button class="ks-mode ${id} ${g.mode === id ? 'sel' : ''}" data-a="kart-mode" data-mode="${id}" aria-pressed="${g.mode === id}" ${host ? '' : 'disabled'}>${misc(icon)}<b>${label}</b><small>${sub}</small></button>`).join('')}</div></div>`;
-    const logo = `<div class="ks-logo"><small>Arcade</small><b>Kart</b></div>`;
     const roster = `<div class="ks-block ks-roster"><h3 class="ks-title">Pilotos <small>${g.roster.length}/4</small></h3>${g.roster.map(x => `<p>${portrait(x.driver, x.color)}${face(c, x, 28)}<span class="nm">${c.esc(x.name)}</span><span class="ks-tag ${x.ready ? 'ready' : 'wait'}">${x.ready ? 'pronto' : 'escolhendo…'}</span></p>`).join('')}</div>`;
-    if (!p) return `<section class="kart-ui kart-setup">${logo}<p class="ks-sub">Na torcida · você continua nesta sala</p>${mode}${roster}<button class="ks-btn go" data-a="kart-seat" ${g.roster.length >= 4 ? 'disabled' : ''}>${misc('flag')}Entrar na largada</button><p class="ks-note">Até 4 pilotos por partida.</p></section>`;
-    return `<section class="kart-ui kart-setup">${logo}<p class="ks-sub">Seu celular é o volante</p>${mode}
+    if (!p) return `<section class="kart-ui kart-setup">${hero('Arcade', 'Kart', 'Na torcida · você continua nesta sala')}${mode}${roster}<button class="ks-btn go" data-a="kart-seat" ${g.roster.length >= 4 ? 'disabled' : ''}>${misc('flag')}Entrar na largada</button><p class="ks-note">Até 4 pilotos por partida.</p></section>`;
+    return `<section class="kart-ui kart-setup">${hero('Arcade', 'Kart', 'Seu celular é o volante')}${mode}
       <div class="ks-block"><h3 class="ks-title">Seu piloto</h3><div class="ks-grid">${g.drivers.map((name, i) => `<button class="ks-choice ${p.driver === i ? 'sel' : ''}" data-a="kart-driver" data-value="${i}" aria-pressed="${p.driver === i}">${portrait(i, p.color)}<b>${c.esc(name)}</b></button>`).join('')}</div></div>
       <div class="ks-block"><h3 class="ks-title">Seu kart <small>mesma velocidade, só o estilo</small></h3><div class="ks-grid">${g.karts.map((name, i) => `<button class="ks-choice ${p.kart === i ? 'sel' : ''}" data-a="kart-kart" data-value="${i}" aria-pressed="${p.kart === i}"><span class="ks-kart">${I() ? I().kart(i, p.color) : ''}</span><b>${c.esc(name)}</b></button>`).join('')}</div></div>
       <button class="ks-btn ready ${p.ready ? 'on' : ''}" data-a="kart-ready">${p.ready ? 'Pronto · mudar' : 'Estou pronto'}</button>
@@ -199,7 +200,7 @@
     const g = c.G, p = g.world && g.world.karts.find(x => x.pid === c.you.pid), priv = g.private || {};
     const put = (id, text) => { const e = document.getElementById(id); if (e && e.textContent !== text) e.textContent = text; };
     // Battle only: HP is the one private number worth a glance (the TV shows it too, but not per phone).
-    put('kart-status', g.phase === 'loading' ? 'CARREGANDO…' : g.phase === 'countdown' ? `LARGADA EM ${g.countdown}` : p && p.respawn > 0 ? `VOLTANDO ${Math.ceil(p.respawn)}` : p && p.finished ? '🏁 CHEGOU!' : g.mode === 'battle' && priv.hp != null ? `♥ ${Math.max(0, Math.ceil(priv.hp))}` : p && p.lap != null && g.mode === 'race' ? `VOLTA ${Math.min(3, p.lap + 1)}/3 · ${p.position}º` : '');
+    put('kart-status', g.phase === 'loading' ? 'CARREGANDO…' : g.phase === 'countdown' ? `LARGADA EM ${g.countdown}` : p && p.respawn > 0 ? `VOLTANDO ${Math.ceil(p.respawn)}` : p && p.finished ? 'CHEGOU!' : g.mode === 'battle' && priv.hp != null ? `♥ ${Math.max(0, Math.ceil(priv.hp))}` : p && p.lap != null && g.mode === 'race' ? `VOLTA ${Math.min(3, p.lap + 1)}/3 · ${p.position}º` : '');
     const item = priv.item || null;
     if (item !== lastItem) { lastItem = item; const slot = document.getElementById('kart-item'); if (slot) { slot.innerHTML = item && I() ? I().item(item) : ''; slot.className = 'kart-item-slot' + (item ? ' ready' : ''); } }
     put('kart-item-name', item ? items[item] : 'SEM ITEM');
@@ -217,7 +218,7 @@
     const g = c.G, results = (g.world && g.world.results) || [], battle = g.mode === 'battle';
     const info = p => battle ? `${p.kills || 0} KO${p.kills === 1 ? '' : 's'}` : p.finished ? `${Math.floor(p.finishTime / 60)}:${String(Math.floor(p.finishTime % 60)).padStart(2, '0')}.${Math.floor(p.finishTime % 1 * 10)}` : `${p.lap} volta${p.lap === 1 ? '' : 's'}`;
     const driverOf = p => (g.roster.find(x => x.pid === p.pid) || {}).driver || 0;
-    return `<section class="kart-ui kart-setup"><div class="ks-logo"><small>Resultado</small><b>Kart</b></div><p class="ks-sub">${battle ? 'Fim da batalha' : 'Fim da corrida'} · ${TRACKS[g.mode]}</p>
+    return `<section class="kart-ui kart-setup">${hero('Resultado', 'Kart', (battle ? 'Fim da batalha' : 'Fim da corrida') + ' · ' + TRACKS[g.mode])}
       <div class="ks-block ks-podium">${results.map((p, i) => `<div class="ks-place p${i + 1} ${p.pid === c.you.pid ? 'me' : ''}"><span class="ks-n">${i + 1}º</span>${portrait(driverOf(p), p.color)}${face(c, p, 28)}<b>${c.esc(p.name || (g.roster.find(x => x.pid === p.pid) || {}).name || 'Piloto')}</b><small>${info(p)}</small></div>`).join('')}</div>
       ${c.you.pid === g.hostPid ? `<button class="ks-btn go" data-a="kart-again">${misc('flag')}Jogar de novo</button>` : '<p class="ks-note">O primeiro piloto pode iniciar outra partida.</p>'}</section>`;
   }
@@ -233,7 +234,7 @@
       if (c.G.phase === 'setup') return setup(c);
       if (driving(c)) return controls(c);
       if (c.G.phase === 'results') return results(c);
-      return `<section class="kart-ui kart-setup"><div class="ks-logo"><small>Arcade</small><b>Kart</b></div><div class="ks-block ks-card"><div class="ks-big">${misc('eye')}</div><h2>Na torcida</h2><p>Acompanhe a partida na TV.<br>Você pode jogar na próxima largada.</p></div></section>`;
+      return `<section class="kart-ui kart-setup">${hero('Arcade', 'Kart', '')}<div class="ks-block ks-card"><div class="ks-big">${misc('eye')}</div><h2>Na torcida</h2><p>Acompanhe a partida na TV.<br>Você pode jogar na próxima largada.</p></div></section>`;
     },
     act(a, el, c) {
       const actions = { 'kart-ready':'kart-ready', 'kart-start':'kart-start', 'kart-again':'kart-again', 'kart-seat':'kart-seat' };

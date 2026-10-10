@@ -1,0 +1,188 @@
+/* TV: lobby da sala, transição "Fulano escolheu" e o QR no menu dos jogos. Só a TV carrega. */
+/* ======================================================================
+   TV: lobby (o palco da sala antes de um jogo começar), visual "fliperama de papel" (shared/ui.css).
+   A TV é passiva: nada aqui parece botão. Tudo aponta para o celular.
+   Tamanhos em rem (1rem = 1vw, ou 1.78vh em telas mais largas que 16:9): a mesma composição vale em 720p, 1080p e 4K.
+   Medidas do desenho aprovado (1920 px de largura) divididas por 19.2.
+   Compatível com a TV da sala (Chrome 47): sem var(), grid, gap em flex, inset nem place-items;
+   cores por elemento (pessoa, categoria, aviso) o JS escreve inline.
+   Cores: papel #f1f0ea · tinta #0f0f14 · amarelo #ffce1f · vermelho #f0443a · apagado #55555e
+   ====================================================================== */
+body.tv[data-screen="library"] #tv { display:none; }
+body.tv:not([data-screen="library"]) #lobby { display:none; }
+/* "online": no lobby fica na barra preta, à direita, em verde (quadrado + rótulo) */
+body.tv[data-screen="library"] .conn { top:2.15rem; right:3.33rem; z-index:6; font-family:'JetBrains Mono',monospace; font-size:1.15rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#35d07f; display:flex; align-items:center; line-height:1; }
+body.tv[data-screen="library"] .conn::before { content:''; width:.73rem; height:.73rem; margin-right:.62rem; background:#35d07f; }
+body.tv[data-screen="library"] .conn.off { color:#f0443a; }
+body.tv[data-screen="library"] .conn.off::before { background:#f0443a; animation:tvl-blink .6s infinite; }
+
+#lobby { position:fixed; top:0; left:0; right:0; bottom:0; width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; background:#f1f0ea; color:#0f0f14; font-family:'Archivo',sans-serif; }
+
+/* ---- barra preta: marca + categorias ---- */
+.tvl-bar { height:5.42rem; flex:none; background:#0f0f14; display:flex; align-items:center; padding:0 3.33rem; }
+.tvl-logo { font-size:2.08rem; font-weight:400 !important; line-height:.85; color:#f0443a; letter-spacing:.02em; flex:none; }
+.tvl-logo span { color:#ffce1f; }
+.tvl-cats { display:flex; align-items:center; margin-left:2.5rem; color:#f1f0ea; font-size:1.15rem; text-transform:uppercase; }
+.tvl-cat { display:flex; align-items:center; }
+.tvl-cat + .tvl-cat { margin-left:1.88rem; }
+.tvl-cat i { width:.83rem; height:.83rem; margin-right:.62rem; flex:none; }
+
+/* ---- miolo: frase + código + pessoas (esquerda) e cartão do QR (direita) ---- */
+.tvl-main { flex:1; min-height:0; display:flex; padding:2.6rem 3.33rem 0; }
+.tvl-left { flex:1; min-width:0; display:flex; flex-direction:column; }
+.tvl-h1 { margin:0; font-size:4.79rem; line-height:.92; animation:tvl-rise .6s cubic-bezier(.2,.8,.2,1) both; }
+.tvl-row { display:flex; align-items:flex-end; margin-top:1.46rem; }
+.tvl-codebox { flex:none; background-color:#ffce1f; border:.21rem solid #0f0f14; box-shadow:.52rem .52rem 0 #0f0f14; padding:.83rem 1.67rem .52rem; animation:tvl-rise .6s .1s cubic-bezier(.2,.8,.2,1) both; }
+.tvl-codek { font-size:1.15rem; letter-spacing:.14em; text-transform:uppercase; }
+.tvl-code { font-size:7.81rem; font-weight:700; line-height:.95; letter-spacing:.1em; margin-right:-.1em; }
+.tvl-people { flex:1; min-width:0; margin-left:2.08rem; padding-bottom:.42rem; }
+.tvl-count { font-size:1.15rem; letter-spacing:.1em; text-transform:uppercase; }
+.tvl-count b { font-size:1.6rem; letter-spacing:.04em; }
+.tvl-chips { display:flex; flex-wrap:wrap; align-items:flex-start; margin:.3rem 0 0 -.36rem; }
+#lobby[data-state="empty"] .tvl-chips { display:none; }
+#lobby[data-state="crowd"] .tvl-empty { display:none; }
+.tvl-empty { margin-top:.73rem; display:inline-block; padding:.9rem 1.25rem; border:.21rem dashed #0f0f14; font-size:1.25rem; line-height:1.35; text-transform:uppercase; letter-spacing:.06em; color:#0f0f14; }
+.tvl-empty span { display:inline-block; animation:tvl-nudge 1.2s ease-in-out infinite; }
+
+/* pessoa: quadrado na cor dela com o boneco, nome embaixo */
+.tvl-chipw { display:inline-block; margin:.36rem; animation:tvl-pop .5s cubic-bezier(.2,1.4,.3,1) both; }
+.tvl-chipw.out { animation:tvl-drop .4s cubic-bezier(.6,0,.8,.2) both; }
+.tvl-chip { display:flex; flex-direction:column; align-items:center; width:5.6rem; transition:opacity .4s; }
+.tvl-tile { position:relative; display:flex; align-items:center; justify-content:center; width:4.79rem; height:4.79rem; flex:none; border:.21rem solid #0f0f14; box-shadow:.31rem .31rem 0 #0f0f14; overflow:hidden; color:#0f0f14; }
+.tvl-tile b { font-size:2.4rem; line-height:1; }
+.tvl-tile.face svg { display:block; flex:none; width:100%; height:100%; margin-top:14%; }
+.tvl-nm { display:block; max-width:100%; margin-top:.5rem; font-size:1.15rem; font-weight:800; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tvl-chip.off { opacity:.4; }
+.tvl-chip.off .tvl-tile::after { content:'OFF'; position:absolute; left:0; right:0; bottom:0; background:#0f0f14; color:#f1f0ea; font:700 .75rem/1.4 'JetBrains Mono',monospace; letter-spacing:.1em; text-align:center; }
+#lobby[data-size="m"] .tvl-chipw { margin:.36rem .2rem; }
+#lobby[data-size="m"] .tvl-chip { width:4.3rem; }
+#lobby[data-size="m"] .tvl-tile { width:3.65rem; height:3.65rem; }
+#lobby[data-size="m"] .tvl-nm { font-size:.98rem; margin-top:.42rem; }
+#lobby[data-size="s"] .tvl-chipw { margin:.26rem; }
+#lobby[data-size="s"] .tvl-chip { width:3.9rem; }
+#lobby[data-size="s"] .tvl-tile { width:3.13rem; height:3.13rem; box-shadow:.21rem .21rem 0 #0f0f14; }
+#lobby[data-size="s"] .tvl-nm { font-size:.83rem; margin-top:.31rem; }
+#lobby[data-size="s"] .tvl-h1 { font-size:4.2rem; }
+/* com muita gente o código encolhe um pouco para os quadrados caberem numa fila só (até 8) */
+#lobby[data-size="m"] .tvl-code, #lobby[data-size="s"] .tvl-code { font-size:6.4rem; }
+
+/* cartão do QR */
+.tvl-join { width:24.48rem; flex:none; align-self:flex-start; margin-left:3.33rem; background:#fff; border:.21rem solid #0f0f14; box-shadow:.63rem .63rem 0 #0f0f14; padding:1.46rem; display:flex; flex-direction:column; align-items:center; text-align:center; animation:tvl-rise .6s .15s cubic-bezier(.2,.8,.2,1) both; }
+.tvl-join > * + * { margin-top:.94rem; }
+.tvl-join-k { font-size:1.56rem; line-height:1; }
+.tvl-qrs { display:flex; justify-content:center; }
+.tvl-qr { display:flex; flex-direction:column; align-items:center; }
+.tvl-qr + .tvl-qr { margin-left:.83rem; }
+.tvl-qr-img { padding:.52rem; border:.21rem solid #0f0f14; background:#fff; }
+.tvl-qr-img svg { display:block; width:17.7rem; height:17.7rem; }
+.tvl-qrs.two .tvl-qr-img { padding:.31rem; }
+.tvl-qrs.two .tvl-qr-img svg { width:9.6rem; height:9.6rem; }
+.tvl-qr-label { margin-top:.52rem; font-size:.83rem; text-transform:uppercase; letter-spacing:.04em; }
+.tvl-qr-url { margin-top:.42rem; font-size:1.04rem; word-break:break-all; max-width:20rem; }
+.tvl-qrs.two .tvl-qr-url { font-size:.73rem; max-width:10.4rem; color:#55555e; }
+.tvl-join-hint { font-size:.83rem; font-weight:500; color:#55555e; letter-spacing:.02em; }
+
+/* ---- prateleira "Jogos da casa": ambiente, não navegação ---- */
+.tvl-show { flex:none; display:flex; flex-direction:column; padding:0 0 2.1rem 3.33rem; }
+.tvl-show-k { display:flex; align-items:center; }
+.tvl-show-k > * + * { margin-left:.94rem; }
+.tvl-show-tag { background:#0f0f14; color:#f1f0ea; padding:.52rem .94rem; font-size:1.35rem; line-height:1; }
+.tvl-show-n { font-size:1.77rem; line-height:1; }
+.tvl-hint { font-size:1.04rem; color:#55555e; text-transform:uppercase; letter-spacing:.04em; }
+.tvl-track-wrap { position:relative; height:14.6rem; margin-top:1.04rem; overflow:hidden; }
+.tvl-track { position:absolute; top:0; bottom:.63rem; left:0; display:flex; width:-webkit-max-content; width:max-content; will-change:transform; }
+.tvl-track.drift { animation:tvl-drift 60s linear infinite; }   /* a duração real vem do JS (animation-duration) */
+.tvl-poster { position:relative; width:12.29rem; flex:none; margin-right:1.15rem; background:#fff; border:.21rem solid #0f0f14; box-shadow:.42rem .42rem 0 #0f0f14; display:flex; flex-direction:column; transition:background .4s; }
+.tvl-cover { height:7.81rem; flex:none; display:flex; align-items:center; justify-content:center; font-size:3.33rem; font-weight:700; line-height:1; border-bottom:.21rem solid #0f0f14; color:#0f0f14; white-space:nowrap; overflow:hidden; transition:opacity .5s; }
+.tvl-pbody { flex:1; display:flex; flex-direction:column; padding:.63rem .73rem .73rem; min-height:0; }
+.tvl-gname { font-size:1.25rem; font-weight:800; line-height:1.05; overflow:hidden; max-height:2.63rem; }
+.tvl-req { margin-top:auto; padding-top:.31rem; display:flex; align-items:center; font-size:.83rem; color:#55555e; text-transform:uppercase; letter-spacing:.02em; white-space:nowrap; }
+.tvl-req i { width:.63rem; height:.63rem; flex:none; margin-right:.42rem; border:.1rem solid #0f0f14; }
+.tvl-req b { font-weight:700; }
+/* jogo que ainda não cabe na sala: capa apagada e o que falta em destaque */
+.tvl-poster.lock { background:#e4e2d9; box-shadow:.21rem .21rem 0 #0f0f14; }
+.tvl-poster.lock .tvl-cover { opacity:.3; }
+.tvl-poster.lock .tvl-gname { color:#55555e; }
+.tvl-poster.lock .tvl-req { color:#0f0f14; }
+.tvl-poster.lock .tvl-req i { display:none; }
+.tvl-poster.lock .tvl-req b { background:#0f0f14; color:#ffce1f; padding:.16rem .42rem; }
+.tvl-poster.unlocked { animation:tvl-ring 2.4s ease-out; }
+
+/* ---- avisos curtos (entrou, saiu, jogo liberado): cartão na cor do acontecimento ---- */
+.tvl-announce { position:absolute; left:50%; top:6.8rem; transform:translateX(-50%); z-index:5; pointer-events:none; }
+.tvl-ann { display:flex; align-items:center; padding:.94rem 2rem .94rem 1rem; background-color:#ffce1f; color:#0f0f14; border:.26rem solid #0f0f14; box-shadow:.63rem .63rem 0 #0f0f14; white-space:nowrap; animation:tvl-ann-in .45s cubic-bezier(.2,1.3,.3,1) both; }
+.tvl-ann > * + * { margin-left:1.04rem; }
+.tvl-ann .tvl-tile { width:4.2rem; height:4.2rem; box-shadow:none; }
+.tvl-ann-glyph { display:flex; align-items:center; justify-content:center; min-width:4.2rem; height:4.2rem; padding:0 .5rem; background:#fff; border:.21rem solid #0f0f14; font-size:2.2rem; font-weight:700; }
+.tvl-ann-txt { display:flex; flex-direction:column; padding-left:.4rem; min-width:0; max-width:52rem; }
+.tvl-ann-txt b { overflow:hidden; text-overflow:ellipsis; }
+.tvl-ann small { font-size:1.04rem; letter-spacing:.16em; text-transform:uppercase; }
+.tvl-ann b { margin-top:.31rem; font-size:2.6rem; line-height:1; }
+.tvl-ann.out { animation:tvl-ann-out .35s ease-in both; }
+
+/* ---- alguém escolheu um jogo no celular: a TV inteira vira a cor da categoria ---- */
+.tvl-over { position:fixed; top:0; left:0; right:0; bottom:0; z-index:65; display:flex; align-items:center; justify-content:center; overflow:hidden; background-color:#ffce1f; color:#0f0f14; font-family:'Archivo',sans-serif; animation:fade .25s; }
+.tvl-over.dots { background-image:radial-gradient(rgba(15,15,20,.18) 2px, transparent 2.1px); background-size:16px 16px; }
+.tvl-over.out { animation:tvl-over-out .45s ease-in both; }
+.tvl-obar { position:absolute; top:0; left:0; right:0; height:5.42rem; background:#0f0f14; display:flex; align-items:center; justify-content:space-between; padding:0 3.33rem; }
+.tvl-oroom { color:#f1f0ea; font-size:1.15rem; letter-spacing:.08em; text-transform:uppercase; }
+.tvl-oroom span { color:#ffce1f; font-size:1.67rem; margin-left:.4rem; }
+.tvl-over-in { display:flex; align-items:center; margin-top:3.13rem; padding:0 3.33rem; }
+.tvl-ocard { width:19.79rem; height:27.6rem; flex:none; background:#fff; border:.31rem solid #0f0f14; box-shadow:.94rem .94rem 0 #0f0f14; -webkit-transform:rotate(-4deg); transform:rotate(-4deg); display:flex; flex-direction:column; justify-content:space-between; padding:1.35rem; animation:tvl-deal .55s cubic-bezier(.2,1.2,.3,1) both; }
+.tvl-ocard span { font-size:5rem; font-weight:700; line-height:1; white-space:nowrap; }
+.tvl-ocard .tvl-ocard-r { align-self:flex-end; -webkit-transform:rotate(180deg); transform:rotate(180deg); }
+.tvl-oinfo { display:flex; flex-direction:column; align-items:flex-start; margin-left:4.17rem; max-width:51rem; min-width:0; }
+.tvl-oinfo > * + * { margin-top:1.35rem; }
+.tvl-who { display:flex; align-items:center; animation:tvl-rise .5s .15s cubic-bezier(.2,.8,.2,1) both; }
+.tvl-who > * + * { margin-left:1.15rem; }
+.tvl-who .tvl-tile { width:5.73rem; height:5.73rem; border-width:.26rem; box-shadow:.42rem .42rem 0 #0f0f14; }
+.tvl-who .tvl-tile b { font-size:2.9rem; }
+.tvl-who .disp { font-size:2.81rem; line-height:1; background:#0f0f14; color:#f1f0ea; padding:.73rem 1.15rem; white-space:nowrap; }
+.tvl-oname { margin:0; font-size:12.5rem; line-height:.85; word-wrap:break-word; animation:tvl-rise .55s .3s cubic-bezier(.2,.8,.2,1) both; }
+.tvl-oname.l { font-size:9rem; }
+.tvl-oname.m { font-size:6.4rem; line-height:.9; }
+.tvl-oname.s { font-size:5rem; line-height:.92; }
+.tvl-otags { display:flex; animation:tvl-rise .5s .45s cubic-bezier(.2,.8,.2,1) both; }
+.tvl-otags span { background:#fff; border:.21rem solid #0f0f14; padding:.52rem .94rem; font-size:1.35rem; text-transform:uppercase; }
+.tvl-otags span + span { margin-left:.94rem; }
+.tvl-ogo { font-size:1.46rem; text-transform:uppercase; animation:tvl-rise .5s .6s both; }
+.tvl-ogo b { font-size:2.29rem; font-weight:700; margin-left:.3rem; }
+.tvl-ogo-arrow { display:inline-block; animation:tvl-nudge 1s ease-in-out infinite; }
+
+@keyframes tvl-rise { from { opacity:0; transform:translateY(1.4rem); } }
+@keyframes tvl-pop { from { opacity:0; transform:scale(.4); } to { opacity:1; transform:scale(1); } }
+@keyframes tvl-drop { to { opacity:0; transform:scale(.6) translateY(1.5rem); } }
+@keyframes tvl-drift { to { transform:translateX(-50%); } }
+@keyframes tvl-ring { 0% { transform:translate(0,0); box-shadow:.42rem .42rem 0 #0f0f14; } 15% { transform:translate(-.31rem,-.52rem); box-shadow:.73rem .94rem 0 #ffce1f; } 60% { transform:translate(-.31rem,-.52rem); box-shadow:.73rem .94rem 0 #ffce1f; } 100% { transform:translate(0,0); box-shadow:.42rem .42rem 0 #0f0f14; } }
+@keyframes tvl-ann-in { from { opacity:0; transform:translateY(-1.6rem); } }
+@keyframes tvl-ann-out { to { opacity:0; transform:translateY(-1rem); } }
+@keyframes tvl-nudge { 0%,100% { transform:translateX(0); } 50% { transform:translateX(.4rem); } }
+@keyframes tvl-deal { from { opacity:0; transform:translate(-6rem,3rem) rotate(-16deg); } to { opacity:1; transform:rotate(-4deg); } }
+@keyframes tvl-over-out { to { opacity:0; } }
+@keyframes tvl-blink { 0%,100% { opacity:.25; } 50% { opacity:1; } }
+@media (prefers-reduced-motion: reduce) { .tvl-track.drift, .tvl-empty span, .tvl-ogo-arrow { animation:none; } }
+
+/* QR na TV durante o menu de um jogo (fase "setup"): cartão branco no canto de baixo, à direita.
+   Some quando a partida começa. Chrome 47: sem var(), gap nem inset. */
+#tvqr { display:none; }
+body.tv[data-screen="game"] #tvqr.on { display:flex; flex-direction:column; align-items:center; position:fixed; right:28px; bottom:28px; z-index:40; width:236px; padding:12px 12px 10px; background:#fff; color:#0f0f14; text-align:center; border:4px solid #0f0f14; box-shadow:8px 8px 0 #0f0f14; }
+#tvqr .tvqr-k { font-family:'Archivo',sans-serif; font-weight:900; font-stretch:125%; text-transform:uppercase; font-size:18px; line-height:1; letter-spacing:-.01em; }
+#tvqr .tvqr-qrs { display:flex; margin-top:10px; }
+#tvqr .tvqr-qr + .tvqr-qr { margin-left:8px; }
+#tvqr .tvqr-img { border:3px solid #0f0f14; padding:4px; background:#fff; }
+#tvqr svg { display:block; width:124px; height:124px; }
+#tvqr .tvqr-qrs.two svg { width:86px; height:86px; }
+#tvqr .tvqr-label { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; text-transform:uppercase; margin-top:5px; }
+#tvqr .tvqr-hint { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; text-transform:uppercase; margin-top:8px; color:#0f0f14; }
+#tvqr .tvqr-hint b { display:inline-block; font-family:'Pixelify Sans',monospace; font-size:24px; line-height:1; letter-spacing:.08em; margin-left:4px; padding:1px 6px; background:#ffce1f; border:2px solid #0f0f14; vertical-align:middle; }
+/* o painel da direita encolhe (margem, não padding: o overflow:hidden do painel corta no padding) para o cartão não cobrir o placar */
+body.tv.tvqr-on[data-screen="game"] .side { margin-bottom:262px; }
+@media (max-height:800px) {
+  body.tv[data-screen="game"] #tvqr.on { right:20px; bottom:20px; width:200px; padding:10px 10px 8px; }
+  #tvqr .tvqr-k { font-size:15px; }
+  #tvqr svg { width:96px; height:96px; }
+  #tvqr .tvqr-qrs.two svg { width:72px; height:72px; }
+  #tvqr .tvqr-hint { font-size:11px; }
+  #tvqr .tvqr-hint b { font-size:20px; }
+  body.tv.tvqr-on[data-screen="game"] .side { margin-bottom:214px; }
+}

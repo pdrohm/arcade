@@ -4,7 +4,7 @@
 //
 //   node test/tv-compat.js
 //
-// Sem argumentos, confere o que a TV carrega: shared/*.js, games/*/tv.js, public/tv.html e shared/ui.css.
+// Sem argumentos, confere o que a TV carrega: shared/*.js, games/*/tv.js, public/tv.html, shared/ui.css e shared/tv-lobby.css.
 // (phone.js e index.html rodam em celular moderno e ficam de fora.)
 // Uma linha com o comentário tv-ok é aceita: use quando a linha de cima já tem o valor fixo de reserva.
 // Com `acorn` instalado (npm i -D acorn acorn-walk) a conferência é exata; sem ele, cai
@@ -195,11 +195,13 @@ function conferirCss(src) {
 function main() {
   const lista = process.argv.length > 2 ? process.argv.slice(2) : alvos();
   let ruins = 0;
-  // folha de estilo comum
+  // folhas de estilo que a TV carrega (a comum e a do lobby)
   if (process.argv.length <= 2) {
-    const css = conferirCss(fs.readFileSync(path.join(RAIZ, 'shared/ui.css'), 'utf8'));
-    if (css.erros.length) { ruins++; console.log('\n✗ shared/ui.css'); for (const f of css.erros) console.log('   linha ' + f.linha + ': ' + f.o_que); }
-    if (css.avisos.length) { console.log('\n⚠ shared/ui.css (só desalinha na TV, não quebra):'); for (const f of css.avisos) console.log('   linha ' + f.linha + ': ' + f.o_que); }
+    for (const f of ['shared/ui.css', 'shared/tv-lobby.css']) {
+      const css = conferirCss(fs.readFileSync(path.join(RAIZ, f), 'utf8'));
+      if (css.erros.length) { ruins++; console.log('\n✗ ' + f); for (const e of css.erros) console.log('   linha ' + e.linha + ': ' + e.o_que); }
+      if (css.avisos.length) { console.log('\n⚠ ' + f + ' (só desalinha na TV, não quebra):'); for (const e of css.avisos) console.log('   linha ' + e.linha + ': ' + e.o_que); }
+    }
   }
   for (const rel of lista) {
     const src = fonte(rel);

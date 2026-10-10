@@ -1,0 +1,175 @@
+/* Celular: casca do arcade (entrar, biblioteca, detalhe do jogo, QR da sala, barra do topo).
+   Só o celular carrega este arquivo (a TV tem o lobby próprio), então pode usar grid, gap e var.
+   Visual "fliperama de papel": papel #f1f0ea, tinta #0f0f14, borda 3px, sombra dura 5px 5px 0. */
+
+body.phone { font-size:18px; }
+body.phone #app { max-width:560px; margin:0 auto; padding:0 16px 46px; display:flex; flex-direction:column; gap:14px; min-height:100vh; }
+body.phone .grow { flex:1; }
+
+/* conexão: some quando está tudo bem; sem conexão vira uma faixa vermelha no topo */
+body.phone .conn { display:none; }
+body.phone .conn.off { display:block; top:0; left:0; right:0; padding:5px 8px; background:#f0443a; color:#0f0f14; text-align:center; z-index:80; border-bottom:3px solid #0f0f14; }
+
+/* ---------- barra preta do topo ---------- */
+body.phone .topbar { height:60px; margin:0 -16px 6px; padding:0 14px; background:#0f0f14; color:#f1f0ea; display:flex; align-items:center; gap:10px; flex:none; }
+body.phone .logo { font-size:22px; font-weight:400 !important; line-height:.9; color:#f0443a; letter-spacing:.02em; white-space:nowrap; }
+body.phone .logo span { color:#ffce1f; }
+body.phone .room-chip { height:38px; display:flex; align-items:center; gap:8px; padding:0 10px; border:2px solid #f1f0ea; color:#f1f0ea; font-size:13px; white-space:nowrap; flex:none; }
+body.phone .room-chip .pix { font-size:18px; color:#ffce1f; letter-spacing:.06em; }
+body.phone .me-btn { width:44px; height:44px; flex:none; padding:0; border:3px solid #f1f0ea; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; color:#0f0f14; font:900 18px 'Archivo',sans-serif; }
+body.phone .me-btn svg { display:block; margin-top:4px; }
+body.phone .back-btn { width:44px; height:44px; flex:none; padding:0; display:flex; align-items:center; justify-content:center; border:2px solid #f1f0ea; background:transparent; cursor:pointer; }
+body.phone .back-btn:active { background:#2a2a32; }
+body.phone .topbar-cat { color:#f1f0ea; font-size:13px; letter-spacing:.08em; }
+body.phone .game-chip { width:40px; height:40px; flex:none; display:flex; align-items:center; justify-content:center; border:2px solid #f1f0ea; color:#0f0f14; font-size:17px; line-height:1; white-space:nowrap; overflow:hidden; }
+body.phone .topbar-game { flex:1; min-width:0; display:flex; flex-direction:column; line-height:1.1; }
+body.phone .topbar-game .mono { font-size:10px; color:#ffce1f; letter-spacing:.1em; }
+body.phone .topbar-game b { font-size:16px; font-weight:900; font-stretch:112%; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* ---------- textos comuns ---------- */
+body.phone .page-title { margin:8px 0 0; font-size:32px; line-height:.95; }
+body.phone .lead { font-size:16px; font-weight:600; line-height:1.35; margin-top:-4px; }
+body.phone .field { display:flex; flex-direction:column; gap:7px; }
+body.phone .field > .mono { font-size:12px; letter-spacing:.1em; }
+body.phone .field input { height:54px; padding:0 14px; font-size:20px; font-weight:800; }
+body.phone .sec-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:6px; }
+body.phone .sec-head .mono { font-size:12px; }
+body.phone #app .btn.ghost { text-decoration:underline; text-underline-offset:3px; padding:10px; }
+body.phone .btn.dark:disabled { opacity:.35; }
+body.phone .divider { display:flex; align-items:center; gap:10px; font-size:12px; color:#55555e; margin-top:10px; }
+body.phone .divider::before, body.phone .divider::after { content:''; flex:1; border-top:3px dotted #0f0f14; opacity:.35; }
+
+/* ---------- sem sala: código ---------- */
+body.phone .code-block { display:flex; flex-direction:column; gap:8px; padding:14px 16px 16px; background-color:#ffce1f; border:3px solid #0f0f14; box-shadow:6px 6px 0 #0f0f14; }
+body.phone .code-block .mono { font-size:12px; letter-spacing:.1em; }
+body.phone input.code { height:74px; padding:0 10px; text-align:center; font-size:50px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; }
+body.phone input.code::placeholder { color:#c9c7bd; }
+
+/* ---------- entrar ---------- */
+body.phone .room-block { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 16px; background-color:#ffce1f; border:3px solid #0f0f14; box-shadow:6px 6px 0 #0f0f14; margin-top:10px; }
+body.phone .room-block .mono { font-size:11px; letter-spacing:.06em; }
+body.phone .room-block > div:first-child { min-width:0; }
+body.phone .room-lbl { white-space:nowrap; }
+@media (max-width: 380px) { body.phone .room-lbl { white-space:normal; } }
+body.phone .room-code { font-size:54px; line-height:1; letter-spacing:.08em; }
+body.phone .room-count { text-align:right; line-height:1.5; flex:none; }
+
+/* editor do boneco: quadrado da cor + setas */
+body.phone .av-edit2 { display:flex; flex-wrap:wrap; align-items:center; gap:14px; }
+body.phone .av-face2 { width:104px; height:104px; flex:none; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+body.phone .av-face2 svg { display:block; margin-top:14px; }
+body.phone .av-rows { flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; }
+body.phone .av-row { display:flex; align-items:center; gap:6px; }
+body.phone .av-row .mono { flex:1; text-align:center; font-size:12px; }
+body.phone .av-edit2 .av-arrow { width:36px; height:32px; border-width:2.5px; font-size:18px; padding:0; }
+body.phone .av-rand { height:30px; display:flex; align-items:center; justify-content:center; gap:6px; border:2.5px solid #0f0f14; background:#ffce1f; color:#0f0f14; font-size:12px; cursor:pointer; }
+body.phone .av-rand svg { width:16px; height:16px; }
+body.phone .av-rand:active { transform:translate(2px,2px); }
+body.phone .av-edit2 .field { width:100%; }
+
+/* cores: quadrados com borda; tomada = apagada com ×; a minha = anel duplo */
+body.phone .colors2 { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+body.phone .color2 { height:50px; padding:0; border:3px solid #0f0f14; box-shadow:4px 4px 0 #0f0f14; color:#0f0f14; font:900 24px/1 'Archivo',sans-serif; cursor:pointer; }
+body.phone .color2:active { transform:translate(3px,3px); box-shadow:1px 1px 0 #0f0f14; }
+body.phone .color2.sel { box-shadow:0 0 0 3px #f1f0ea, 0 0 0 6px #0f0f14; }
+body.phone .color2.taken { opacity:.35; box-shadow:none; cursor:not-allowed; }
+body.phone .enter-btn { margin-top:6px; }
+
+/* ---------- biblioteca ---------- */
+body.phone .lib-top { display:flex; flex-direction:column; gap:12px; }
+body.phone .lib-top .page-title { font-size:34px; }
+body.phone .lib-search-row { display:flex; gap:10px; }
+body.phone .lib-search-box { flex:1; min-width:0; height:48px; display:flex; align-items:center; gap:8px; padding:0 12px; background:#fff; border:3px solid #0f0f14; }
+body.phone .lib-search-box svg { flex:none; }
+body.phone .lib-search-box:focus-within { box-shadow:4px 4px 0 #ffce1f; }
+body.phone .lib-search { border:0; padding:0; height:100%; background:transparent; font-size:16px; font-weight:600; -webkit-appearance:none; appearance:none; min-width:0; }
+body.phone .lib-search:focus { box-shadow:none; }
+body.phone .surprise-btn { height:48px; padding:0 13px; display:flex; align-items:center; gap:7px; flex:none; background:#ffce1f; border:3px solid #0f0f14; box-shadow:4px 4px 0 #0f0f14; color:#0f0f14; font:900 14px 'Archivo',sans-serif; font-stretch:115%; text-transform:uppercase; cursor:pointer; }
+body.phone .surprise-btn:active { transform:translate(3px,3px); box-shadow:1px 1px 0 #0f0f14; }
+
+/* categorias: faixas coloridas com pontinhos; toque filtra, toque de novo limpa */
+body.phone .cats { display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+body.phone .cat { height:62px; display:flex; align-items:center; gap:12px; padding:0 16px; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; color:#0f0f14; text-align:left; cursor:pointer; font-family:inherit; transition:transform .06s, box-shadow .06s, opacity .1s; }
+body.phone .cat:active { transform:translate(4px,4px); box-shadow:1px 1px 0 #0f0f14; }
+body.phone .cat.sel { transform:translate(4px,4px); box-shadow:0 0 0 #0f0f14; outline:3px solid #0f0f14; outline-offset:3px; }
+body.phone .cat.dim { opacity:.4; }
+body.phone .cat-name { flex:1; font-size:19px; line-height:1; }
+body.phone .cat-name small { display:block; margin-top:5px; font-size:10px; letter-spacing:.08em; text-transform:none; font-stretch:100%; }
+body.phone .cat-num { display:flex; flex-direction:column; align-items:flex-end; }
+body.phone .cat-num .pix { font-size:28px; line-height:.9; }
+body.phone .cat-num .mono { font-size:10px; letter-spacing:.08em; }
+
+/* cartão de jogo: capa colorida com glifo + nome + faixa de jogadores */
+body.phone .gcard { display:flex; flex-direction:column; padding:0; background:#fff; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; color:#0f0f14; text-align:left; cursor:pointer; font-family:inherit; min-width:0; }
+body.phone .gcard:active { transform:translate(4px,4px); box-shadow:1px 1px 0 #0f0f14; }
+body.phone .gcover { position:relative; height:104px; display:flex; align-items:center; justify-content:center; font-size:42px; line-height:1; border-bottom:3px solid #0f0f14; white-space:nowrap; overflow:hidden; }
+body.phone .gwarn { position:absolute; top:6px; left:6px; padding:3px 6px; background:#0f0f14; color:#f1f0ea; font-size:10px; letter-spacing:.06em; }
+body.phone .gbody { padding:8px 10px 10px; display:flex; flex-direction:column; gap:4px; }
+body.phone .gname { font-size:15px; font-weight:800; line-height:1.1; }
+body.phone .gmeta { display:flex; align-items:center; gap:6px; font-size:11px; color:#55555e; }
+body.phone .gsq { width:9px; height:9px; border:1.5px solid #0f0f14; flex:none; }
+body.phone .gcard.off .gcover { opacity:.55; }
+body.phone .gcard.mini { width:150px; flex:none; }
+body.phone .gcard.mini .gcover { height:110px; font-size:44px; }
+
+body.phone section.now, body.phone section.all { display:flex; flex-direction:column; gap:12px; }
+body.phone section.now { margin-top:8px; }
+body.phone .now-row { display:flex; gap:12px; overflow-x:auto; margin:0 -16px; padding:2px 16px 10px; scroll-snap-type:x proximity; scrollbar-width:none; }
+body.phone .now-row::-webkit-scrollbar { display:none; }
+body.phone .now-row .gcard { scroll-snap-align:start; }
+body.phone .all { margin-top:8px; }
+body.phone .shelf2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 12px; padding-bottom:6px; }
+
+/* filtros e ordem: fichas quadradas */
+body.phone .lib-chips { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+body.phone .lib-chip { height:34px; padding:0 10px; border:2.5px solid #0f0f14; background:#fff; color:#0f0f14; font-size:11.5px; text-transform:uppercase; cursor:pointer; }
+body.phone .lib-chip:active { transform:translate(2px,2px); }
+body.phone .lib-chip.sel { background:#0f0f14; color:#ffce1f; }
+body.phone .lib-sort-l { font-size:11px; margin-right:2px; }
+body.phone .lib-empty { text-align:center; }
+body.phone .lib-empty .btn { margin-top:12px; }
+
+/* QR da sala no celular (biblioteca): outro celular lê direto desta tela */
+body.phone .phone-qr { display:flex; flex-direction:column; align-items:center; gap:10px; }
+body.phone .phone-qr-list { display:flex; flex-wrap:wrap; justify-content:center; gap:12px; }
+body.phone .phone-qr-item svg { display:block; width:220px; height:220px; margin:0 auto; background:#fff; border:3px solid #0f0f14; }
+body.phone .phone-qr-item .mono { margin:6px 0 0; font-size:12px; }
+body.phone .phone-qr-code { font-size:44px; line-height:1; letter-spacing:.12em; padding:6px 14px; background:#ffce1f; border:3px solid #0f0f14; }
+
+/* ---------- detalhe do jogo ---------- */
+body.phone .hero { margin:-20px -16px 0; min-height:220px; padding:18px 16px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px; border-bottom:3px solid #0f0f14; }
+body.phone .hero-txt { min-width:0; flex:1; }
+body.phone .hero h1 { margin:0; line-height:.92; overflow-wrap:break-word; }
+body.phone .hero-tag { margin-top:10px; display:inline-flex; align-items:center; gap:6px; padding:5px 9px; background:#0f0f14; color:#f1f0ea; font-size:12px; }
+body.phone .hero-tag span { width:9px; height:9px; }
+body.phone .hero-card { width:92px; height:128px; flex:none; padding:8px; background:#fff; border:3px solid #0f0f14; box-shadow:5px 5px 0 #0f0f14; transform:rotate(6deg); display:flex; flex-direction:column; justify-content:space-between; align-self:center; overflow:hidden; }
+body.phone .hero-card .pix { font-size:24px; line-height:1; white-space:nowrap; }
+body.phone .hero-card .flip { align-self:flex-end; transform:rotate(180deg); }
+body.phone .hero + .lead { margin-top:4px; font-size:17px; }
+body.phone .fit { display:flex; align-items:center; gap:12px; padding:10px 12px; background:#fff; border:3px solid #0f0f14; }
+body.phone .fit .pix { font-size:30px; line-height:1; flex:none; }
+body.phone .fit > span + span { font-size:14px; font-weight:700; line-height:1.25; }
+body.phone .fit.no { background:#ffce1f; }
+body.phone .rules { padding:14px 14px 6px; }
+body.phone .rules h2 { margin:0 0 8px; font-size:17px; }
+body.phone .rule { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-top:1.5px solid rgba(15,15,20,.2); font-size:15px; line-height:1.35; }
+body.phone .rule .pix { flex:none; min-width:30px; padding:2px 4px; text-align:center; font-size:15px; line-height:1.2; border:2px solid #0f0f14; }
+body.phone .start-btn { display:flex; align-items:center; justify-content:center; gap:12px; margin-top:4px; }
+body.phone .start-btn:disabled { background:#e4e2d9; }
+
+/* ---------- dentro do jogo ---------- */
+body.phone .exit-btn { margin-top:10px; padding:12px; font-size:17px; display:flex; flex-direction:column; align-items:center; gap:3px; }
+body.phone .exit-btn small { font-size:10px; letter-spacing:.08em; color:#55555e; }
+
+/* jogadores na casca (lista padrão do ui.css) */
+body.phone .players + .sub { margin-top:4px; }
+
+/* Telas estreitas (360 px): um pouco menor para nada estourar */
+@media (max-width: 370px) {
+  body.phone .logo { font-size:19px; }
+  body.phone .room-chip { padding:0 8px; gap:6px; }
+  body.phone .room-code { font-size:46px; }
+  body.phone .colors2 { gap:8px; }
+  body.phone .surprise-btn { padding:0 10px; }
+  body.phone .gcard.mini { width:140px; }
+}

@@ -22,7 +22,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 
 module.exports = {
   meta: {
-    id: 'palavrasecreta', name: 'Palavra Secreta', emoji: '🗝️',
+    id: 'palavrasecreta', name: 'Palavra Secreta', category: 'palavras', glyph: 'Aa', emoji: '🗝️',
     tagline: 'Dê dicas e faça seu time descobrir o máximo de palavras.',
     art: 'linear-gradient(135deg,#14b8a6 0%,#0f766e 55%,#042f2e 100%)',
     minPlayers: 4, maxPlayers: 8,

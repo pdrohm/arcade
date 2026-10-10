@@ -15,7 +15,7 @@ const pick = (arr, n) => { const a = arr.slice(); for (let i = a.length - 1; i >
 
 module.exports = {
   meta: {
-    id: 'stop', name: 'Stop', emoji: '🛑',
+    id: 'stop', name: 'Stop', category: 'palavras', glyph: 'STOP', emoji: '🛑',
     tagline: 'Uma letra, seis categorias, e o primeiro que terminar grita STOP.',
     art: 'linear-gradient(135deg,#ef4444 0%,#991b1b 55%,#450a0a 100%)',
     minPlayers: 2, maxPlayers: 8,

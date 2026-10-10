@@ -4,6 +4,7 @@ module.exports = require('../../shared/ext/game')({
   id: 'skate3',
   name: 'Skate 3',
   emoji: '🛹',
+  glyph: '◢',
   tagline: 'Skate 3 no navegador. Seu celular é o controle de Xbox.',
   art: 'linear-gradient(160deg,#0b2a44 0,#1d5f8c 55%,#36b3ff 100%)',
   upstream: 'https://skate.aaddpp.lol',

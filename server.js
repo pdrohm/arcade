@@ -523,7 +523,7 @@ function loadState() {
 // ---------- HTTP ----------
 const PUBLIC = path.join(__dirname, 'public');
 const SHARED = path.join(__dirname, 'shared');
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json; charset=utf-8' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json; charset=utf-8', '.woff2': 'font/woff2' };
 // Cabeçalhos de segurança em toda resposta. A CSP só libera a própria origem;
 // 'unsafe-inline' porque o index/tv têm <script> e <style> embutidos (nomes etc. já saem escapados).
 // media-src com mediastream:/blob: é a imagem da câmera no leitor de QR do celular (public/qr-scan.js).

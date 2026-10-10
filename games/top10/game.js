@@ -26,7 +26,7 @@ const isLocal = pid => typeof pid === 'string' && pid.charAt(0) === '#';
 
 module.exports = {
   meta: {
-    id: 'top10', name: 'Top 10', emoji: '🔟',
+    id: 'top10', name: 'Top 10', category: 'festa', glyph: '10', emoji: '🔟',
     tagline: 'Um ranking de dez que ninguém vê. Fale um item — ou duvide de quem falou.',
     art: 'linear-gradient(135deg,#facc15 0%,#f97316 45%,#7c2d12 100%)',
     // 1 jogador basta no modo mediador: um celular só conduz a mesa inteira.

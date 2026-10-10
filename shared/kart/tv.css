@@ -1,62 +1,80 @@
-/* KART na TV: cartazes de fliperama (papel creme, tinta roxa, cantos retos, sombra dura) por cima do
-   canvas 2.5D. Compatível com a TV da sala (Chrome 47): sem var(), grid, gap, inset ou clamp();
+/* KART na TV: cartazes no estilo "fliperama de papel" do Arcade (cartão branco, tinta #0f0f14, cantos retos,
+   sombra dura sem desfoque, verde da categoria ação #35d07f) por cima do canvas 2.5D.
+   Fontes do ui.css: Archivo (títulos), Pixelify Sans (números), JetBrains Mono (rótulos).
+   Compatível com a TV da sala (Chrome 47): sem var(), grid, gap, inset ou clamp();
    1rem = 1% da largura da tela (regra do html em ui.css), então tudo escala de 1080p a 4K. */
 body.kart-tv #game{display:block}body.kart-tv #stage{width:100%;height:calc(100vh - 32px);max-width:none;padding:0}body.kart-tv #side{display:none}
-#kart-stage{position:relative;width:100%;height:100%;min-height:400px;overflow:hidden;background:#1b1035;font-family:"Courier New",Courier,monospace;color:#1b1035}
-#kart-stage:after{content:"";position:absolute;z-index:1;top:0;left:0;right:0;bottom:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(27,16,53,.08) 0,rgba(27,16,53,.08) 1px,transparent 1px,transparent 4px)}
+#kart-stage{position:relative;width:100%;height:100%;min-height:400px;overflow:hidden;background:#0f0f14;border:.25rem solid #0f0f14;font-family:'Archivo',sans-serif;color:#0f0f14}
+#kart-stage:after{content:"";position:absolute;z-index:1;top:0;left:0;right:0;bottom:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(15,15,20,.07) 0,rgba(15,15,20,.07) 1px,transparent 1px,transparent 4px)}
 #kart-canvas{display:block;width:100%;height:100%;image-rendering:-webkit-optimize-contrast;image-rendering:pixelated;image-rendering:crisp-edges}
 #kart-overlay{position:absolute;z-index:2;top:0;left:0;right:0;bottom:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
-#kart-stage .ki{display:block;width:100%;height:100%}#kart-stage .kart-hint .ki{width:1.6em;height:1.6em;margin-right:.5em}
-.kart-sticker{background:#fff1c9;color:#1b1035;border:.26rem solid #1b1035;box-shadow:.45rem .45rem 0 #1b1035,.7rem .7rem 0 #7c5cff}
+#kart-stage .ki{display:block;width:100%;height:100%}#kart-stage .kart-hint .ki{width:1.6em;height:1.6em;margin-right:.6em}
+.kart-sticker{background:#fff;color:#0f0f14;border:.25rem solid #0f0f14;box-shadow:.55rem .55rem 0 #0f0f14}
+.kart-disp{font-family:'Archivo',sans-serif;font-weight:900;font-stretch:125%;text-transform:uppercase;letter-spacing:-.01em;line-height:.95}
+.kart-mono{font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.kart-pix{font-family:'Pixelify Sans',monospace;font-weight:700}
 /* ---------- cartazes ---------- */
-.kart-card{width:36rem;padding:1.8rem;text-align:center;font-size:1.1rem}
-.kart-card h2{font-size:2rem;margin:.4rem 0;text-transform:uppercase;letter-spacing:.04em}.kart-card p{font-size:1.15rem;margin:.3rem 0}
-.kart-logo{display:inline-block;-webkit-transform:rotate(-3deg);transform:rotate(-3deg);line-height:.9;text-transform:uppercase;font-weight:900;letter-spacing:-.02em;text-align:center}
+.kart-card{width:38rem;padding:2rem 1.8rem 1.8rem;text-align:center;font-size:1.1rem}
+.kart-card h2{font-size:2.4rem;margin:.5rem 0 .6rem}
+.kart-card p{margin:.3rem 0}
+/* marca: etiqueta preta "ARCADE" + bloco verde pontilhado com KART em letra larga */
+.kart-logo{display:inline-block;position:relative;-webkit-transform:rotate(-3deg);transform:rotate(-3deg);text-align:center}
 .kart-logo span{display:block}
-.kart-logo .kl-arcade{font-size:1.3rem;letter-spacing:.35em;color:#fff1c9;text-shadow:.12rem 0 0 #1b1035,-.12rem 0 0 #1b1035,0 .12rem 0 #1b1035,0 -.12rem 0 #1b1035}
-.kart-logo .kl-kart{font-size:6.2rem;color:#ffd23f;text-shadow:.22rem 0 0 #1b1035,-.22rem 0 0 #1b1035,0 .22rem 0 #1b1035,0 -.22rem 0 #1b1035,.16rem .16rem 0 #1b1035,-.16rem .16rem 0 #1b1035,.16rem -.16rem 0 #1b1035,-.16rem -.16rem 0 #1b1035,0 .55rem 0 #1b1035,0 .8rem 0 #7c5cff}
-.kart-logo.small .kl-kart{font-size:3.6rem}.kart-logo.small .kl-arcade{font-size:.9rem}
+.kart-logo .kl-arcade{position:absolute;z-index:1;left:50%;top:-1.3rem;width:9rem;margin-left:-4.5rem;padding:.35rem 0;background:#0f0f14;color:#ffce1f;font-size:1.05rem;letter-spacing:.3em}
+.kart-logo .kl-kart{padding:.9rem 2.6rem .6rem;background-color:#35d07f;background-image:radial-gradient(rgba(15,15,20,.18) 2px,transparent 2.1px);background-size:16px 16px;border:.3rem solid #0f0f14;box-shadow:.7rem .7rem 0 #0f0f14;color:#0f0f14;font-size:6.6rem}
+.kart-logo.small .kl-kart{font-size:3.8rem;padding:.7rem 1.8rem .45rem;box-shadow:.5rem .5rem 0 #0f0f14}.kart-logo.small .kl-arcade{font-size:.85rem;width:12rem;margin-left:-6rem;top:-1.1rem}
 .kart-lobby{width:94%;display:flex;flex-direction:column;align-items:center;text-align:center}
-.kart-lobby .kart-track{display:inline-block;margin-top:.9rem;padding:.5rem 1.6rem .7rem;-webkit-transform:rotate(1.5deg);transform:rotate(1.5deg)}
-.kart-lobby .kart-track small{display:block;font-size:.9rem;letter-spacing:.2em;font-weight:900;color:#7c5cff}
-.kart-lobby .kart-track h1{font-size:2.6rem;margin:.1rem 0 0;letter-spacing:-.01em}
-.kart-roster{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;width:100%;margin:.9rem 0 .3rem}
-.kart-pilot{position:relative;width:14rem;margin:.9rem .5rem .5rem;padding:.9rem .7rem .7rem;text-align:center}
-.kart-pilot.ready{-webkit-transform:translateY(-.3rem);transform:translateY(-.3rem)}
-.kart-pilot .kp-portrait{width:5.6rem;height:5.6rem;margin:0 auto .5rem;border-radius:50%;border:.22rem solid #1b1035;overflow:hidden;box-shadow:0 .25rem 0 #1b1035}
+.kart-lobby .kart-track{display:inline-block;margin-top:1.6rem;padding:.6rem 2rem .8rem;-webkit-transform:rotate(1.5deg);transform:rotate(1.5deg)}
+.kart-lobby .kart-track small{display:block;font-size:1rem;color:#0f0f14}
+.kart-lobby .kart-track small b{display:inline-block;width:.8rem;height:.8rem;margin-right:.5rem;background:#35d07f;border:.12rem solid #0f0f14;vertical-align:-.05rem}
+.kart-lobby .kart-track h1{font-size:2.9rem;margin:.35rem 0 0}
+.kart-roster{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;width:100%;margin:1rem 0 .4rem}
+.kart-pilot{position:relative;width:14.5rem;margin:1rem .7rem .7rem;padding:1rem .8rem .8rem;text-align:center}
+.kart-pilot.ready{-webkit-transform:translate(.2rem,.2rem);transform:translate(.2rem,.2rem);box-shadow:.3rem .3rem 0 #0f0f14}
+.kart-pilot .kp-portrait{width:5.8rem;height:5.8rem;margin:0 auto .6rem;border:.22rem solid #0f0f14;overflow:hidden}
 .kart-pilot .kp-portrait .ki,.kpd .kp-portrait .ki,.kv-portrait .ki{-webkit-transform:scale(1.15) translateY(4%);transform:scale(1.15) translateY(4%)}
-.kart-pilot strong{display:block;font-size:1.45rem;text-transform:uppercase;word-wrap:break-word}
-.kart-pilot small{display:block;margin-top:.2rem;font-size:.9rem;color:#5d5488;font-weight:700}
-.kart-pilot .kp-kart{width:3.8rem;height:3.8rem;margin:.3rem auto 0}
-.kp-tag{position:absolute;top:-.8rem;right:-.6rem;padding:.25rem .7rem;border:.18rem solid #1b1035;background:#fff1c9;font-size:.85rem;font-weight:900;letter-spacing:.1em;-webkit-transform:rotate(6deg);transform:rotate(6deg);box-shadow:.2rem .2rem 0 #1b1035}
-.kp-tag.ready{background:#45e0a5}.kp-tag.wait{-webkit-animation:kart-blink 1.4s ease-in-out infinite;animation:kart-blink 1.4s ease-in-out infinite}
-.kart-pilot.empty{border-style:dashed;background:rgba(255,241,201,.55);box-shadow:none;color:#5d5488}
-.kart-pilot.empty .kp-portrait{border-style:dashed;background:transparent;box-shadow:none;display:flex;align-items:center;justify-content:center;font-size:2.4em;color:#7c5cff}
-.kart-hint{display:inline-flex;align-items:center;margin-top:.4rem;padding:.5rem 1.2rem;background:#1b1035;color:#fff1c9;font-size:1.1rem;font-weight:800;border:.18rem solid #fff1c9}
-.kart-hint.warn{background:#ff5e5b}
+.kart-pilot strong{display:block;font-family:'Archivo',sans-serif;font-weight:900;font-stretch:125%;font-size:1.5rem;line-height:1.05;text-transform:uppercase;word-wrap:break-word}
+.kart-pilot strong .avatar{vertical-align:-.35rem}
+.kart-pilot small{display:block;margin-top:.35rem;font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#55555e}
+.kart-pilot .kp-kart{width:4rem;height:4rem;margin:.3rem auto 0}
+.kp-tag{position:absolute;top:-.95rem;right:-.7rem;padding:.3rem .7rem;border:.18rem solid #0f0f14;background:#ffce1f;font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:700;letter-spacing:.08em;-webkit-transform:rotate(5deg);transform:rotate(5deg);box-shadow:.22rem .22rem 0 #0f0f14}
+.kp-tag.ready{background:#35d07f}.kp-tag.wait{-webkit-animation:kart-blink 1.4s ease-in-out infinite;animation:kart-blink 1.4s ease-in-out infinite}
+.kart-pilot.empty{border-style:dashed;background:#f1f0ea;box-shadow:none;color:#55555e}
+.kart-pilot.empty strong{color:#55555e}
+.kart-pilot.empty .kp-portrait{border-style:dashed;background:transparent;display:flex;align-items:center;justify-content:center;font-family:'Pixelify Sans',monospace;font-weight:700;font-size:3.4rem;color:#0f0f14}
+.kart-hint{display:inline-flex;align-items:center;margin-top:.7rem;padding:.7rem 1.4rem;background:#0f0f14;color:#f1f0ea;font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:.2rem solid #0f0f14;box-shadow:.4rem .4rem 0 #35d07f}
+.kart-hint.warn{background:#f0443a;color:#0f0f14;box-shadow:.4rem .4rem 0 #0f0f14}
 .kart-loading{display:flex;flex-direction:column;align-items:center}
-.kart-loading .kart-wheel{width:6rem;height:6rem;margin-bottom:.6rem;-webkit-animation:kart-spin 1s linear infinite;animation:kart-spin 1s linear infinite}
+.kart-loading .kart-wheel{width:6.5rem;height:6.5rem;margin-bottom:.4rem;-webkit-animation:kart-spin 1s linear infinite;animation:kart-spin 1s linear infinite}
+.kart-loading .kc-kicker{display:inline-block;padding:.35rem .8rem;background:#0f0f14;color:#f1f0ea;font-size:.95rem}
+.kart-loading .kc-bar{width:70%;height:1.2rem;margin:1rem auto 0;background:#e4e2d9;border:.2rem solid #0f0f14;overflow:hidden}
+.kart-loading .kc-bar i{display:block;width:40%;height:100%;background:#35d07f;border-right:.2rem solid #0f0f14;-webkit-animation:kart-bar 1.2s ease-in-out infinite alternate;animation:kart-bar 1.2s ease-in-out infinite alternate}
+@-webkit-keyframes kart-bar{from{-webkit-transform:translateX(-100%)}to{-webkit-transform:translateX(250%)}}@keyframes kart-bar{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
 @-webkit-keyframes kart-spin{to{-webkit-transform:rotate(360deg)}}@keyframes kart-spin{to{transform:rotate(360deg)}}
 @-webkit-keyframes kart-blink{50%{opacity:.35}}@keyframes kart-blink{50%{opacity:.35}}
 .kart-results{position:relative;width:92%;display:flex;flex-direction:column;align-items:center;text-align:center}
-.kart-results .kr-kicker{margin-top:1.2rem;letter-spacing:.2em;font-weight:900;color:#fff1c9;text-shadow:.1rem 0 0 #1b1035,-.1rem 0 0 #1b1035,0 .1rem 0 #1b1035,0 -.1rem 0 #1b1035;font-size:1rem}
-.kart-podium{display:flex;align-items:flex-end;justify-content:center;width:100%;margin-top:1.4rem}
-.kpd{position:relative;width:15rem;margin:0 .4rem;padding:.9rem .7rem 0;text-align:center;box-shadow:none}
-.kpd .kp-portrait{width:5.6rem;height:5.6rem;margin:0 auto .4rem;border-radius:50%;border:.22rem solid #1b1035;overflow:hidden}
-.kpd strong{display:block;font-size:1.4rem;text-transform:uppercase;word-wrap:break-word}
-.kpd small{display:block;margin:.2rem 0 .6rem;font-size:.9rem;color:#5d5488;font-weight:700}
-.kpd .kpd-step{margin:0 -.9rem;padding:.5rem 0 0;border:.22rem solid #1b1035;border-bottom:0;font-size:2.8rem;font-weight:900;line-height:1}
-.kpd-1{z-index:2}.kpd-1 .kpd-step{height:6rem;background:#ffd23f}.kpd-2 .kpd-step{height:4.2rem;background:#c9b8ff}.kpd-3 .kpd-step{height:3rem;background:#ff9e7a}
-.kpd-1 .kp-portrait{box-shadow:0 0 0 .3rem #ffd23f}
-.kpd .kpd-crown{position:absolute;left:50%;top:-1.6rem;width:3rem;height:3rem;margin-left:-1.5rem;-webkit-transform:rotate(-8deg);transform:rotate(-8deg)}
-.kart-podium-base{width:47rem;max-width:100%;height:1.2rem;background:#1b1035}
+.kart-results .kr-kicker{display:inline-block;margin-top:1.6rem;padding:.4rem 1rem;background:#0f0f14;color:#f1f0ea;font-size:1.05rem}
+.kart-podium{display:flex;align-items:flex-end;justify-content:center;width:100%;margin-top:2rem}
+.kpd{position:relative;width:15rem;margin:0 .4rem;padding:1rem .8rem 0;text-align:center;box-shadow:none}
+.kpd .kp-portrait{width:5.8rem;height:5.8rem;margin:0 auto .5rem;border:.22rem solid #0f0f14;overflow:hidden}
+.kpd strong{display:block;font-family:'Archivo',sans-serif;font-weight:900;font-stretch:125%;font-size:1.45rem;line-height:1.05;text-transform:uppercase;word-wrap:break-word}
+.kpd strong .avatar{vertical-align:-.35rem}
+.kpd small{display:block;margin:.35rem 0 .7rem;font-family:'Pixelify Sans',monospace;font-size:1.3rem;font-weight:700;color:#0f0f14}
+.kpd .kpd-step{margin:0 -1.05rem;padding:.6rem 0 0;border:.25rem solid #0f0f14;border-bottom:0;font-family:'Pixelify Sans',monospace;font-size:3.2rem;font-weight:700;line-height:1;background-image:radial-gradient(rgba(15,15,20,.18) 2px,transparent 2.1px);background-size:16px 16px}
+.kpd-1{z-index:2}.kpd-1 .kpd-step{height:6.4rem;background-color:#ffce1f}.kpd-2 .kpd-step{height:4.4rem;background-color:#3db4f2}.kpd-3 .kpd-step{height:3.2rem;background-color:#ff7ab8}
+.kpd-1{box-shadow:.55rem 0 0 #0f0f14}
+.kpd .kpd-crown{position:absolute;left:50%;top:-1.8rem;width:3.2rem;height:3.2rem;margin-left:-1.6rem;-webkit-transform:rotate(-8deg);transform:rotate(-8deg)}
+.kart-podium-base{width:48rem;max-width:100%;height:1.3rem;background:#0f0f14}
 .kv-av{margin-right:.4em}
-.kart-others{display:flex;flex-wrap:wrap;justify-content:center;margin-top:.7rem}
-.kart-others span{display:inline-flex;align-items:center;margin:.3rem;padding:.4rem .9rem;font-size:1rem;font-weight:900}
-.kv-portrait{display:inline-block;width:1.8em;height:1.8em;margin-right:.4em;border-radius:50%;border:.12rem solid #1b1035;overflow:hidden;vertical-align:middle}
+.kart-others{display:flex;flex-wrap:wrap;justify-content:center;margin-top:1rem}
+.kart-others>span{display:inline-flex;align-items:center;margin:.4rem;padding:.45rem 1rem;font-size:1.1rem;font-weight:900;box-shadow:.35rem .35rem 0 #0f0f14}
+.kart-others .ko-n{font-family:'Pixelify Sans',monospace;font-weight:700;font-size:1.4rem;margin-right:.5rem}
+.kv-portrait{display:inline-block;width:1.8em;height:1.8em;margin-right:.4em;border:.12rem solid #0f0f14;overflow:hidden;vertical-align:middle}
 .kart-confetti{position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;pointer-events:none}
-.kart-confetti i{position:absolute;top:-20px;width:.6rem;height:1rem;border:.1rem solid #1b1035;-webkit-animation:kart-fall 3.2s linear infinite;animation:kart-fall 3.2s linear infinite}
+.kart-confetti i{position:absolute;top:-20px;width:.7rem;height:1rem;border:.12rem solid #0f0f14;-webkit-animation:kart-fall 3.2s linear infinite;animation:kart-fall 3.2s linear infinite}
 @-webkit-keyframes kart-fall{to{-webkit-transform:translateY(110vh) rotate(720deg)}}@keyframes kart-fall{to{transform:translateY(110vh) rotate(720deg)}}
-.kart-confetti i:nth-child(6n){background:#ff5e5b}.kart-confetti i:nth-child(6n+1){background:#ffd23f}.kart-confetti i:nth-child(6n+2){background:#45e0a5}.kart-confetti i:nth-child(6n+3){background:#4fc3f7}.kart-confetti i:nth-child(6n+4){background:#7c5cff}.kart-confetti i:nth-child(6n+5){background:#ff9ecb}
-.kart-fail{width:40rem;padding:1.8rem;text-align:center}
-.kart-fail h2{font-size:1.9rem;margin:0 0 .6rem}.kart-fail p{margin:.3rem 0;font-size:1.15rem}
+.kart-confetti i:nth-child(6n){background:#f0443a}.kart-confetti i:nth-child(6n+1){background:#ffce1f}.kart-confetti i:nth-child(6n+2){background:#35d07f}.kart-confetti i:nth-child(6n+3){background:#3db4f2}.kart-confetti i:nth-child(6n+4){background:#b08cff}.kart-confetti i:nth-child(6n+5){background:#ff7ab8}
+.kart-fail{width:44rem;padding:0 0 1.6rem;text-align:center}
+.kart-fail h2{margin:0 0 1rem;padding:1.2rem 1.4rem;background-color:#f0443a;background-image:radial-gradient(rgba(15,15,20,.18) 2px,transparent 2.1px);background-size:16px 16px;border-bottom:.25rem solid #0f0f14;font-size:2.2rem}
+.kart-fail p{margin:.4rem 1.6rem;font-size:1.2rem;line-height:1.4}
+.kart-fail p.kart-mono{margin-top:1rem;font-size:.95rem;color:#55555e}

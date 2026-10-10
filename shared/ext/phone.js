@@ -59,11 +59,26 @@
   #xp .ab .x{left:0;top:31%;--c:#3b82f6}#xp .ab .b{right:0;top:31%;--c:#ef4444}
   #xp .ab .r3{left:37%;top:37%;width:26%;height:26%;font-size:10px;--c:#6b7080;text-shadow:none}
   #xp .ab button.on{background:var(--c);color:#121318;text-shadow:none;transform:translateY(3px);box-shadow:0 1px 0 #0b0c10,0 0 18px var(--c)}
-  #xp-pick{position:fixed;inset:0;z-index:1001;background:rgba(5,7,12,.94);overflow:auto;padding:16px}
-  .xp-seat{margin-bottom:14px}.xp-seat h3{margin:0 0 8px;font-size:16px}
-  .xp-chips{display:flex;flex-wrap:wrap;gap:8px}
-  .xp-chips button{display:flex;align-items:center;gap:6px;padding:6px 12px 6px 6px;border-radius:999px;border:2px solid #323b5c;background:#161b2c;color:#e5e7eb;font:700 14px/1 system-ui}
-  .xp-chips button.sel{border-color:#22c55e;background:#14301f}`;
+  /* telas fora do controle ("Quem joga?" e a escolha de quem pega o controle): papel do Arcade, verde da categoria ação */
+  #xp-pick{position:fixed;inset:0;z-index:1001;background:#f1f0ea;color:#0f0f14;overflow:auto;padding:18px 16px 24px;font-family:'Archivo',sans-serif}
+  #xp-pick>h2{margin:0 0 16px;font-weight:900;font-stretch:125%;text-transform:uppercase;font-size:34px;line-height:.95}
+  #xp-pick>.btn{margin-top:6px}
+  .xp-hero{padding:20px 16px 16px;border:3px solid #0f0f14;box-shadow:5px 5px 0 #0f0f14;background-color:#ff9a3c;background-image:radial-gradient(rgba(15,15,20,.16) 1.2px,transparent 1.3px);background-size:9px 9px;margin-bottom:16px}
+  .xp-tag{display:inline-block;padding:5px 9px;background:#0f0f14;color:#f1f0ea;font:700 12px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase}
+  .xp-hero h1{margin:10px 0 0;font-weight:900;font-stretch:125%;text-transform:uppercase;font-size:46px;line-height:.9;letter-spacing:-.01em}
+  .xp-hero p{margin:12px 0 0;font-size:17px;font-weight:700;line-height:1.3}
+  .xp-hero p .nm{font-size:16px}
+  .xp-help{margin:0 0 16px;font-size:15px;font-weight:600;line-height:1.4;color:#55555e}
+  .xp-seat{margin-bottom:14px;padding:14px;background:#fff;border:3px solid #0f0f14;box-shadow:5px 5px 0 #0f0f14}
+  .xp-seat h3{display:flex;align-items:center;flex-wrap:wrap;margin:0 0 12px;font-size:17px;font-weight:900;font-stretch:125%;text-transform:uppercase;line-height:1}
+  .xp-seat h3 .xp-pad{margin-right:10px;padding:5px 7px;background:#ff9a3c;border:2px solid #0f0f14;font:700 12px/1 'JetBrains Mono',monospace;letter-spacing:.06em}
+  .xp-seat h3 .xp-none{font:700 13px/1 'JetBrains Mono',monospace;color:#55555e;letter-spacing:.06em}
+  .xp-chips{display:flex;flex-wrap:wrap;gap:10px}
+  .xp-chips button{display:flex;align-items:center;gap:6px;min-height:44px;padding:4px 12px 4px 4px;border:3px solid #0f0f14;border-radius:0;background:#fff;color:#0f0f14;box-shadow:3px 3px 0 #0f0f14;font:800 15px/1 'Archivo',sans-serif;cursor:pointer}
+  .xp-chips button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #0f0f14}
+  .xp-chips button.sel{background:#ff9a3c;transform:translate(2px,2px);box-shadow:1px 1px 0 #0f0f14}
+  .xp-chips button small{font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:uppercase}
+  .xp-chips button.xp-off{padding-left:12px;background:#e4e2d9;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.06em;text-transform:uppercase}`;
 
   function css() {
     if (document.getElementById('ext-phone-css')) return;
@@ -207,22 +222,23 @@
     </div>${picking ? picker(c) : ''}`;
   }
   // Quem joga em cada controle. Qualquer pessoa da sala pode trocar.
-  function picker(c) {
+  function seats(c) {
     const G = c.G, ps = c.C.players;
-    const seats = G.seats.map((p, i) => `<div class="xp-seat">
-      <h3>🎮 ${G.pads > 1 ? 'Controle ' + (i + 1) + ': ' : ''}${p ? c.nm(p) : '<span class="sub">ninguém</span>'}</h3>
-      <div class="xp-chips">${ps.map(q => `<button data-a="ext-seat" data-slot="${i}" data-pid="${c.esc(q.pid)}" class="${p && p.pid === q.pid ? 'sel' : ''}">${c.avatar(q, 24)}${c.esc(q.name)}${c.you && q.pid === c.you.pid ? ' (você)' : ''}</button>`).join('')}
-      ${p ? `<button data-a="ext-unseat" data-slot="${i}">✕ ninguém</button>` : ''}</div></div>`).join('');
-    return `<div id="xp-pick"><h2>Quem joga?</h2>${seats}<button class="btn" data-a="ext-pick">✔️ Pronto</button></div>`;
+    return G.seats.map((p, i) => `<div class="xp-seat">
+      <h3><span class="xp-pad">${G.pads > 1 ? 'P' + (i + 1) : 'P1'}</span>${p ? c.nm(p) : '<span class="xp-none">ninguém no controle</span>'}</h3>
+      <div class="xp-chips">${ps.map(q => `<button data-a="ext-seat" data-slot="${i}" data-pid="${c.esc(q.pid)}" class="${p && p.pid === q.pid ? 'sel' : ''}">${c.avatar(q, 30)}${c.esc(q.name)}${c.you && q.pid === c.you.pid ? ' <small>(você)</small>' : ''}</button>`).join('')}
+      ${p ? `<button class="xp-off" data-a="ext-unseat" data-slot="${i}">Ninguém</button>` : ''}</div></div>`).join('');
+  }
+  function picker(c) {
+    return `<div id="xp-pick"><h2>Quem joga?</h2>${seats(c)}<button class="btn ok" data-a="ext-pick">Pronto</button></div>`;
   }
   function waiting(c) {
     const G = c.G;
     const who = G.seats.filter(Boolean);
-    return `<div class="box center">
-      <h2>${c.esc(c.game().emoji || '🎮')} ${c.esc(c.game().name || id)}</h2>
-      <p>${who.length ? who.map(p => c.nm(p)).join(' e ') + (who.length > 1 ? ' estão jogando.' : ' está jogando.') : 'Ninguém está no controle agora.'}</p>
-      <p class="sub">O jogo aparece na TV. Escolha abaixo quem fica com o controle.</p>
-    </div><div class="box">${picker(c).replace('<div id="xp-pick">', '<div>').replace('<button class="btn" data-a="ext-pick">✔️ Pronto</button>', '')}</div>`;
+    return `<div class="xp-hero"><span class="xp-tag">Ação · o jogo está na TV</span><h1>${c.esc(c.game().name || id)}</h1>
+      <p>${who.length ? who.map(p => c.nm(p)).join(' e ') + (who.length > 1 ? ' estão jogando.' : ' está jogando.') : 'Ninguém está no controle agora.'}</p></div>
+      <p class="xp-help">Toque num nome para dar o controle a essa pessoa. O celular dela vira o controle.</p>
+      ${seats(c)}`;
   }
 
   function act(a, el) {

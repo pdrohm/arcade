@@ -54,7 +54,7 @@ module.exports = {
   meta: {
     id: 'imagemeacao',
     name: 'Imagem e Ação',
-    emoji: '🎨',
+    category: 'desenho', glyph: '✎', emoji: '🎨',
     tagline: 'Desenhe, adivinhe e avance. Em equipes, com dado e cronômetro.',
     art: 'linear-gradient(135deg,#a855f7 0%,#7e22ce 50%,#1e1b4b 100%)',
     minPlayers: 2, maxPlayers: 8,

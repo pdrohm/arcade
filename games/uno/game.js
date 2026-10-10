@@ -22,7 +22,7 @@ function novoBaralho() {
 
 module.exports = {
   meta: {
-    id: 'uno', name: 'UNO', emoji: '🃏',
+    id: 'uno', name: 'UNO', category: 'cartas', glyph: '+4', emoji: '🃏',
     tagline: 'Combine cor ou número, grite UNO e não esqueça o +4.',
     art: 'linear-gradient(135deg,#ef4444 0%,#facc15 40%,#22c55e 70%,#3b82f6 100%)',
     minPlayers: 2, maxPlayers: 8,

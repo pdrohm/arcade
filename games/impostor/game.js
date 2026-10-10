@@ -18,7 +18,7 @@ const MAX_IMP = n => Math.max(1, Math.floor((n - 1) / 2));   // nunca deixa impo
 
 module.exports = {
   meta: {
-    id: 'impostor', name: 'Impostor', emoji: '🕵️‍♂️',
+    id: 'impostor', name: 'Impostor', category: 'festa', glyph: '?', emoji: '🕵️‍♂️',
     tagline: 'Descubra quem não sabe a palavra.',
     art: 'linear-gradient(135deg,#0ea5e9 0%,#1e3a8a 60%,#020617 100%)',
     minPlayers: 3, maxPlayers: 8,

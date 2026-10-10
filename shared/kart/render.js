@@ -9,9 +9,11 @@
 (function () {
   var W = window.KartWorld, SP = window.KartSprites;
   var INK = '#1b1035', CREAM = '#fff1c9', YEL = '#ffd23f', COR = '#ff5e5b', MINT = '#45e0a5', SKY = '#4fc3f7', GRAPE = '#7c5cff', LILAC = '#c9b8ff';
-  var FONT = '"Courier New",Courier,monospace';
+  // Cores e fontes do HUD (visual "fliperama de papel", as mesmas de shared/ui.css e shared/kart/tv.css).
+  var HINK = '#0f0f14', PAPER = '#f1f0ea', WHITE = '#ffffff', SUNK = '#e4e2d9', MUTED = '#55555e', HYEL = '#ffce1f', HRED = '#f0443a', HGRN = '#35d07f', HBLU = '#3db4f2', HPNK = '#ff7ab8';
+  var PIX = '"Pixelify Sans",monospace', MONO = '"JetBrains Mono",monospace', DISP = 'Archivo,"Arial Black",sans-serif';
   var ITEM_NAMES = { rocket: 'FOGUETE', bomb: 'BOMBA', oil: 'ÓLEO', banana: 'BANANA', nitro: 'NITRO', clock: 'RELÓGIO', shield: 'ESCUDO', boost: 'TURBO', rapid: 'RAJADA', mine: 'MINA' };
-  var ITEM_MARKS = { rocket: '▲', bomb: '●', oil: '◆', banana: '◒', nitro: 'N', clock: '◷', shield: '◇', boost: '⚡', rapid: '»', mine: '✹' };
+  var ITEM_MARKS = { rocket: '▲', bomb: '●', oil: '◆', banana: '◒', nitro: 'N', clock: '◷', shield: '◇', boost: '≫', rapid: '»', mine: '✹' };
   var NEAR = 1.5, FAR = 170, TAU = Math.PI * 2, BASE_RES = 960;
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -178,7 +180,7 @@
       if (v.map) this.drawMap(vw, vh, karts, g);
       else this.drawView(v, vw, vh, karts, snap, g, dt);
       ctx.restore();
-      if (views.length > 1) { ctx.fillStyle = INK; if (v.x > 0) ctx.fillRect(vx - 2, vy, 4, vh); if (v.y > 0) ctx.fillRect(vx, vy - 2, vw, 4); }
+      if (views.length > 1) { ctx.fillStyle = HINK; if (v.x > 0) ctx.fillRect(vx - 2, vy, 4, vh); if (v.y > 0) ctx.fillRect(vx, vy - 2, vw, 4); }
     }
     if (g.phase === 'countdown') this.drawCountdown(res, h, g);
     // Custo: se a TV não acompanha, a resolução interna cai (960 → 800 → 640) e volta quando sobra fôlego.
@@ -315,88 +317,135 @@
   };
   Renderer.prototype.speedLines = function (vw, vh) { var ctx = this.ctx, i; ctx.strokeStyle = 'rgba(255,241,201,0.5)'; ctx.lineWidth = 1; ctx.beginPath(); for (i = 0; i < 8; i++) { var y = (vh * .2 + Math.random() * vh * .7) | 0, len = 20 + Math.random() * 50, left = i % 2 === 0; ctx.moveTo(left ? 0 : vw, y); ctx.lineTo(left ? len : vw - len, y + (left ? 4 : -4)); } ctx.stroke(); };
   // ---- HUD (desenhado no canvas: nada de DOM durante a corrida) --------------------------------------------
-  Renderer.prototype.label = function (x, y, text, size, color, bg, align) {
-    var ctx = this.ctx; ctx.font = 'bold ' + size + 'px ' + FONT; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-    var w = ctx.measureText(text).width + size * .9, h = size * 1.5; if (align === 'right') x -= w; else if (align === 'center') x -= w / 2;
-    if (bg) { ctx.fillStyle = INK; ctx.fillRect(x - 2, y - 2, w + 4, h + 4); ctx.fillStyle = bg; ctx.fillRect(x, y, w, h); }
-    ctx.fillStyle = color; ctx.fillText(text, x + size * .45, y + h / 2 + 1);
+  // HUD no visual "fliperama de papel": cartões brancos, borda preta grossa, cantos retos e sombra dura
+  // (sem desfoque). Números em Pixelify Sans, rótulos em JetBrains Mono, palavras grandes em Archivo 900.
+  // Texto sobre cor é sempre tinta (#0f0f14).
+  Renderer.prototype.setFont = function (kind, size) {
+    var ctx = this.ctx; size = Math.round(size);
+    ctx.font = kind === 'pix' ? '700 ' + size + 'px ' + PIX : kind === 'mono' ? '700 ' + size + 'px ' + MONO : '900 ' + size + 'px ' + DISP;
+    if ('fontStretch' in ctx) ctx.fontStretch = kind === 'disp' ? 'expanded' : 'normal';   // Archivo largo onde o navegador deixa
+  };
+  Renderer.prototype.measure = function (text, kind, size) { this.setFont(kind, size); return this.ctx.measureText(text).width; };
+  Renderer.prototype.text = function (text, x, y, kind, size, color, align) {
+    var ctx = this.ctx; this.setFont(kind, size); ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = color;
+    ctx.fillText(text, Math.round(x), Math.round(y + size * (kind === 'mono' ? .04 : .06)));
+  };
+  // Cartão: sombra dura (s) para baixo e à direita, borda de tinta (b) por dentro de w × h.
+  Renderer.prototype.card = function (x, y, w, h, fill, b, s) {
+    var ctx = this.ctx; x = Math.round(x); y = Math.round(y); w = Math.round(w); h = Math.round(h);
+    ctx.fillStyle = HINK; if (s) ctx.fillRect(x + s, y + s, w, h); ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = fill; ctx.fillRect(x + b, y + b, w - 2 * b, h - 2 * b);
+  };
+  // Etiqueta: texto num cartão. Devolve a largura (sem a sombra).
+  Renderer.prototype.label = function (x, y, text, size, color, bg, align, kind, u) {
+    kind = kind || 'mono'; u = u || size / 14;
+    var b = Math.max(2, Math.round(3 * u)), s = Math.max(2, Math.round(4 * u)), w = Math.round(this.measure(text, kind, size) + size * 1.2), h = Math.round(size * 1.9);
+    if (align === 'right') x -= w; else if (align === 'center') x -= w / 2;
+    this.card(x, y, w, h, bg || WHITE, b, s); this.text(text, x + w / 2, y + h / 2, kind, size, color, 'center');
     return w;
   };
-  Renderer.prototype.big = function (x, y, text, size, fill) { var ctx = this.ctx; ctx.font = 'bold ' + size + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(3, size * .14); ctx.strokeText(text, x, y); ctx.fillStyle = fill; ctx.fillText(text, x, y); };
+  // Palavra grande ao centro (JÁ!, VOLTA FINAL!, TURBO!): adesivo colorido com texto em tinta.
+  Renderer.prototype.big = function (x, y, text, size, fill) {
+    var w = this.measure(text, 'disp', size) + size * 1.1, h = size * 1.55, b = Math.max(3, Math.round(size * .09)), s = Math.max(4, Math.round(size * .16));
+    this.card(x - w / 2 - s / 2, y - h / 2 - s / 2, w, h, fill, b, s); this.text(text, x - s / 2, y - s / 2, 'disp', size, HINK, 'center');
+  };
   Renderer.prototype.hud = function (v, vw, vh, snap, g) {
-    var ctx = this.ctx, k = v.target.k, u = Math.max(.74, vh / 540), pad = Math.round(10 * u), battle = this.mode === 'battle', world = snap ? snap.world : null, t = world ? world.time : 0, fs;
-    // placa do piloto: avatar (o próprio sprite de frente), cor e nome
-    fs = Math.round(15 * u); var spr = this.kartSprite(k), ah = Math.round(30 * u);
-    ctx.fillStyle = INK; ctx.fillRect(pad, pad, ah + 6, ah + 6); ctx.fillStyle = CREAM; ctx.fillRect(pad + 2, pad + 2, ah + 2, ah + 2);
-    ctx.drawImage(spr.frames[8], pad + 3, pad + 3, ah, ah);
-    var nw = this.label(pad + ah + 8, pad + Math.round(4 * u), upper(k.name), fs, CREAM, INK), swx = pad + ah + 8 + nw + 6, swy = pad + Math.round(4 * u), swh = fs * 1.5;
-    ctx.fillStyle = INK; ctx.fillRect(swx - 2, swy - 2, swh + 4, swh + 4); ctx.fillStyle = k.color; ctx.fillRect(swx, swy, swh, swh);
+    var ctx = this.ctx, k = v.target.k, u = Math.max(.74, vh / 540), pad = Math.round(12 * u), b = Math.max(2, Math.round(3 * u)), sh = Math.max(3, Math.round(5 * u)), battle = this.mode === 'battle', world = snap ? snap.world : null, t = world ? world.time : 0, i;
+    // placa do piloto: avatar (o próprio sprite de frente), nome e a cor da pessoa
+    var spr = this.kartSprite(k), ah = Math.round(36 * u), name = upper(k.name), fsz = Math.round(15 * u), nw = Math.round(this.measure(name, 'disp', fsz)), chip = Math.round(16 * u), gap = Math.round(9 * u), pw = ah + gap + nw + gap + chip + gap;
+    this.card(pad, pad, pw, ah, WHITE, b, sh);
+    ctx.fillStyle = SUNK; ctx.fillRect(pad + b, pad + b, ah - 2 * b, ah - 2 * b);
+    ctx.drawImage(spr.frames[8], pad + b, pad + b, ah - 2 * b, ah - 2 * b);
+    ctx.fillStyle = HINK; ctx.fillRect(pad + ah - b, pad, b, ah);
+    this.text(name, pad + ah + gap, pad + ah / 2, 'disp', fsz, HINK);
+    var cx0 = pad + ah + gap + nw + gap, cy0 = pad + Math.round((ah - chip) / 2);
+    ctx.fillStyle = HINK; ctx.fillRect(cx0, cy0, chip, chip); ctx.fillStyle = k.color || WHITE; ctx.fillRect(cx0 + b, cy0 + b, chip - 2 * b, chip - 2 * b);
     var rost = g && g.roster, av = null, ri; if (rost) for (ri = 0; ri < rost.length; ri++) if (rost[ri].pid === k.pid) av = rost[ri].av;
-    if (av && window.ARCADE && window.ARCADE.avatar) { try { window.ARCADE.avatar.draw(ctx, av, k.color, swx + swh + 8 + ah * .6, pad + ah * .5 + 3, ah * 1.2); } catch (e) { /* sem boneco */ } }
-    // Caixa de item no estilo dos jogos de corrida dos anos 90. A TV mostra o item e o mesmo botão X do celular.
-    var item = k.item || null, iw = Math.round(154 * u), ih = Math.round(42 * u), iy = pad + ah + Math.round(14 * u), icon = Math.round(34 * u);
-    ctx.fillStyle = INK; ctx.fillRect(pad, iy, iw, ih); ctx.fillStyle = item ? CREAM : '#3a2d63'; ctx.fillRect(pad + 3, iy + 3, iw - 6, ih - 6);
-    ctx.fillStyle = item ? SKY : '#5d5488'; ctx.fillRect(pad + 6, iy + 6, icon, ih - 12);
-    ctx.font = 'bold ' + Math.round(20 * u) + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = item ? INK : LILAC; ctx.fillText(item ? ITEM_MARKS[item] || '?' : '?', pad + 6 + icon / 2, iy + ih / 2);
-    ctx.textAlign = 'left'; ctx.font = 'bold ' + Math.round(11 * u) + 'px ' + FONT; ctx.fillStyle = item ? INK : LILAC; ctx.fillText(item ? ITEM_NAMES[item] || upper(item) : 'SEM ITEM', pad + icon + 13 * u, iy + 15 * u);
-    ctx.font = 'bold ' + Math.round(8 * u) + 'px ' + FONT; ctx.fillStyle = item ? COR : '#8d82b2'; ctx.fillText(item ? 'APERTE X' : 'PEGUE UMA CAIXA', pad + icon + 13 * u, iy + 30 * u);
-    // posição (ou KOs na batalha): quadrado amarelo no canto direito
-    var bs = Math.round(46 * u), bx = vw - pad - bs, by = pad, posColor = battle ? COR : k.position === 1 ? YEL : k.position === 2 ? LILAC : k.position === 3 ? '#ff9e7a' : CREAM;
-    ctx.fillStyle = INK; ctx.fillRect(bx - 3, by - 3, bs + 6, bs + 6); ctx.fillStyle = posColor; ctx.fillRect(bx, by, bs, bs);
-    ctx.font = 'bold ' + Math.round(24 * u) + 'px ' + FONT; ctx.fillStyle = battle ? CREAM : INK; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(battle ? String(k.kills) : k.position + 'º', bx + bs / 2, by + bs / 2 + (battle ? -4 * u : 1));
-    if (battle) { ctx.font = 'bold ' + Math.round(10 * u) + 'px ' + FONT; ctx.fillText('KO', bx + bs / 2, by + bs - 8 * u); }
+    if (av && window.ARCADE && window.ARCADE.avatar) { try { window.ARCADE.avatar.draw(ctx, av, k.color, pad + pw + sh + Math.round(8 * u) + ah * .55, pad + ah * .5, ah * 1.2); } catch (e) { /* sem boneco */ } }
+    // Caixa de item. A TV mostra o item e o mesmo botão X do celular.
+    var item = k.item || null, ih = Math.round(46 * u), iw = Math.round(168 * u), iy = pad + ah + sh + Math.round(9 * u), tx = pad + ih + Math.round(10 * u);
+    this.card(pad, iy, iw, ih, WHITE, b, sh);
+    ctx.fillStyle = item ? HYEL : SUNK; ctx.fillRect(pad + b, iy + b, ih - 2 * b, ih - 2 * b);
+    ctx.fillStyle = HINK; ctx.fillRect(pad + ih - b, iy, b, ih);
+    this.text(item ? ITEM_MARKS[item] || '?' : '?', pad + ih / 2, iy + ih / 2, 'disp', Math.round(22 * u), item ? HINK : MUTED, 'center');
+    this.text(item ? ITEM_NAMES[item] || upper(item) : 'SEM ITEM', tx, iy + ih * .36, 'disp', Math.round(14 * u), item ? HINK : MUTED);
+    this.text(item ? 'APERTE X' : 'PEGUE UMA CAIXA', tx, iy + ih * .7, 'mono', Math.round(10 * u), item ? HINK : MUTED);
+    if (item) { var xw = Math.round(this.measure('APERTE ', 'mono', Math.round(10 * u))), xs = Math.round(14 * u), xx = tx + xw - Math.round(2 * u), xy = Math.round(iy + ih * .7 - xs / 2); ctx.fillStyle = HINK; ctx.fillRect(xx, xy, xs, xs); ctx.fillStyle = HRED; ctx.fillRect(xx + 2, xy + 2, xs - 4, xs - 4); this.text('X', xx + xs / 2, xy + xs / 2, 'mono', Math.round(9 * u), HINK, 'center'); }
+    // posição (ou KOs na batalha): quadrado colorido no canto direito
+    var bs = Math.round(56 * u), bx = vw - pad - sh - bs, by = pad, posColor = battle ? HRED : k.position === 1 ? HYEL : k.position === 2 ? HBLU : k.position === 3 ? HPNK : WHITE;
+    this.card(bx, by, bs, bs, posColor, Math.max(3, Math.round(4 * u)), Math.round(7 * u));
+    if (battle) { this.text(String(k.kills), bx + bs / 2, by + bs * .42, 'pix', Math.round(30 * u), HINK, 'center'); this.text('KO', bx + bs / 2, by + bs * .8, 'mono', Math.round(10 * u), HINK, 'center'); }
+    else this.text(k.position + 'º', bx + bs / 2, by + bs / 2, 'pix', Math.round(32 * u), HINK, 'center');
     // canto inferior esquerdo: volta e relógio (corrida) ou vida e relógio (batalha)
-    var ly = vh - pad - Math.round(22 * u), lx = pad, clock = battle ? this.clock(120 - t) : this.clock(t);
+    var lh = Math.round(32 * u), ly = vh - pad - sh - lh, lx = pad, clock = battle ? this.clock(120 - t) : this.clock(t), nsz = Math.round(18 * u), msz = Math.round(11 * u), ip = Math.round(10 * u), cw;
     if (battle) {
-      var hp = Math.max(0, Math.ceil(k.hp)), bw = Math.round(120 * u), bh = Math.round(14 * u), low = 120 - t <= 10;
-      var hpw = this.label(lx, ly, '♥', Math.round(14 * u), COR, CREAM);
-      ctx.fillStyle = INK; ctx.fillRect(lx + hpw + 2, ly - 2, bw + 8, bh + 12 * u); ctx.fillStyle = '#e9dcc7'; ctx.fillRect(lx + hpw + 5, ly + 2, bw + 2, bh + 5 * u);
-      ctx.fillStyle = hp <= 30 ? COR : hp <= 60 ? YEL : MINT; ctx.fillRect(lx + hpw + 6, ly + 3, Math.round(bw * hp / 100), bh + 3 * u);
-      var hpn = this.label(lx + hpw + bw + 14, ly, String(hp), Math.round(14 * u), CREAM, INK);
-      this.label(lx + hpw + bw + 14 + hpn + 4, ly, clock, Math.round(14 * u), low ? CREAM : YEL, low ? COR : INK);
+      var hp = Math.max(0, Math.ceil(k.hp)), bw = Math.round(120 * u), low = 120 - t <= 10, hw = lh;
+      this.card(lx, ly, hw, lh, WHITE, b, sh); this.text('♥', lx + hw / 2, ly + lh / 2, 'disp', Math.round(16 * u), HRED, 'center');
+      var hx = lx + hw + sh + Math.round(4 * u); this.card(hx, ly, bw, lh, SUNK, b, sh);
+      ctx.fillStyle = hp <= 30 ? HRED : hp <= 60 ? HYEL : HGRN; ctx.fillRect(hx + b, ly + b, Math.round((bw - 2 * b) * hp / 100), lh - 2 * b);
+      this.text(String(hp), hx + bw - ip, ly + lh / 2, 'pix', nsz, HINK, 'right');   // a vida em número, dentro da barra
+      var kx = hx + bw + sh + Math.round(4 * u), kw = Math.round(this.measure(clock, 'pix', nsz) + 2 * ip); this.card(kx, ly, kw, lh, low ? HRED : WHITE, b, sh); this.text(clock, kx + kw / 2, ly + lh / 2, 'pix', nsz, HINK, 'center');
     } else {
-      var lap = Math.min(3, k.lap + 1), lw = this.label(lx, ly, 'VOLTA ' + (k.finished ? 3 : lap) + '/3', Math.round(14 * u), INK, k.lap >= 2 && !k.finished ? YEL : CREAM), i;
-      for (i = 0; i < 3; i++) { ctx.fillStyle = INK; ctx.fillRect(lx + lw + 6 + i * 14 * u, ly + 5 * u, 11 * u, 11 * u); ctx.fillStyle = i < k.lap ? MINT : '#e9dcc7'; ctx.fillRect(lx + lw + 8 + i * 14 * u, ly + 7 * u, 7 * u, 7 * u); }
-      this.label(lx + lw + 6 + 3 * 14 * u + 6, ly, clock, Math.round(14 * u), YEL, INK);
+      var lap = k.finished ? 3 : Math.min(3, k.lap + 1), lapTxt = lap + '/3', mw = Math.round(this.measure('VOLTA', 'mono', msz)), lw = ip + mw + Math.round(7 * u) + Math.round(this.measure(lapTxt, 'pix', nsz)) + ip;
+      this.card(lx, ly, lw, lh, k.lap >= 2 && !k.finished ? HYEL : WHITE, b, sh);
+      this.text('VOLTA', lx + ip, ly + lh / 2, 'mono', msz, HINK); this.text(lapTxt, lx + ip + mw + Math.round(7 * u), ly + lh / 2, 'pix', nsz, HINK);
+      var px0 = lx + lw + sh + Math.round(6 * u), ps = Math.round(13 * u), pg = Math.round(5 * u), py0 = ly + Math.round((lh - ps) / 2);
+      for (i = 0; i < 3; i++) { ctx.fillStyle = HINK; ctx.fillRect(px0 + i * (ps + pg), py0, ps, ps); ctx.fillStyle = i < k.lap ? HGRN : WHITE; ctx.fillRect(px0 + i * (ps + pg) + b, py0 + b, ps - 2 * b, ps - 2 * b); }
+      var kx2 = px0 + 3 * (ps + pg) + Math.round(4 * u); cw = Math.round(this.measure(clock, 'pix', nsz) + 2 * ip);
+      this.card(kx2, ly, cw, lh, WHITE, b, sh); this.text(clock, kx2 + cw / 2, ly + lh / 2, 'pix', nsz, HINK, 'center');
     }
-    // canto inferior direito: velocímetro em segmentos + carga da derrapagem
-    var seg = 12, sw = Math.round(10 * u), sh = Math.round(18 * u), gap = Math.round(3 * u), total = seg * (sw + gap), sx0 = vw - pad - total, sy0 = vh - pad - sh - Math.round(12 * u), speed = k.speed || 0, lit = Math.round(clamp(speed / 37, 0, 1) * seg), j;
-    ctx.fillStyle = INK; ctx.fillRect(sx0 - 5, sy0 - 5, total + 8, sh + Math.round(12 * u) + 8);
-    for (j = 0; j < seg; j++) { var on = j < lit; ctx.fillStyle = on ? (k.boost > 0 ? COR : j < 8 ? MINT : YEL) : '#3a2d63'; ctx.fillRect(sx0 + j * (sw + gap), sy0 + (seg - j) * u * .6, sw, sh - (seg - j) * u * .6); }
-    ctx.fillStyle = '#3a2d63'; ctx.fillRect(sx0, sy0 + sh + 3 * u, total - gap, 5 * u); ctx.fillStyle = k.driftCharge >= .65 ? SKY : YEL; ctx.fillRect(sx0, sy0 + sh + 3 * u, Math.round((total - gap) * clamp((k.driftCharge || 0) / 2.5, 0, 1)), 5 * u);
-    ctx.font = 'bold ' + Math.round(10 * u) + 'px ' + FONT; ctx.textAlign = 'right'; ctx.fillStyle = CREAM; ctx.fillText(Math.round(speed * 4) + ' KM/H', vw - pad - 2, sy0 - 12 * u);
-    if (k.boost > 0 && Math.floor(this.time * 8) % 2 === 0) this.big(vw - pad - total / 2, sy0 - 30 * u, 'TURBO!', Math.round(20 * u), COR);
+    // canto inferior direito: velocímetro em segmentos + carga da derrapagem, num cartão branco
+    var seg = 12, sw = Math.round(10 * u), sg = Math.round(3 * u), sgh = Math.round(20 * u), total = seg * (sw + sg) - sg, spd = k.speed || 0, lit = Math.round(clamp(spd / 37, 0, 1) * seg), j;
+    var sp = b + Math.round(7 * u), rowH = Math.round(18 * u), dh = Math.round(6 * u), spw = total + 2 * sp, sph = sp + rowH + Math.round(5 * u) + sgh + Math.round(5 * u) + dh + sp, spx = vw - pad - sh - spw, spy = vh - pad - sh - sph;
+    this.card(spx, spy, spw, sph, WHITE, b, sh);
+    var kmw = Math.round(this.measure('KM/H', 'mono', msz));
+    this.text('KM/H', spx + spw - sp, spy + sp + rowH / 2, 'mono', msz, MUTED, 'right');
+    this.text(String(Math.round(spd * 4)), spx + spw - sp - kmw - Math.round(6 * u), spy + sp + rowH / 2, 'pix', nsz, HINK, 'right');
+    var sy0 = spy + sp + rowH + Math.round(5 * u);
+    for (j = 0; j < seg; j++) { var on = j < lit, hj = Math.round(sgh * (.45 + .55 * (j + 1) / seg)); ctx.fillStyle = on ? (k.boost > 0 ? HRED : j < 8 ? HGRN : HYEL) : SUNK; ctx.fillRect(spx + sp + j * (sw + sg), sy0 + sgh - hj, sw, hj); }
+    var dy = sy0 + sgh + Math.round(5 * u); ctx.fillStyle = SUNK; ctx.fillRect(spx + sp, dy, total, dh);
+    ctx.fillStyle = k.driftCharge >= .65 ? HBLU : HYEL; ctx.fillRect(spx + sp, dy, Math.round(total * clamp((k.driftCharge || 0) / 2.5, 0, 1)), dh);
+    if (k.boost > 0 && Math.floor(this.time * 8) % 2 === 0) this.big(spx + spw / 2, spy - Math.round(26 * u), 'TURBO!', Math.round(16 * u), HRED);
     // avisos ao centro: largada, volta final, chegada, retorno
     var text = '';
     if (g.phase === 'playing' && t < 1.1) text = 'JÁ!';
     else if (k.finished && g.phase === 'playing' && t - k.finishTime < 2.5) text = 'CHEGOU ' + k.position + 'º';
     else if (this.flash[k.pid] && this.flash[k.pid].until > t) text = this.flash[k.pid].text;
-    if (text) this.big(vw / 2, vh * .36, text, Math.round((text.length > 6 ? 40 : 64) * u), YEL);
-    if (k.respawn > 0) this.big(vw / 2, vh / 2, 'VOLTANDO…', Math.round(28 * u), CREAM);
+    if (text) this.big(vw / 2, vh * .36, text, Math.round((text.length > 6 ? 30 : 52) * u), text === 'JÁ!' ? HGRN : HYEL);
+    if (k.respawn > 0) this.big(vw / 2, vh / 2, 'VOLTANDO…', Math.round(24 * u), WHITE);
   };
   Renderer.prototype.clock = function (t) { t = Math.max(0, Math.floor(t)); var m = Math.floor(t / 60), s = t % 60; return m + ':' + (s < 10 ? '0' : '') + s; };
+  // Largada: o número num quadrado colorido (3 vermelho, 2 amarelo, 1 verde) e três luzes que acendem.
   Renderer.prototype.drawCountdown = function (w, h, g) {
-    var ctx = this.ctx, i; this.big(w / 2, h * .42, String(g.countdown), Math.round(h * .32), YEL);
-    var lx = w / 2 - 3 * 22, ly = h * .42 + h * .2; ctx.fillStyle = INK; ctx.fillRect(lx - 12, ly - 14, 3 * 44 + 24, 28); ctx.fillStyle = CREAM; ctx.fillRect(lx - 9, ly - 11, 3 * 44 + 18, 22);
-    for (i = 0; i < 3; i++) { ctx.fillStyle = i < 4 - g.countdown ? COR : '#e9dcc7'; SP.ellipse(ctx, lx + 22 + i * 44, ly, 8, 8); ctx.fill(); }
+    var ctx = this.ctx, i, u = h / 540, n = g.countdown, cols = [HRED, HYEL, HGRN], fill = n >= 3 ? HRED : n === 2 ? HYEL : HGRN;
+    var side = Math.round(h * .36), cx = w / 2, cy = h * .42, b = Math.round(6 * u), s = Math.round(14 * u), x0 = cx - side / 2 - s / 2, y0 = cy - side / 2 - s / 2;
+    this.card(x0, y0, side, side, fill, b, s);
+    this.text(String(n), x0 + side / 2, y0 + side / 2, 'pix', Math.round(side * .78), HINK, 'center');
+    var tag = 'LARGADA', tsz = Math.round(13 * u), tw = Math.round(this.measure(tag, 'mono', tsz) + 24 * u), th = Math.round(26 * u);
+    ctx.fillStyle = HINK; ctx.fillRect(Math.round(x0 + side / 2 - tw / 2), Math.round(y0 - th / 2), tw, th); this.text(tag, x0 + side / 2, y0, 'mono', tsz, PAPER, 'center');
+    var ls = Math.round(26 * u), lg = Math.round(14 * u), lp = Math.round(12 * u), lw = 3 * ls + 2 * lg + 2 * lp, lh = ls + 2 * lp, lx = cx - lw / 2 - s / 4, ly = y0 + side + Math.round(30 * u), lb = Math.max(2, Math.round(3 * u));
+    this.card(lx, ly, lw, lh, WHITE, b, Math.round(8 * u));
+    for (i = 0; i < 3; i++) { var qx = Math.round(lx + lp + i * (ls + lg)), qy = Math.round(ly + lp); ctx.fillStyle = HINK; ctx.fillRect(qx, qy, ls, ls); ctx.fillStyle = i < 4 - n ? cols[i] : SUNK; ctx.fillRect(qx + lb, qy + lb, ls - 2 * lb, ls - 2 * lb); }
   };
-  // Quarto quadrante com três pilotos: mapa da pista com os karts (estilo painel de fliperama).
+  // Quarto quadrante com três pilotos: mapa da pista com os karts, num painel de papel.
   Renderer.prototype.drawMap = function (vw, vh, karts, g) {
     var ctx = this.ctx, race = this.mode === 'race', i, u = Math.max(.74, vh / 540);
-    ctx.fillStyle = INK; ctx.fillRect(0, 0, vw, vh);
-    var span = race ? 170 : 130, s = Math.min(vw, vh) / span, ox = vw / 2, oy = vh / 2 + 10 * u;
+    ctx.fillStyle = PAPER; ctx.fillRect(0, 0, vw, vh);
+    ctx.fillStyle = SUNK; for (var dy = Math.round(6 * u); dy < vh; dy += Math.round(12 * u)) for (var dx = Math.round(6 * u); dx < vw; dx += Math.round(12 * u)) ctx.fillRect(dx, dy, 2, 2);
+    var span = race ? 170 : 130, s = Math.min(vw, vh) / span, ox = vw / 2, oy = vh / 2 + 14 * u;
     var mx = function (x) { return ox + x * s; }, mz = function (z) { return oy - z * s; };
     if (race) {
-      ctx.strokeStyle = '#3a2d63'; ctx.lineWidth = 34 * s; ctx.lineJoin = 'round'; ctx.beginPath(); for (i = 0; i <= 96; i++) { var p = W.TRACK[i % 96]; if (i) ctx.lineTo(mx(p.x), mz(p.z)); else ctx.moveTo(mx(p.x), mz(p.z)); } ctx.stroke();
-      ctx.strokeStyle = CREAM; ctx.lineWidth = 19 * s; ctx.stroke(); ctx.strokeStyle = this.theme.road[0]; ctx.lineWidth = 16 * s; ctx.stroke();
-      var a = W.point(0, -8), b = W.point(0, 8); ctx.strokeStyle = CREAM; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(mx(a.x), mz(a.z)); ctx.lineTo(mx(b.x), mz(b.z)); ctx.stroke();
+      ctx.strokeStyle = HINK; ctx.lineWidth = 30 * s; ctx.lineJoin = 'miter'; ctx.beginPath(); for (i = 0; i <= 96; i++) { var p = W.TRACK[i % 96]; if (i) ctx.lineTo(mx(p.x), mz(p.z)); else ctx.moveTo(mx(p.x), mz(p.z)); } ctx.stroke();
+      ctx.strokeStyle = WHITE; ctx.lineWidth = 20 * s; ctx.stroke(); ctx.strokeStyle = this.theme.road[0]; ctx.lineWidth = 16 * s; ctx.stroke();
+      var a = W.point(0, -8), b = W.point(0, 8); ctx.strokeStyle = WHITE; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(mx(a.x), mz(a.z)); ctx.lineTo(mx(b.x), mz(b.z)); ctx.stroke();
     } else {
-      ctx.fillStyle = this.theme.road[0]; ctx.fillRect(mx(-55), mz(55), 110 * s, 110 * s); ctx.strokeStyle = '#d8d2f2'; ctx.lineWidth = 3 * s; ctx.strokeRect(mx(-55), mz(55), 110 * s, 110 * s);
+      this.card(mx(-55), mz(55), 110 * s, 110 * s, this.theme.road[0], Math.max(2, Math.round(3 * u)), Math.round(6 * u));
       var m = this.map; for (i = 0; i < m.hazards.length; i++) { ctx.fillStyle = '#ff7a3d'; SP.ellipse(ctx, mx(m.hazards[i].x), mz(m.hazards[i].z), m.hazards[i].radius * s, m.hazards[i].radius * s); ctx.fill(); }
       for (i = 0; i < m.platforms.length; i++) { var pf = m.platforms[i]; ctx.fillStyle = '#d9a066'; ctx.fillRect(mx(pf.x - pf.width / 2), mz(pf.z + pf.depth / 2), pf.width * s, pf.depth * s); }
     }
-    for (i = 0; i < karts.length; i++) { var kt = karts[i]; ctx.fillStyle = INK; SP.ellipse(ctx, mx(kt.x), mz(kt.z), 7 * u, 7 * u); ctx.fill(); ctx.fillStyle = kt.k.color; SP.ellipse(ctx, mx(kt.x), mz(kt.z), 5 * u, 5 * u); ctx.fill(); ctx.font = 'bold ' + Math.round(9 * u) + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = INK; ctx.fillText(String(kt.k.position || ''), mx(kt.x), mz(kt.z) + .5); }
-    this.label(vw / 2, 10 * u, race ? 'CIRCUITO AURORA' : 'FORTE PRISMA', Math.round(13 * u), INK, YEL, 'center');
+    var ks = Math.round(21 * u), kb = Math.max(2, Math.round(2 * u));
+    for (i = 0; i < karts.length; i++) { var kt = karts[i], qx = Math.round(mx(kt.x) - ks / 2), qy = Math.round(mz(kt.z) - ks / 2); ctx.fillStyle = HINK; ctx.fillRect(qx, qy, ks, ks); ctx.fillStyle = kt.k.color || WHITE; ctx.fillRect(qx + kb, qy + kb, ks - 2 * kb, ks - 2 * kb); this.text(String(kt.k.position || ''), qx + ks / 2, qy + ks / 2, 'pix', Math.round(14 * u), HINK, 'center'); }
+    this.label(vw / 2, 12 * u, race ? 'CIRCUITO AURORA' : 'FORTE PRISMA', Math.round(13 * u), HINK, HYEL, 'center', 'disp', u);
   };
   window.KartRender = Renderer;
 })();
