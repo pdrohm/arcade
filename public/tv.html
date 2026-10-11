@@ -10,6 +10,9 @@
 <script>
 // Browser de TV não tem console: qualquer erro de script aparece num canto da tela.
 window.addEventListener('error', function (e) {
+  // "Script error." sem arquivo é erro de script de outra origem (a TV LG injeta os dela).
+  // Não diz nada e não é nosso: os nossos arquivos são do mesmo endereço e chegam com arquivo e linha.
+  if (e.message === 'Script error.' && !e.filename) return;
   var host = document.body || document.documentElement;
   var el = document.getElementById('tverr');
   if (!el) { el = document.createElement('pre'); el.id = 'tverr'; host.appendChild(el); el.textContent = navigator.userAgent + '\n'; }
