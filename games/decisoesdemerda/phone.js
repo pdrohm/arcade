@@ -55,7 +55,7 @@
   const ply = (c, pid) => c.C.players.filter(p => p.pid === pid)[0] || null;
 
   function placar(c) {
-    const G = c.G, hits = (G.result && G.result.hit) || [];
+    const G = c.G, hits = G.result && G.result.hit ? [G.result.reader] : [];
     return `<div class="box"><p class="ddmp-lbl">Pontos <span class="mut">(meta: ${G.cfg.goal})</span></p>${c.playersHtml({
       info: p => `<span class="ddmp-pts">${G.scores[p.pid] || 0}${hits.indexOf(p.pid) >= 0 ? '<small>+1</small>' : ''}</span>`,
       tag: p => G.champs.indexOf(p.pid) >= 0 ? ' 👑' : '',
@@ -66,16 +66,16 @@
     const card = c.G.card || ['', ''];
     return [1, 2].map(k => {
       const cls = sel ? (sel === k ? 'sel' : 'dim') : R && R.maj ? (R.maj === k ? 'sel' : 'dim') : '';
-      const tag = R ? `<span class="ok">${R.n[k]} ${R.n[k] === 1 ? 'VOTO' : 'VOTOS'}${R.maj === k ? ' · MAIORIA' : ''}</span>` : sel === k ? '<span class="ok">SUA ESCOLHA</span>' : '';
+      const tag = R ? `<span class="ok">${R.n[k]} ${R.n[k] === 1 ? 'VOTO' : 'VOTOS'}${R.maj === k && !R.vazio ? ' · MAIORIA' : ''}</span>` : sel === k ? '<span class="ok">SUA ESCOLHA</span>' : '';
       return `<div class="ddmp-ch ${cls}" style="background-color:${COR[k]}" ${a ? `data-a="${a}" data-v="${k}"` : ''}><span class="num">${k}</span><span class="t">${c.esc(card[k - 1])}</span>${tag}</div>`;
     }).join('');
   }
   function resultado(c, R) {
-    const ordem = c.C.players.filter(p => R.picks[p.pid] || R.bets[p.pid]);
-    return `<div>${ordem.map(p => {
-      const hit = R.hit.indexOf(p.pid) >= 0;
-      return `<div class="ddmp-row ${hit ? 'hit' : ''}">${c.avatar(p, 30)}<b>${c.nm(p)}</b><span class="pk">escolheu <i>${R.picks[p.pid] || '—'}</i><br>apostou <i>${R.bets[p.pid] || '—'}</i>${hit ? ' +1' : ''}</span></div>`;
-    }).join('')}</div>`;
+    const rd = ply(c, R.reader);
+    const ap = R.bet == null ? 'não apostou' : R.bet ? `apostou na opção ${R.bet}` : 'apostou no empate';
+    const quem = c.C.players.filter(p => R.picks[p.pid]);
+    return `${rd ? `<div class="ddmp-row ${R.hit ? 'hit' : ''}">${c.avatar(rd, 30)}<b>${c.nm(rd)} ${ap}</b><span class="pk">${R.hit ? 'ACERTOU +1' : 'ERROU'}</span></div>` : ''}
+      <div style="margin-top:10px">${quem.map(p => `<div class="ddmp-row">${c.avatar(p, 30)}<b>${c.nm(p)}</b><span class="pk">escolheu <i>${R.picks[p.pid]}</i></span></div>`).join('')}</div>`;
   }
 
   ARCADE.register('decisoesdemerda', {
@@ -92,7 +92,7 @@
 
         if (G.phase === 'setup') {
           const opt = (a, vals, cur, fmt) => `<div class="ddmp-opt">${vals.map(v => `<div class="ddmp-o ${v === cur ? 'sel' : ''}" data-a="${a}" data-v="${v}">${fmt ? fmt(v) : pix(v)}</div>`).join('')}</div>`;
-          return `<div class="ddmp-hero"><span class="ddmp-k">Regras</span><h2 class="t">Decisões de Merda</h2><p>Duas opções ruins. Escolha a sua e aposte na da maioria. Qualquer um pode mudar as regras.</p></div>
+          return `<div class="ddmp-hero"><span class="ddmp-k">Regras</span><h2 class="t">Decisões de Merda</h2><p>Duas opções ruins. Os outros escolhem; quem está na vez adivinha o que a maioria escolhe (ou se dá empate). Qualquer um pode mudar as regras.</p></div>
             <div class="box"><p class="ddmp-lbl">Pontos para vencer</p>${opt('cfgGoal', G.goals, G.cfg.goal)}</div>
             <div class="box"><p class="ddmp-lbl">Tempo para escolher</p>${opt('cfgTime', G.voteSecs, G.cfg.voteSec, v => pix(v + 's'))}</div>
             <div class="box"><p class="ddmp-lbl">Cartas sacanas <span class="mut">(dilemas mais pesados, para maiores)</span></p>
@@ -111,17 +111,22 @@
         }
 
         if (G.phase === 'vote') {
-          const pronto = G.myPick && G.myBet;
-          return `<div class="ddmp-hero"><span class="ddmp-k">${reader ? esc(reader.name) + ' leu' : roda}</span><h2 class="t">O que você prefere?</h2></div>
-            ${c.timerHtml(pronto ? 'Pronto! Pode trocar até o tempo acabar.' : 'Escolha e aposte. Ninguém vê até o fim.', G.turnMs)}
-            <p class="ddmp-step"><span class="n">1</span>Sua escolha</p>
+          if (souEu) {   // quem está na vez não escolhe: só aposta no que a maioria vai escolher
+            const bt = (k, txt) => `<div class="ddmp-bet ${G.myBet === k ? 'sel' : ''}" style="background:${G.myBet === k ? (COR[k] || '#ffce1f') : '#fff'}" data-a="apostar" data-v="${k}">${pix(k || '=')}${txt}</div>`;
+            return `<div class="ddmp-hero"><span class="ddmp-k">${roda}</span><h2 class="t">Sua vez de apostar</h2><p>Leia as opções em voz alta. Você não escolhe: adivinhe o que a maioria vai escolher.</p></div>
+              ${c.timerHtml(G.myBet != null ? 'Aposta feita. Pode trocar até o tempo acabar.' : 'O que a maioria vai escolher?', G.turnMs)}
+              <div>${opcoes(c, null, null, null)}</div>
+              <p class="ddmp-step"><span class="n">?</span>A maioria vai de…</p>
+              <div class="ddmp-bets">${bt(1, 'opção 1')}${bt(0, 'empate')}${bt(2, 'opção 2')}</div>
+              <p class="ddmp-lbl" style="text-align:center;margin:0">${pix(G.ready.filter(x => x !== me).length)} de ${pix(c.C.players.length - 1)} escolheram</p>`;
+          }
+          return `<div class="ddmp-hero"><span class="ddmp-k">${reader ? esc(reader.name) + ' leu' : roda}</span><h2 class="t">O que você prefere?</h2><p>${reader ? esc(reader.name) : 'Quem leu'} vai tentar adivinhar o que a maioria escolhe.</p></div>
+            ${c.timerHtml(G.myPick ? 'Escolhido! Pode trocar até o tempo acabar.' : 'Escolha em segredo.', G.turnMs)}
             <div>${opcoes(c, 'escolher', G.myPick, null)}</div>
-            <p class="ddmp-step"><span class="n">2</span>A maioria vai escolher…</p>
-            <div class="ddmp-bets">${[1, 2].map(k => `<div class="ddmp-bet ${G.myBet === k ? 'sel' : ''}" style="background:${G.myBet === k ? COR[k] : '#fff'}" data-a="apostar" data-v="${k}">${pix(k)}opção ${k}</div>`).join('')}</div>
             <p class="ddmp-lbl" style="text-align:center;margin:0">${pix(G.ready.length)} de ${pix(c.C.players.length)} prontos</p>`;
         }
 
-        const R = G.result || { n: { 1: 0, 2: 0 }, picks: {}, bets: {}, hit: [], maj: 0 };
+        const R = G.result || { n: { 1: 0, 2: 0 }, picks: {}, maj: 0, vazio: true, bet: null, hit: false };
         const fim = G.phase === 'end';
         let h = '';
         if (fim) {

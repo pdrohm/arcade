@@ -71,7 +71,7 @@
       let extra = '', cls = '';
       if (R) {
         const quem = Object.keys(R.picks).filter(pid => R.picks[pid] === k).map(pid => ply(c, pid)).filter(Boolean);
-        extra = `<div class="ddm-big">${R.n[k]}</div><div class="ddm-who">${quem.map(p => c.avatar(p, 40)).join('')}</div>${R.maj === k ? '<span class="ddm-maj">ESCOLHA DA MAIORIA</span>' : ''}`;
+        extra = `<div class="ddm-big">${R.n[k]}</div><div class="ddm-who">${quem.map(p => c.avatar(p, 40)).join('')}</div>${R.maj === k && !R.vazio ? '<span class="ddm-maj">ESCOLHA DA MAIORIA</span>' : ''}`;
         cls = R.maj === k ? 'win' : R.maj ? 'lose' : '';
       }
       return `<div class="ddm-opt ${cls}" style="background-color:${COR[k]}"><span class="num">${k}</span><div class="t">${c.esc(card[k - 1])}</div>${extra}</div>`;
@@ -93,9 +93,9 @@
           stage += `<div class="ddm-stage"><div class="ddm-tag">🤢 DECISÕES DE MERDA</div>
             <div class="ddm-how">
               <p><b>1</b>Na sua vez, vire uma carta: duas opções ruins.</p>
-              <p><b>2</b>No celular, escolha em segredo qual você prefere.</p>
-              <p><b>3</b>E aposte qual opção a MAIORIA vai escolher.</p>
-              <p><b>4</b>Acertou a escolha da maioria? Ganha 1 ponto. Empate: ninguém pontua.</p>
+              <p><b>2</b>Os outros escolhem em segredo no celular qual preferem.</p>
+              <p><b>3</b>Quem está na vez não escolhe: aposta se a maioria vai de 1, de 2 ou se dá empate.</p>
+              <p><b>4</b>Acertou? Quem está na vez ganha 1 ponto.</p>
               <p><b>5</b>Quem chegar a ${pix(G.cfg.goal)} pontos primeiro vence.</p>
             </div>
             <div class="ddm-hint">Meta ${pix(G.cfg.goal)} pontos · ${pix(G.cfg.voteSec + 's')} para escolher · ${G.cfg.sacana ? 'com' : 'sem'} cartas sacanas</div>
@@ -108,11 +108,13 @@
         } else if (G.phase === 'vote') {
           stage += `<div class="ddm-stage"><div class="ddm-tag">${roda}</div><div class="ddm-pre">O que você prefere?</div>
             ${opcoes(c, G, null)}
-            <div class="ddm-hint">Escolha e aposte no celular ▸ ${pix(G.ready.length)}/${pix(c.C.players.length)} prontos</div>
-            <div class="ddm-vs">${c.C.players.map(p => { const ok = G.ready.indexOf(p.pid) >= 0; return `<div class="ddm-v ${ok ? 'ok' : ''}" style="${ok ? c.nmStyle(p) : ''}">${c.avatar(p, 40)}${esc(p.name)}${ok ? '<span class="ck">PRONTO</span>' : ''}</div>`; }).join('')}</div></div>`;
+            <div class="ddm-hint">Escolham no celular ▸ ${reader ? esc(reader.name).toUpperCase() : 'quem leu'} aposta no que a maioria vai escolher</div>
+            <div class="ddm-vs">${c.C.players.map(p => { const ok = G.ready.indexOf(p.pid) >= 0, eu = p.pid === G.reader; return `<div class="ddm-v ${ok ? 'ok' : ''}" style="${ok ? c.nmStyle(p) : ''}">${c.avatar(p, 40)}${esc(p.name)}${ok ? `<span class="ck">${eu ? 'APOSTOU' : 'ESCOLHEU'}</span>` : eu ? '<span class="ck" style="color:#ffce1f">APOSTANDO</span>' : ''}</div>`; }).join('')}</div></div>`;
           side += c.timerHtml('', G.turnMs);
         } else {
-          const R = G.result || { n: { 1: 0, 2: 0 }, picks: {}, bets: {}, hit: [], maj: 0 };
+          const R = G.result || { n: { 1: 0, 2: 0 }, picks: {}, maj: 0, vazio: true, bet: null, hit: false };
+          const rd = ply(c, R.reader);
+          const apTxt = R.bet == null ? 'não apostou' : R.bet ? `apostou na opção ${R.bet}` : 'apostou no empate';
           let fim = '';
           if (G.phase === 'end') {
             const cs = G.champs.map(pid => ply(c, pid)).filter(Boolean);
@@ -120,13 +122,12 @@
           }
           stage += `<div class="ddm-stage">${G.phase === 'end' ? fim : `<div class="ddm-tag">${roda}</div>`}
             ${opcoes(c, G, R)}
-            <div class="ddm-hint">Apostas na maioria</div>
-            <div class="ddm-vs">${c.C.players.filter(p => R.bets[p.pid]).map(p => { const hit = R.hit.indexOf(p.pid) >= 0; return `<div class="ddm-v ${hit ? 'hit' : 'ok'}">${c.avatar(p, 34)}${esc(p.name)}<span class="bt">${R.bets[p.pid]}</span>${hit ? '<span class="ck">+1</span>' : ''}</div>`; }).join('')}</div>
+            ${rd ? `<div class="ddm-vs" style="margin-top:2.4rem"><div class="ddm-v ${R.hit ? 'hit' : 'ok'}">${c.avatar(rd, 40)}${esc(rd.name)} ${apTxt}${R.hit ? '<span class="ck">ACERTOU +1</span>' : '<span class="ck" style="color:#f0443a">ERROU</span>'}</div></div>` : ''}
             <div class="ddm-win">${c.hl(c.C.event ? c.C.event.text : '')}</div>
             <div class="ddm-hint">${G.phase === 'end' ? 'Toque em "Jogar de novo" no celular' : 'Toque em "Próxima vez" no celular'}</div></div>`;
         }
 
-        const hits = (G.result && G.result.hit) || [];
+        const hits = G.result && G.result.hit ? [G.result.reader] : [];
         side += `<div class="box"><p class="ddm-side-t">Pontos (meta ${G.cfg.goal})</p>${c.playersHtml({
           info: p => `<span class="ddm-pts">${G.scores[p.pid] || 0}${hits.indexOf(p.pid) >= 0 ? '<small>+1</small>' : ''}</span>`,
           tag: p => (p.pid === G.reader && G.phase !== 'setup' && G.phase !== 'end' ? '<span class="ddm-rd">LEU</span>' : '') + (G.champs.indexOf(p.pid) >= 0 ? ' 👑' : ''),

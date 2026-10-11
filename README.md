@@ -72,7 +72,7 @@ O que o núcleo já resolve para todos os jogos:
 | `games/stop` | Stop (Adedonha) — menu de regras (rodadas, tempo, categorias, letras), roleta de letras, STOP e conferência com veto |
 | `games/provavel` | Quem é mais provável? — pergunta na TV, votos no celular, barras e coroa |
 | `games/amigosdemerda` | Amigos de Merda — no estilo do jogo da Buró: quem é da vez compra a carta, todo mundo aponta no celular (em si mesmo não vale) e o mais apontado fica com ela. Empate: quem não votou nos empatados pode trocar, depois quem leu desempata. Quem junta 5 cartas (ou 3/7) é coroado; cartas sacanas opcionais |
-| `games/decisoesdemerda` | Decisões de Merda — no estilo do jogo da Buró: quem é da vez vira uma carta com duas opções ruins; cada um escolhe em segredo a sua e aposta na escolha da maioria. Quem acerta a maioria ganha 1 ponto (empate: ninguém pontua). Meta de 3 pontos (ou 5/7); cartas sacanas opcionais |
+| `games/decisoesdemerda` | Decisões de Merda — no estilo do jogo da Buró: quem é da vez vira uma carta com duas opções ruins; os outros escolhem em segredo e quem é da vez aposta no que a maioria vai escolher (opção 1, opção 2 ou empate). Acertou, ganha 1 ponto. Meta de 3 pontos (ou 5/7); cartas sacanas opcionais |
 | `games/stopalfabeto` | Stop Alfabeto — uma categoria, o alfabeto na TV; fala a palavra, aperta a letra, 5 s por vez, 3 vidas, contestação por votação |
 | `games/uno` | UNO — mão no celular, mesa na TV, coringa, +2/+4, UNO! e "Pegou!", pontuação oficial |
 | `games/pife` | Pife (Cacheta) — 2–10 pessoas, mão privada no celular, compra do monte ou descarte, três jogos de três cartas e opção de partida com ou sem coringas |
