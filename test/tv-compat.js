@@ -15,7 +15,8 @@ const path = require('path');
 
 const RAIZ = path.join(__dirname, '..');
 const IGNORAR = ['shared/kart/simulation.js',   // só o servidor roda a simulação; o resto do KART a TV carrega
-  'shared/ext/game.js', 'shared/ext/phone.js'];   // jogos de fora: servidor e celular (a TV carrega só shared/ext/tv.js)
+  'shared/ext/game.js', 'shared/ext/phone.js',   // jogos de fora: servidor e celular (a TV carrega só shared/ext/tv.js)
+  'shared/bash/engine.js', 'shared/bash/phone.js'];   // jogos de arena: servidor e celular (a TV carrega só shared/bash/tv.js)
 
 function alvos() {
   const out = [];

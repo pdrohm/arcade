@@ -82,6 +82,10 @@ O que o núcleo já resolve para todos os jogos:
 | `games/palavrasecreta` | Palavra Secreta — estilo Mega Senha: em times, um vê a palavra e dá dicas em voz alta, o colega adivinha; ACERTOU/PASSAR no celular, cronômetro e placar na TV |
 | `games/ultimodepe` | Último de Pé — memória espacial e ação simultânea, 2–8. 🐧 Pinguins (dash com força no gelo, quem cai na água sai) ou 🤠 Tiroteio (todo mundo atira junto). O servidor resolve a rodada; celular em tela cheia |
 | `games/top10` | Top 10 — um ranking de dez que ninguém vê. Cada um fala um item na ordem; quem duvidar do anterior revela a lista, a turma vota e alguém perde uma das 4 vidas. Com TV ou só nos celulares, e com um celular só no modo mediador |
+| `games/cratecrush` | Crate Crush — briga em arena estilo Crash Bash, 1–4 + CPU: pegue e jogue caixas, TNT com 3-2-1, Nitro, chute e pulo. Jungle, Space (buracos no chão), Snow (gelo e pinguim) e Drain Bash (armas) |
+| `games/polarpush` | Polar Push — empurra-empurra de urso no gelo, 1–4 + CPU: investida com medidor, contra-ataque, pendurado na borda. Polar, Tilt (gangorra e morsa), Melt (ilha derretendo) e Manic Panic (bombas) |
+| `games/pogo` | Pogo Pandemonium — conquista de casas num tabuleiro 8×8, 1–4 + CPU: pinte e pegue a caixa "!" para guardar os pontos. Pogo Painter, Pogo-a-Gogo (laços), El Pogo Loco (dinamite) e Pogo Padlock (cadeado) |
+| `games/ballistix` | Ballistix — pong de 4 gols, 1–4 + CPU: cada um defende um lado, chute e turbo, bolas cada vez mais rápidas e numerosas. Crashball, Beach Ball (ímã), N. Ballism (canhão e escudo) e Sky Balls (plataforma inclina) |
 
 No Truco, o Paulista usa mão de onze e sequência 1→3→6→9→12; o Mineiro usa mão de dez e sequência 2→4→6→10→12. O Gaudério vai até 12 pontos (ou 24, escolhido no celular), com truco, retruco, vale quatro, envido e flor. O baralho espanhol contém 1–7, Sota (10), Cavalo (11) e Rei (12), sem 8 e 9.
 
@@ -279,3 +283,30 @@ cada rodada uma vez e manda um replay; TV e celulares só desenham (`shared/ulti
 Canvas 2D, roda na TV antiga). Nas fases escondidas a view não leva a posição de ninguém, nem para
 a TV. Uma mira que chega até 260 ms depois do fim do 3‑2‑1 ainda vale (folga para o ping).
 Testes: `node --test test/ultimodepe.test.js`.
+
+## Jogos de arena (Crate Crush, Polar Push, Pogo Pandemonium, Ballistix)
+
+Quatro minijogos no estilo de Crash Bash (PlayStation, 2000), com os bonecos da casa no lugar dos personagens.
+Até 4 pessoas jogam; a CPU completa as vagas (pode desligar). Quem sobra assiste e entra na próxima.
+
+- **Preparação (celular):** o primeiro jogador escolhe a arena (4 por jogo), quantas vitórias levam o troféu
+  (1, 2 ou 3), CPU ligada ou não e o nível da CPU (Fácil, Normal, Difícil). Qualquer um toca **Entrar** ou **Só assistir**.
+- **Partida:** a TV mostra a arena em 3/4, placar nos cantos e o 3-2-1. Cada rodada termina com um vencedor
+  (ou empate); quem chega primeiro ao número de vitórias leva o troféu. No fim: **Revanche** ou **Trocar arena**.
+- **Controle:** o celular vira um controle deitado (em pé ele gira sozinho): analógico à esquerda, até 3 botões
+  (A verde, B azul, C amarelo) à direita. No computador: WASD/setas, J = A, K = B, L = C. Vibra quando você apanha.
+- **Quedas:** quem sai no meio da partida vira CPU. O primeiro jogador pode parar a partida (■ duas vezes).
+
+| Jogo | Controles | Como vence |
+|---|---|---|
+| Crate Crush | A pega/joga caixa, B pula, C chuta (ou usa a arma) | último de pé; no fim dos 90 s, mais vida |
+| Polar Push | A investida (medidor), B bomba/bola de neve | último no gelo |
+| Pogo Pandemonium | analógico pula de casa em casa, A míssil | mais pontos guardados em 90 s |
+| Ballistix | analógico anda no seu gol, A chute, B turbo, C ímã (Beach Ball) | último com pontos |
+
+Por dentro: `shared/bash/engine.js` é o motor comum (vagas, CPU, rodadas, troféu, entradas `t:'input'`, 60 passos
+por segundo, 30 quadros por segundo para a TV). Cada jogo tem só `games/<id>/sim.js` (regras, física e CPU, puras),
+`tv.js` (desenho, ES5 para a TV antiga) e `phone.js` (uma linha). A TV usa `shared/bash/tv.js` (canvas 2D, câmera 3/4,
+interpolação, partículas, sons sintetizados, placar, cartazes) e o celular `shared/bash/phone.js`. O contrato da
+simulação está no topo de `engine.js`. Testes: `node --test test/bash-engine.test.js test/cratecrush.test.js
+test/polarpush.test.js test/pogo.test.js test/ballistix.test.js`.
